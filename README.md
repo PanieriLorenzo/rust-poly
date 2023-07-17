@@ -1,5 +1,14 @@
 # rust-poly
-Numeric manipulation of real and complex polynomials
+Numeric manipulation of real and complex polynomials.
+
+> Note: this crate is currently under development and should not be used
+
+Basic Goals:
+- [ ] addition, subtraction and multiplication of complex and real univariate polynomials
+- [ ] long division of complex and real univariate polynomials
+-
+- [ ] finding complex roots of polynomials
+- [ ] generate chebyshev polynomials
 
 ## Licensing
 
