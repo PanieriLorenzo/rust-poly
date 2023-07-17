@@ -1,7 +1,18 @@
 [package]
 name = "rust-poly"
+description = "Numeric manipulation of real and complex polynomials."
 version = "0.0.0"
 edition = "2021"
+license = "MIT"
+license-file = "LICENSE"
+# TODO:
+documentation = "https://github.com/PanieriLorenzo/rust-poly"
+# TODO:
+homepage = "https://github.com/PanieriLorenzo/rust-poly"
+repository = "https://github.com/PanieriLorenzo/rust-poly"
+readme = "README.md"
+keywords = ["mathematics", "numerics", "polynomial", "solver"]
+categories = ["Math"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
