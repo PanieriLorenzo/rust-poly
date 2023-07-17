@@ -1,6 +1,6 @@
-use ndarray::{array, s, Array, Array1, Axis, Dimension, ScalarOperand};
+use ndarray::{array, s, Array, Array1, ArrayView1, ArrayViewMut1, Axis, Dimension, ScalarOperand};
 use num_traits::{Num, Zero};
-use std::ops::Add;
+use std::ops::{Add, Div, Mul, Rem, Sub};
 
 mod scalar;
 pub use scalar::Scalar;
@@ -118,6 +118,57 @@ impl<T: Scalar> Poly<T> {
         }
         y
     }
+
+    /// Computes the quotient and remainder of a polynomial division
+    ///
+    /// ## Examples
+    ///
+    /// Divide two real polynomials
+    ///
+    /// ```
+    /// # use rust_poly::Poly;
+    /// use ndarray::prelude::*;
+    ///
+    /// let p1 = Poly::new(array![3.0, 5.0, 2.0]);
+    /// let p2 = Poly::new(array![2.0, 1.0]);
+    /// let (q, r) = p1.div_rem(p2);
+    /// assert_eq!(q, Poly::new(array![1.5, 1.75]));
+    /// assert_eq!(r, Poly::new(array![0.25]));
+    /// ```
+    ///
+    /// Divide two complex polynomials
+    ///
+    /// ```
+    /// # use rust_poly::Poly;
+    /// use ndarray::prelude::*;
+    /// use num_complex::Complex64;
+    ///
+    /// let p1 = Poly::term(Complex64::new(1.0, 1.0), 2);
+    /// let p2 = Poly::term(Complex64::new(1.0, -1.0), 0);
+    /// let (q, r) = p1.div_rem(p2);
+    /// assert_eq!(q, Poly::term(Complex64::new(0.0, 1.0), 2));
+    /// assert_eq!(r, Poly::new(array![]));
+    /// ```
+    ///
+    pub fn div_rem(&self, rhs: Self) -> (Self, Self) {
+        let u: Array1<T> = self.0.clone() + array![T::zero()];
+        let v: Array1<T> = rhs.0 + array![T::zero()];
+        let m = u.len() as isize - 1;
+        let n = v.len() as isize - 1;
+        let scale = T::one() / v[0].clone();
+        let mut q: Array1<T> = Array1::zeros((m - n + 1).max(1) as usize);
+        let mut r: Array1<T> = u.clone(); // TODO: useless assignment
+        for k in 0..((m - n + 1) as usize) {
+            let d = scale.clone() * r[k].clone();
+            q[k] = d.clone();
+            r.slice_mut(s![k..(k + n as usize + 1)])
+                .iter_mut()
+                .zip((array![d] * v.clone()).iter())
+                .for_each(|p| *p.0 = p.0.clone() - p.1.clone());
+        }
+        dbg!(q.clone(), r.clone());
+        (Self(q), Self(r).trim_zeros())
+    }
 }
 
 impl<T: Scalar> Add for Poly<T> {
@@ -153,7 +204,7 @@ impl<T: Scalar> Add for Poly<T> {
     /// ```
     fn add(self, rhs: Self) -> Self::Output {
         let len_delta = self.raw_len() as isize - rhs.raw_len() as isize;
-        if len_delta == 0 {
+        (if len_delta == 0 {
             Self(self.0 + rhs.0)
         } else if len_delta < 0 {
             let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.abs() as usize]);
@@ -163,6 +214,123 @@ impl<T: Scalar> Add for Poly<T> {
             let mut rhs_new: Array1<T> = Array1::<T>::zeros([len_delta as usize]);
             rhs_new.append(Axis(0), rhs.0.view()).unwrap(); // TODO
             Self(self.0 + rhs_new)
-        }
+        })
+        .trim_zeros()
     }
+}
+
+impl<T: Scalar> Sub for Poly<T> {
+    type Output = Poly<T>;
+
+    /// Subtract one polynomial from another
+    ///
+    /// ## Examples
+    /// Subtract polynomials of various lengths
+    ///
+    /// ```
+    /// # use rust_poly::Poly;
+    /// use ndarray::prelude::*;
+    ///
+    /// let p1 = Poly::new(array![1.0, 0.0]);
+    /// let p2 = Poly::new(array![1.0]);
+    /// assert_eq!(p1.clone() - p1.clone(), Poly::new(array![]));
+    /// assert_eq!(p2.clone() - p1.clone(), Poly::new(array![-1.0, 1.0]));
+    /// assert_eq!(p1 - p2, Poly::new(array![1.0, -1.0]));
+    /// ```
+    fn sub(self, rhs: Self) -> Self::Output {
+        let len_delta = self.raw_len() as isize - rhs.raw_len() as isize;
+        (if len_delta == 0 {
+            Self(self.0 - rhs.0)
+        } else if len_delta < 0 {
+            let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.abs() as usize]);
+            lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
+            Self(lhs - rhs.0)
+        } else {
+            let mut rhs_new: Array1<T> = Array1::<T>::zeros([len_delta as usize]);
+            rhs_new.append(Axis(0), rhs.0.view()).unwrap(); // TODO
+            Self(self.0 - rhs_new)
+        })
+        .trim_zeros()
+    }
+}
+
+impl<T: Scalar> Mul for Poly<T> {
+    type Output = Poly<T>;
+
+    /// Multiplies two polynomials together
+    ///
+    /// ## Examples
+    ///
+    /// Convolve two polynomials
+    /// ```
+    /// # use rust_poly::Poly;
+    /// use ndarray::prelude::*;
+    ///
+    /// let p1 = Poly::new(array![1.0, 2.0, 3.0]);
+    /// let p2 = Poly::new(array![9.0, 5.0, 1.0]);
+    /// let prod = p1 * p2;
+    /// assert_eq!(prod, Poly::new(array![9.0, 23.0, 38.0, 17.0, 3.0]));
+    /// ```
+    ///
+    /// Scalar multiplication
+    /// ```
+    /// # use rust_poly::Poly;
+    /// use ndarray::prelude::*;
+    ///
+    /// let p1 = Poly::term(3, 0);
+    /// let p2 = Poly::new(array![1, 1]);
+    /// let prod1 = p1.clone() * p2.clone();
+    /// let prod2 = p2.clone() * p1.clone();
+    /// assert_eq!(prod1, Poly::new(array![3, 3]));
+    /// assert_eq!(prod2, Poly::new(array![3, 3]));
+    /// ```
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(convolve_1d(self.0.view(), rhs.0.view())).trim_zeros()
+    }
+}
+
+impl<T: Scalar> Div for Poly<T> {
+    type Output = Poly<T>;
+
+    /// Computes the quotient of two polynomials, truncating the remainder.
+    ///
+    /// See also `Poly::div_rem()`.
+    fn div(self, rhs: Self) -> Self::Output {
+        self.div_rem(rhs).0
+    }
+}
+
+impl<T: Scalar> Rem for Poly<T> {
+    type Output = Poly<T>;
+
+    /// Computes the remainder of the division of two polynomials.
+    ///
+    /// See also `Poly::div_rem()`.
+    fn rem(self, rhs: Self) -> Self::Output {
+        self.div_rem(rhs).1
+    }
+}
+
+// TODO: this is a slightly modified version of a ChatGPT 3.5 answer,
+//     integrate it better by placing it inside `Poly::mul` and changing
+//     the name of variables.
+fn convolve_1d<T: Scalar>(input: ArrayView1<T>, kernel: ArrayView1<T>) -> Array1<T> {
+    let input_len = input.len();
+    let kernel_len = kernel.len();
+    let output_len = input_len + kernel_len - 1;
+
+    let mut output: Array1<T> = Array1::<T>::zeros([output_len]);
+
+    for i in 0..output_len {
+        let mut sum = T::zero();
+        for j in 0..kernel_len {
+            let k = i as isize - j as isize;
+            if k >= 0 && k < input_len as isize {
+                sum = sum.clone() + input[k as usize].clone() * kernel[j].clone();
+            }
+        }
+        output[i] = sum;
+    }
+
+    output
 }

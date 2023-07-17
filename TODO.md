@@ -1,0 +1,2 @@
+- [ ]: change implementation for operators so that left is owned and right is borrowed, then define the owned-owned variant in terms of the owned-borrowed variant, like in ndarray.
+- [ ]: in-place variants of memory intesive operations
