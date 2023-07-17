@@ -18,7 +18,7 @@ categories = ["Math"]
 [dependencies]
 ndarray = "0.15.6"
 num-traits = "0.2.15"
+num-complex = "0.4.3"
 
 [dev-dependencies]
 ndarray = "0.15.6"
-num-complex = "0.4.3"
