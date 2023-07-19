@@ -189,7 +189,7 @@ impl<T: Scalar> Poly<T> {
         let scale = T::one() / den[0].clone();
         let mut quot: Array1<T> = Array1::zeros((num_deg - den_deg + 1).max(1));
         let mut rem: Array1<T> = num;
-        for k in 0..(num_deg - den_deg + 1) {
+        for k in 0..=(num_deg - den_deg) {
             let d = scale.clone() * rem[k].clone();
             quot[k] = d.clone();
             rem.slice_mut(s![k..=(k + den_deg)])
@@ -226,7 +226,7 @@ impl<T: Scalar> Zero for Poly<T> {
 }
 
 impl<T: Scalar> Add for Poly<T> {
-    type Output = Poly<T>;
+    type Output = Self;
 
     /// Add toghether two polynomials
     ///
@@ -274,7 +274,7 @@ impl<T: Scalar> Add for Poly<T> {
 }
 
 impl<T: Scalar> Sub for Poly<T> {
-    type Output = Poly<T>;
+    type Output = Self;
 
     /// Subtract one polynomial from another
     ///
@@ -309,7 +309,7 @@ impl<T: Scalar> Sub for Poly<T> {
 }
 
 impl<T: Scalar> Mul for Poly<T> {
-    type Output = Poly<T>;
+    type Output = Self;
 
     /// Multiplies two polynomials together
     ///
@@ -344,7 +344,7 @@ impl<T: Scalar> Mul for Poly<T> {
 }
 
 impl<T: Scalar> Div<&Self> for Poly<T> {
-    type Output = Poly<T>;
+    type Output = Self;
 
     /// Computes the quotient of two polynomials, truncating the remainder.
     ///
@@ -355,7 +355,7 @@ impl<T: Scalar> Div<&Self> for Poly<T> {
 }
 
 impl<T: Scalar> Rem<&Self> for Poly<T> {
-    type Output = Poly<T>;
+    type Output = Self;
 
     /// Computes the remainder of the division of two polynomials.
     ///
