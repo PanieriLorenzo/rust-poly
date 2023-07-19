@@ -8,7 +8,7 @@ mod scalar;
 pub use scalar::Scalar;
 
 /// polynomial as a list of coefficients of terms of descending degree
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Poly<T: Scalar>(Array1<T>);
 
 impl<T: Scalar> Poly<T> {
@@ -33,10 +33,12 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(t2, Poly::new(array![2, 0]));
     /// assert_eq!(t3, Poly::new(array![3, 0, 0]));
     /// ```
+    #[allow(clippy::missing_panics_doc)]
     pub fn term(coeff: T, degree: usize) -> Self {
         let zeros: Array1<T> = Array1::<T>::zeros([degree]);
         let mut term: Array1<T> = array![coeff];
-        term.append(Axis(0), zeros.view()).unwrap(); // TODO
+        term.append(Axis(0), zeros.view())
+            .unwrap_or_else(|_| unreachable!()); // TODO: proof
         Self(term)
     }
 
@@ -77,6 +79,11 @@ impl<T: Scalar> Poly<T> {
         self.trim_zeros().raw_len()
     }
 
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Length of the polynomial, without trimming zeros
     fn raw_len(&self) -> usize {
         self.0.len()
@@ -95,7 +102,7 @@ impl<T: Scalar> Poly<T> {
     /// // x^2 + 2x + 1
     /// let p = Poly::new(array![1, 2, 1]);
     /// let x = array![-1, 0, 1];
-    /// let y = p.eval(x);
+    /// let y = p.eval(&x);
     /// assert_eq!(y, array![0, 1, 4]);
     /// ```
     ///
@@ -112,10 +119,10 @@ impl<T: Scalar> Poly<T> {
     ///     Complex64::new(0.0, 2.0),
     /// ]);
     /// let x = array![Complex64::new(1.0, 0.0), Complex64::new(0.0, 1.0)];
-    /// let y = p.eval(x);
+    /// let y = p.eval(&x);
     /// assert_eq!(y, array![Complex64::new(2.0, 3.0), Complex64::new(-2.0, 1.0)]);
     /// ```
-    pub fn eval<D: Dimension>(&self, x: Array<T, D>) -> Array<T, D> {
+    pub fn eval<D: Dimension>(&self, x: &Array<T, D>) -> Array<T, D> {
         let mut y: Array<T, D> = Array::<T, D>::zeros(x.raw_dim());
         for pv in &self.0 {
             y = y * x.clone() + pv.clone();
@@ -125,7 +132,7 @@ impl<T: Scalar> Poly<T> {
 
     /// Computes the quotient and remainder of a polynomial division
     ///
-    /// ## Examples
+    /// # Examples
     ///
     /// Divide two real polynomials
     ///
@@ -154,6 +161,8 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(r, Poly::new(array![]));
     /// ```
     ///
+    /// # Panics
+    ///
     /// Dividing by zero is not allowed! Even when using floating point numbers.
     /// Arithmetically, following the algorithm for long division here would just
     /// result in `+inf` or `-inf` quotient and `nan` remainder, but this can lead
@@ -167,8 +176,6 @@ impl<T: Scalar> Poly<T> {
     /// let p1 = Poly::new(array![1.0, 2.0, 3.0]);
     /// let p2 = Poly::new(array![]);
     /// let (q, r) = p1.div_rem(&p2);
-    /// dbg!(q, r);
-    /// assert!(false);
     /// ```
     ///
     #[must_use]
@@ -221,7 +228,7 @@ impl<T: Scalar> Zero for Poly<T> {
     }
 
     fn is_zero(&self) -> bool {
-        self.len() == 0
+        self.is_empty()
     }
 }
 
@@ -257,19 +264,38 @@ impl<T: Scalar> Add for Poly<T> {
     /// assert_eq!(sum, Poly::new(array![3, 2, 1]));
     /// ```
     fn add(self, rhs: Self) -> Self::Output {
+        // will only wrap with polynomials so large they don't fit in memory
+        #[allow(clippy::cast_possible_wrap)]
         let len_delta = self.raw_len() as isize - rhs.raw_len() as isize;
-        (if len_delta == 0 {
-            Self(self.0 + rhs.0)
-        } else if len_delta < 0 {
-            let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.unsigned_abs()]);
-            lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
-            Self(lhs + rhs.0)
-        } else {
-            let mut rhs_new: Array1<T> = Array1::<T>::zeros([len_delta as usize]);
-            rhs_new.append(Axis(0), rhs.0.view()).unwrap(); // TODO
-            Self(self.0 + rhs_new)
-        })
+        let abs_delta = len_delta.unsigned_abs();
+        match len_delta {
+            0 => Self(self.0 + rhs.0),
+            1.. => {
+                let mut rhs_new: Array1<T> = Array1::<T>::zeros([abs_delta]);
+                rhs_new.append(Axis(0), rhs.0.view()).unwrap(); // TODO
+                Self(self.0 + rhs_new)
+            }
+            _ => {
+                let mut lhs: Array1<T> = Array1::<T>::zeros([abs_delta]);
+                lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
+                Self(lhs + rhs.0)
+            }
+        }
         .trim_zeros()
+        // (if len_delta == 0 {
+        //     Self(self.0 + rhs.0)
+        // } else if len_delta < 0 {
+        //     let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.unsigned_abs()]);
+        //     lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
+        //     Self(lhs + rhs.0)
+        // } else {
+        //     // guaranteed to be positive because we checked it in the conditional
+        //     #[allow(clippy::cast_sign_loss)]
+        //     let mut rhs_new: Array1<T> = Array1::<T>::zeros([len_delta as usize]);
+        //     rhs_new.append(Axis(0), rhs.0.view()).unwrap(); // TODO
+        //     Self(self.0 + rhs_new)
+        // })
+        // .trim_zeros()
     }
 }
 
@@ -292,18 +318,23 @@ impl<T: Scalar> Sub for Poly<T> {
     /// assert_eq!(p1 - p2, Poly::new(array![1.0, -1.0]));
     /// ```
     fn sub(self, rhs: Self) -> Self::Output {
+        // will only wrap with polynomials so large they don't fit in memory
+        #[allow(clippy::cast_possible_wrap)]
         let len_delta = self.raw_len() as isize - rhs.raw_len() as isize;
-        (if len_delta == 0 {
-            Self(self.0 - rhs.0)
-        } else if len_delta < 0 {
-            let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.unsigned_abs()]);
-            lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
-            Self(lhs - rhs.0)
-        } else {
-            let mut rhs_new: Array1<T> = Array1::<T>::zeros([len_delta as usize]);
-            rhs_new.append(Axis(0), rhs.0.view()).unwrap(); // TODO
-            Self(self.0 - rhs_new)
-        })
+        let abs_delta = len_delta.unsigned_abs();
+        match len_delta {
+            0 => Self(self.0 - rhs.0),
+            1.. => {
+                let mut rhs_new: Array1<T> = Array1::<T>::zeros([abs_delta]);
+                rhs_new.append(Axis(0), rhs.0.view()).unwrap(); // TODO
+                Self(self.0 - rhs_new)
+            }
+            _ => {
+                let mut lhs: Array1<T> = Array1::<T>::zeros([abs_delta]);
+                lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
+                Self(lhs - rhs.0)
+            }
+        }
         .trim_zeros()
     }
 }
@@ -378,7 +409,14 @@ fn convolve_1d<T: Scalar>(input: ArrayView1<T>, kernel: ArrayView1<T>) -> Array1
     for i in 0..output_len {
         let mut sum = T::zero();
         for j in 0..kernel_len {
+            // will only wrap with polynomials so large they don't fit in memory
+            #[allow(clippy::cast_possible_wrap)]
             let k = i as isize - j as isize;
+
+            // will only wrap with polynomials so large they don't fit in memory
+            #[allow(clippy::cast_possible_wrap)]
+            // k is guaranteed to be positive by the conditional
+            #[allow(clippy::cast_sign_loss)]
             if k >= 0 && k < input_len as isize {
                 sum = sum.clone() + input[k as usize].clone() * kernel[j].clone();
             }
