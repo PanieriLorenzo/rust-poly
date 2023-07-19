@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 use ndarray::{array, s, Array, Array1, ArrayView1, ArrayViewMut1, Axis, Dimension, ScalarOperand};
 use num_traits::{Num, Zero};
 use std::ops::{Add, Div, Mul, Rem, Sub};
