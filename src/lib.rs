@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
 use ndarray::{array, s, Array, Array1, ArrayView1, ArrayViewMut1, Axis, Dimension};
 use num_traits::Zero;
 use std::ops::{Add, Div, Mul, Rem, Sub};
@@ -153,25 +154,50 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(r, Poly::new(array![]));
     /// ```
     ///
+    /// Dividing by zero is not allowed! Even when using floating point numbers.
+    /// Arithmetically, following the algorithm for long division here would just
+    /// result in `+inf` or `-inf` quotient and `nan` remainder, but this can lead
+    /// to hard to debug errors, so we prefer to outright disallow any division by zero
+    /// with a more helpful error message.
+    ///
+    /// ```should_panic
+    /// # use rust_poly::Poly;
+    /// use ndarray::prelude::*;
+    ///
+    /// let p1 = Poly::new(array![1.0, 2.0, 3.0]);
+    /// let p2 = Poly::new(array![]);
+    /// let (q, r) = p1.div_rem(&p2);
+    /// dbg!(q, r);
+    /// assert!(false);
+    /// ```
+    ///
     #[must_use]
     pub fn div_rem(self, rhs: &Self) -> (Self, Self) {
-        let u: Array1<T> = self.0 + array![T::zero()];
-        let v: Array1<T> = rhs.0.clone() + array![T::zero()];
-        let m = u.len() as isize - 1;
-        let n = v.len() as isize - 1;
-        let scale = T::one() / v[0].clone();
-        let mut q: Array1<T> = Array1::zeros((m - n + 1).max(1) as usize);
-        let mut r: Array1<T> = u; // TODO: useless assignment
-        for k in 0..((m - n + 1) as usize) {
-            let d = scale.clone() * r[k].clone();
-            q[k] = d.clone();
-            r.slice_mut(s![k..=(k + n as usize)])
+        if self.is_zero() {
+            return (Self::zero(), Self::zero());
+        }
+
+        assert!(!rhs.is_zero(), "Attempted to divide polynomial by zero");
+
+        let num: Array1<T> = self.0;
+        let den: Array1<T> = rhs.0.clone();
+
+        // cannot underflow because we have ensured that len is at least 1
+        let num_deg = num.len() - 1;
+        let den_deg = den.len() - 1;
+
+        let scale = T::one() / den[0].clone();
+        let mut quot: Array1<T> = Array1::zeros((num_deg - den_deg + 1).max(1));
+        let mut rem: Array1<T> = num;
+        for k in 0..(num_deg - den_deg + 1) {
+            let d = scale.clone() * rem[k].clone();
+            quot[k] = d.clone();
+            rem.slice_mut(s![k..=(k + den_deg)])
                 .iter_mut()
-                .zip((array![d] * v.clone()).iter())
+                .zip((array![d] * den.clone()).iter())
                 .for_each(|p| *p.0 = p.0.clone() - p.1.clone());
         }
-        dbg!(q.clone(), r.clone());
-        (Self(q), Self(r).trim_zeros())
+        (Self(quot), Self(rem).trim_zeros())
     }
 
     #[must_use]
@@ -186,6 +212,16 @@ impl<T: Scalar> Poly<T> {
     #[must_use]
     pub fn to_vec(&self) -> Vec<T> {
         self.0.to_vec()
+    }
+}
+
+impl<T: Scalar> Zero for Poly<T> {
+    fn zero() -> Self {
+        Self::new(array![])
+    }
+
+    fn is_zero(&self) -> bool {
+        self.len() == 0
     }
 }
 
