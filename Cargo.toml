@@ -4,7 +4,6 @@ description = "Numeric manipulation of real and complex polynomials."
 version = "0.0.2"
 edition = "2021"
 license = "MIT"
-license-file = "LICENSE"
 documentation = "https://docs.rs/rust-poly/latest/rust_poly/"
 # TODO:
 homepage = "https://github.com/PanieriLorenzo/rust-poly"

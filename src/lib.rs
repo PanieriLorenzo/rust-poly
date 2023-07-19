@@ -1,6 +1,6 @@
 #![warn(clippy::pedantic)]
-use ndarray::{array, s, Array, Array1, ArrayView1, ArrayViewMut1, Axis, Dimension, ScalarOperand};
-use num_traits::{Num, Zero};
+use ndarray::{array, s, Array, Array1, ArrayView1, ArrayViewMut1, Axis, Dimension};
+use num_traits::Zero;
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 mod scalar;
@@ -12,6 +12,7 @@ pub struct Poly<T: Scalar>(Array1<T>);
 
 impl<T: Scalar> Poly<T> {
     /// Create a new polynomial from a 1D array of coefficients
+    #[must_use]
     pub fn new(coeffs: Array1<T>) -> Self {
         Self(coeffs).trim_zeros()
     }
@@ -70,6 +71,7 @@ impl<T: Scalar> Poly<T> {
 
     // internal NOTE: strictly speaking, polynomials are only normalized
     //     when necessary, but this *should* be invisible to the user
+    #[must_use]
     pub fn len(&self) -> usize {
         self.trim_zeros().raw_len()
     }
@@ -151,18 +153,19 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(r, Poly::new(array![]));
     /// ```
     ///
+    #[must_use]
     pub fn div_rem(self, rhs: &Self) -> (Self, Self) {
-        let u: Array1<T> = self.0.clone() + array![T::zero()];
+        let u: Array1<T> = self.0 + array![T::zero()];
         let v: Array1<T> = rhs.0.clone() + array![T::zero()];
         let m = u.len() as isize - 1;
         let n = v.len() as isize - 1;
         let scale = T::one() / v[0].clone();
         let mut q: Array1<T> = Array1::zeros((m - n + 1).max(1) as usize);
-        let mut r: Array1<T> = u.clone(); // TODO: useless assignment
+        let mut r: Array1<T> = u; // TODO: useless assignment
         for k in 0..((m - n + 1) as usize) {
             let d = scale.clone() * r[k].clone();
             q[k] = d.clone();
-            r.slice_mut(s![k..(k + n as usize + 1)])
+            r.slice_mut(s![k..=(k + n as usize)])
                 .iter_mut()
                 .zip((array![d] * v.clone()).iter())
                 .for_each(|p| *p.0 = p.0.clone() - p.1.clone());
@@ -171,6 +174,7 @@ impl<T: Scalar> Poly<T> {
         (Self(q), Self(r).trim_zeros())
     }
 
+    #[must_use]
     pub fn as_ndarray(&self) -> ArrayView1<T> {
         self.0.view()
     }
@@ -179,6 +183,7 @@ impl<T: Scalar> Poly<T> {
         self.0.view_mut()
     }
 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<T> {
         self.0.to_vec()
     }
@@ -220,7 +225,7 @@ impl<T: Scalar> Add for Poly<T> {
         (if len_delta == 0 {
             Self(self.0 + rhs.0)
         } else if len_delta < 0 {
-            let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.abs() as usize]);
+            let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.unsigned_abs()]);
             lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
             Self(lhs + rhs.0)
         } else {
@@ -255,7 +260,7 @@ impl<T: Scalar> Sub for Poly<T> {
         (if len_delta == 0 {
             Self(self.0 - rhs.0)
         } else if len_delta < 0 {
-            let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.abs() as usize]);
+            let mut lhs: Array1<T> = Array1::<T>::zeros([len_delta.unsigned_abs()]);
             lhs.append(Axis(0), self.0.view()).unwrap(); // TODO
             Self(lhs - rhs.0)
         } else {
