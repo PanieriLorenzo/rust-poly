@@ -131,7 +131,7 @@ impl<T: Scalar> Poly<T> {
     ///
     /// let p1 = Poly::new(array![3.0, 5.0, 2.0]);
     /// let p2 = Poly::new(array![2.0, 1.0]);
-    /// let (q, r) = p1.div_rem(p2);
+    /// let (q, r) = p1.div_rem(&p2);
     /// assert_eq!(q, Poly::new(array![1.5, 1.75]));
     /// assert_eq!(r, Poly::new(array![0.25]));
     /// ```
@@ -145,14 +145,14 @@ impl<T: Scalar> Poly<T> {
     ///
     /// let p1 = Poly::term(Complex64::new(1.0, 1.0), 2);
     /// let p2 = Poly::term(Complex64::new(1.0, -1.0), 0);
-    /// let (q, r) = p1.div_rem(p2);
+    /// let (q, r) = p1.div_rem(&p2);
     /// assert_eq!(q, Poly::term(Complex64::new(0.0, 1.0), 2));
     /// assert_eq!(r, Poly::new(array![]));
     /// ```
     ///
-    pub fn div_rem(&self, rhs: Self) -> (Self, Self) {
+    pub fn div_rem(self, rhs: &Self) -> (Self, Self) {
         let u: Array1<T> = self.0.clone() + array![T::zero()];
-        let v: Array1<T> = rhs.0 + array![T::zero()];
+        let v: Array1<T> = rhs.0.clone() + array![T::zero()];
         let m = u.len() as isize - 1;
         let n = v.len() as isize - 1;
         let scale = T::one() / v[0].clone();
@@ -168,6 +168,18 @@ impl<T: Scalar> Poly<T> {
         }
         dbg!(q.clone(), r.clone());
         (Self(q), Self(r).trim_zeros())
+    }
+
+    pub fn as_ndarray(&self) -> ArrayView1<T> {
+        self.0.view()
+    }
+
+    pub fn as_ndarray_mut(&mut self) -> ArrayViewMut1<T> {
+        self.0.view_mut()
+    }
+
+    pub fn to_vec(&self) -> Vec<T> {
+        self.0.to_vec()
     }
 }
 
@@ -289,24 +301,24 @@ impl<T: Scalar> Mul for Poly<T> {
     }
 }
 
-impl<T: Scalar> Div for Poly<T> {
+impl<T: Scalar> Div<&Self> for Poly<T> {
     type Output = Poly<T>;
 
     /// Computes the quotient of two polynomials, truncating the remainder.
     ///
     /// See also `Poly::div_rem()`.
-    fn div(self, rhs: Self) -> Self::Output {
+    fn div(self, rhs: &Self) -> Self::Output {
         self.div_rem(rhs).0
     }
 }
 
-impl<T: Scalar> Rem for Poly<T> {
+impl<T: Scalar> Rem<&Self> for Poly<T> {
     type Output = Poly<T>;
 
     /// Computes the remainder of the division of two polynomials.
     ///
     /// See also `Poly::div_rem()`.
-    fn rem(self, rhs: Self) -> Self::Output {
+    fn rem(self, rhs: &Self) -> Self::Output {
         self.div_rem(rhs).1
     }
 }
