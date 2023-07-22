@@ -1,7 +1,8 @@
 use duplicate::duplicate_item;
 use ndarray::ScalarOperand;
+use ndarray_linalg::Lapack;
 use num_bigint::{BigInt, BigUint};
-use num_complex::Complex;
+use num_complex::{Complex, Complex32};
 use num_rational::{BigRational, Ratio};
 use num_traits::{Float, Num};
 use std::ops::Neg;

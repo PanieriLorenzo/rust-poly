@@ -19,6 +19,7 @@ mod complex_util;
 use complex_util::c_neg;
 mod array_util;
 use array_util::np_diag;
+mod vec2d;
 mod impl_num;
 
 /// A more convenient way to write `Complex::new(...)`.
@@ -395,8 +396,12 @@ impl<T: Scalar> Poly<T> {
         let n = coeffs.len();
         let roots = if n > 1 {
             // build companion matrix and find its eigenvalues (the roots)
-            let a = Array2::<Complex<T>>::from_diag(A::<C<T>>::ones([n-2]))
+            let a: Array2<C<T>> = np_diag(A::<C<T>>::ones([n-2]), -1);
+            Eig::eig(&a)
+        } else {
+            todo!();
         }
+        todo!();
     }
 
     /// A more numerically precise version of `roots`.
