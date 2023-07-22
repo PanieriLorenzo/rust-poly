@@ -4,8 +4,9 @@ use num_bigint::{BigInt, BigUint};
 use num_complex::Complex;
 use num_rational::{BigRational, Ratio};
 use num_traits::{Float, Num};
+use std::ops::Neg;
 
-pub trait Scalar: Num + Clone /*+ ScalarOperand*/ + core::fmt::Debug {}
+pub trait Scalar: Neg + Num + Clone /*+ ScalarOperand*/ + core::fmt::Debug {}
 
 #[duplicate_item(
     scalar_type;
@@ -15,12 +16,6 @@ pub trait Scalar: Num + Clone /*+ ScalarOperand*/ + core::fmt::Debug {}
     [ i64 ];
     [ i128 ];
     [ isize ];
-    [ u8 ];
-    [ u16 ];
-    [ u32 ];
-    [ u64 ];
-    [ u128 ];
-    [ usize ];
     [ f32 ];
     [ f64 ];
     // [ Complex<i8> ];
@@ -43,11 +38,5 @@ pub trait Scalar: Num + Clone /*+ ScalarOperand*/ + core::fmt::Debug {}
     [ Ratio<i64> ];
     [ Ratio<i128> ];
     [ Ratio<isize> ];
-    [ Ratio<u8> ];
-    [ Ratio<u16> ];
-    [ Ratio<u32> ];
-    [ Ratio<u64> ];
-    [ Ratio<u128> ];
-    [ Ratio<usize> ];
 )]
 impl Scalar for scalar_type {}
