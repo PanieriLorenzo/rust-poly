@@ -4,7 +4,7 @@ use ndarray::{array, s, Array, Array1, ArrayView1, ArrayViewMut1, Axis, Dimensio
 use num_traits::{One, Zero};
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
-use crate::{Poly, Scalar, A, AC, C};
+use crate::{poly, Poly, Scalar, A, AC, C};
 
 impl<T: Scalar> Zero for Poly<T> {
     fn zero() -> Self {
