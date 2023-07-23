@@ -21,6 +21,8 @@ mod array_util;
 use array_util::np_diag;
 mod impl_num;
 
+extern crate nalgebra as na;
+
 /// A more convenient way to write `Complex::new(...)`.
 ///
 /// # Examples
@@ -119,6 +121,7 @@ macro_rules! poly {
 /// polynomial as a list of coefficients of terms of descending degree
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Poly<T: Scalar>(Array1<Complex<T>>);
+//pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
 
 pub(crate) type C<T> = Complex<T>;
 pub(crate) type A<T> = Array1<T>;
