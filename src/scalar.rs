@@ -4,9 +4,21 @@ use num_bigint::{BigInt, BigUint};
 use num_complex::Complex;
 use num_rational::{BigRational, Ratio};
 use num_traits::{Float, Num};
-use std::ops::Neg;
+use std::ops::{AddAssign, DivAssign, MulAssign, Neg, RemAssign, SubAssign};
 
-pub trait Scalar: Neg + Num + Clone /*+ ScalarOperand*/ + core::fmt::Debug {}
+pub trait Scalar:
+    Neg
+    + Num
+    + Clone
+    + DivAssign
+    + RemAssign
+    + SubAssign
+    + MulAssign
+    + AddAssign
+    + core::fmt::Debug
+    + 'static
+{
+}
 
 #[duplicate_item(
     scalar_type;
