@@ -7,6 +7,8 @@ use num_rational::{BigRational, Ratio};
 use num_traits::{Float, Num};
 use std::ops::{AddAssign, DivAssign, MulAssign, Neg, RemAssign, SubAssign};
 
+use crate::Poly;
+
 pub trait Scalar:
     Neg
     + Num
@@ -23,6 +25,7 @@ pub trait Scalar:
 {
 }
 
+// TODO: commented out types requires nalgebra to relax its requirements
 #[duplicate_item(
     scalar_type;
     // [ i8 ];
