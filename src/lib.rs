@@ -1,8 +1,6 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-
-
 extern crate nalgebra as na;
 pub use num_complex;
 
@@ -28,7 +26,6 @@ mod num_util;
 
 mod linalg_util;
 
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
 
@@ -37,7 +34,8 @@ impl<T: Scalar> Poly<T> {
         Self(na::DVector::from_row_slice(coeffs))
     }
 
-    #[must_use] pub fn from_roots(roots: na::DVector<Complex<T>>) -> Self {
+    #[must_use]
+    pub fn from_roots(roots: na::DVector<Complex<T>>) -> Self {
         if roots.is_empty() {
             return Self::one();
         }
@@ -63,7 +61,8 @@ impl<T: Scalar> Poly<T> {
         self.0.len()
     }
 
-    #[must_use] pub fn len(&self) -> usize {
+    #[must_use]
+    pub fn len(&self) -> usize {
         self.normalize().len_raw()
     }
 
@@ -89,7 +88,8 @@ impl<T: Scalar> Poly<T> {
         Self(na::DVector::from_column_slice(&self.0.as_slice()[0..end]))
     }
 
-    #[must_use] pub fn pow(&self, pow: u32) -> Self {
+    #[must_use]
+    pub fn pow(&self, pow: u32) -> Self {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
 
@@ -115,7 +115,8 @@ impl<T: Scalar> Poly<T> {
     ///
     /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0), Complex::new(0.0, -1.5)]);
     /// ```
-    #[must_use] pub fn companion(&self) -> na::DMatrix<Complex<T>> {
+    #[must_use]
+    pub fn companion(&self) -> na::DMatrix<Complex<T>> {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
 
@@ -160,7 +161,8 @@ impl<T: Scalar> Poly<T> {
     /// dbg!(p.roots());
     /// assert!(false);
     /// ```
-    #[must_use] pub fn roots(&self) -> Option<na::DVector<Complex<T>>> {
+    #[must_use]
+    pub fn roots(&self) -> Option<na::DVector<Complex<T>>> {
         // invariant: polynomial is normalized
         debug_assert!(self.is_normalized());
 
@@ -201,7 +203,8 @@ impl<T: Scalar> Poly<T> {
     /// let g = Poly::one();
     ///
     /// assert_eq!(f.compose(g), f);
-    #[must_use] pub fn compose(&self, x: Self) -> Self {
+    #[must_use]
+    pub fn compose(&self, x: Self) -> Self {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(x.is_normalized());

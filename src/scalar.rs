@@ -1,13 +1,8 @@
 use duplicate::duplicate_item;
 use nalgebra::RealField;
 
-
-
-
-use num_traits::{Num};
+use num_traits::Num;
 use std::ops::{AddAssign, DivAssign, MulAssign, Neg, RemAssign, SubAssign};
-
-
 
 pub trait Scalar:
     Neg
