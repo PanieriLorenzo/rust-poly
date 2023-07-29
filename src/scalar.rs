@@ -1,4 +1,5 @@
 use duplicate::duplicate_item;
+use nalgebra::RealField;
 use ndarray::ScalarOperand;
 use num_bigint::{BigInt, BigUint};
 use num_complex::Complex;
@@ -17,17 +18,19 @@ pub trait Scalar:
     + AddAssign
     + core::fmt::Debug
     + 'static
+    + RealField
+    + PartialOrd
 {
 }
 
 #[duplicate_item(
     scalar_type;
-    [ i8 ];
-    [ i16 ];
-    [ i32 ];
-    [ i64 ];
-    [ i128 ];
-    [ isize ];
+    // [ i8 ];
+    // [ i16 ];
+    // [ i32 ];
+    // [ i64 ];
+    // [ i128 ];
+    // [ isize ];
     [ f32 ];
     [ f64 ];
     // [ Complex<i8> ];
@@ -44,11 +47,11 @@ pub trait Scalar:
     // [ Complex<usize> ];
     // [ Complex<f32> ];
     // [ Complex<f64> ];
-    [ Ratio<i8> ];
-    [ Ratio<i16> ];
-    [ Ratio<i32> ];
-    [ Ratio<i64> ];
-    [ Ratio<i128> ];
-    [ Ratio<isize> ];
+    // [ Ratio<i8> ];
+    // [ Ratio<i16> ];
+    // [ Ratio<i32> ];
+    // [ Ratio<i64> ];
+    // [ Ratio<i128> ];
+    // [ Ratio<isize> ];
 )]
 impl Scalar for scalar_type {}
