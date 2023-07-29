@@ -55,3 +55,25 @@ impl<T: Scalar> Mul for Poly<T> {
         self * &rhs
     }
 }
+
+impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
+    type Output = Self;
+
+    fn mul(self, rhs: &Complex<T>) -> Self::Output {
+        Self(self.0.map(|e| e * rhs))
+    }
+}
+
+impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
+    type Output = Self;
+
+    fn mul(self, rhs: Complex<T>) -> Self::Output {
+        self.mul(&rhs)
+    }
+}
+
+impl<T: Scalar> std::iter::Sum for Poly<T> {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |acc, x| acc + x)
+    }
+}
