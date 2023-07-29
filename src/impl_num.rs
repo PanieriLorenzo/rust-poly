@@ -20,7 +20,7 @@ impl<T: Scalar> Zero for Poly<T> {
     }
 
     fn is_zero(&self) -> bool {
-        self.len() == 0
+        self.is_empty()
     }
 }
 

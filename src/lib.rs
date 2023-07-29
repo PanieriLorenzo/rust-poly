@@ -1,5 +1,8 @@
+// TODO(version: v1.0.0): license/author header project-wide, see MIT guidelines
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
+// TODO(version: v1.0.0): remove these and remove all unused code
+#![allow(unused)]
 
 extern crate nalgebra as na;
 pub use num_complex;
@@ -66,6 +69,11 @@ impl<T: Scalar> Poly<T> {
         self.normalize().len_raw()
     }
 
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     fn is_normalized(&self) -> bool {
         let n = self.len_raw();
         !self.0.index(n - 1).is_zero()
@@ -90,6 +98,11 @@ impl<T: Scalar> Poly<T> {
 
     #[must_use]
     pub fn pow(&self, pow: u32) -> Self {
+        self.pow_usize(pow as usize)
+    }
+
+    #[must_use]
+    pub fn pow_usize(&self, pow: usize) -> Self {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
 
@@ -115,15 +128,14 @@ impl<T: Scalar> Poly<T> {
     ///
     /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0), Complex::new(0.0, -1.5)]);
     /// ```
-    #[must_use]
-    pub fn companion(&self) -> na::DMatrix<Complex<T>> {
+    fn companion(&self) -> na::DMatrix<Complex<T>> {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
 
         // pre-condition: poly has degree 1 or more
         assert!(
             self.len_raw() >= 2,
-            "Poly must have maximum degree of at least 1"
+            "polynomials of degree 0 or less do not have a companion matrix"
         );
 
         if self.len_raw() == 2 {
@@ -226,7 +238,7 @@ impl<T: Scalar> Poly<T> {
         // TODO: prove that composing two normalized polynomials always results
         //       in a normalized polynomial or else disprove and call .normalize()
         (0..self.len_raw())
-            .map(|i| Self::new(&[self.0[i].clone()]) * x.pow(i as u32))
+            .map(|i| Self::new(&[self.0[i].clone()]) * x.pow_usize(i))
             .sum()
     }
 }
