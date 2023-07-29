@@ -2,7 +2,7 @@
 
 use num_complex::Complex;
 use num_traits::{One, Zero};
-use std::ops::{Add, Div, Mul, Rem, Sub};
+use std::ops::{Add, Mul};
 
 extern crate nalgebra as na;
 
@@ -10,13 +10,13 @@ use crate::{Poly, Scalar};
 
 impl<T: Scalar> One for Poly<T> {
     fn one() -> Self {
-        return Self(na::DVector::from_vec(vec![Complex::<T>::one()]));
+        Self(na::DVector::from_vec(vec![Complex::<T>::one()]))
     }
 }
 
 impl<T: Scalar> Zero for Poly<T> {
     fn zero() -> Self {
-        return Self(na::DVector::from_vec(vec![Complex::<T>::zero()]));
+        Self(na::DVector::from_vec(vec![Complex::<T>::zero()]))
     }
 
     fn is_zero(&self) -> bool {

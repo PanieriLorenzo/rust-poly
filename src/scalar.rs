@@ -1,13 +1,13 @@
 use duplicate::duplicate_item;
 use nalgebra::RealField;
-use ndarray::ScalarOperand;
-use num_bigint::{BigInt, BigUint};
-use num_complex::Complex;
-use num_rational::{BigRational, Ratio};
-use num_traits::{Float, Num};
+
+
+
+
+use num_traits::{Num};
 use std::ops::{AddAssign, DivAssign, MulAssign, Neg, RemAssign, SubAssign};
 
-use crate::Poly;
+
 
 pub trait Scalar:
     Neg
