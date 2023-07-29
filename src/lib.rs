@@ -1,7 +1,7 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-use std::cmp::Ordering;
+
 
 extern crate nalgebra as na;
 pub use num_complex;
@@ -25,11 +25,11 @@ mod complex_util;
 use complex_util::{c_neg, complex_sort_mut};
 mod impl_num;
 mod num_util;
-use num_util::neg;
-mod linalg_util;
-use linalg_util::reverse_mut;
 
-#[derive(Clone, Debug, PartialEq)]
+mod linalg_util;
+
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
 
 impl<T: Scalar> Poly<T> {
@@ -37,8 +37,8 @@ impl<T: Scalar> Poly<T> {
         Self(na::DVector::from_row_slice(coeffs))
     }
 
-    pub fn from_roots(roots: na::DVector<Complex<T>>) -> Self {
-        if roots.len() == 0 {
+    #[must_use] pub fn from_roots(roots: na::DVector<Complex<T>>) -> Self {
+        if roots.is_empty() {
             return Self::one();
         }
 
@@ -49,21 +49,21 @@ impl<T: Scalar> Poly<T> {
             .as_slice()
             .iter()
             .map(|e| Self::line(c_neg(e.clone()), Complex::<T>::one()))
-            .fold(Poly::<T>::one(), |acc, x| acc * x)
+            .fold(Self::one(), |acc, x| acc * x)
     }
 
     pub fn line(offset: Complex<T>, scale: Complex<T>) -> Self {
         if scale.is_zero() {
-            return Poly::new(&[offset]);
+            return Self::new(&[offset]);
         }
-        Poly::new(&[offset, scale])
+        Self::new(&[offset, scale])
     }
 
     fn len_raw(&self) -> usize {
         self.0.len()
     }
 
-    pub fn len(&self) -> usize {
+    #[must_use] pub fn len(&self) -> usize {
         self.normalize().len_raw()
     }
 
@@ -89,7 +89,7 @@ impl<T: Scalar> Poly<T> {
         Self(na::DVector::from_column_slice(&self.0.as_slice()[0..end]))
     }
 
-    pub fn pow(&self, pow: u32) -> Self {
+    #[must_use] pub fn pow(&self, pow: u32) -> Self {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
 
@@ -103,7 +103,7 @@ impl<T: Scalar> Poly<T> {
 
         // TODO: divide and conquer with powers of 2
         let mut res = self.clone();
-        for _ in 2..(pow + 1) {
+        for _ in 2..=pow {
             res = res * self;
         }
         res
@@ -115,7 +115,7 @@ impl<T: Scalar> Poly<T> {
     ///
     /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0), Complex::new(0.0, -1.5)]);
     /// ```
-    pub fn companion(&self) -> na::DMatrix<Complex<T>> {
+    #[must_use] pub fn companion(&self) -> na::DMatrix<Complex<T>> {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
 
@@ -160,7 +160,7 @@ impl<T: Scalar> Poly<T> {
     /// dbg!(p.roots());
     /// assert!(false);
     /// ```
-    pub fn roots(&self) -> Option<na::DVector<Complex<T>>> {
+    #[must_use] pub fn roots(&self) -> Option<na::DVector<Complex<T>>> {
         // invariant: polynomial is normalized
         debug_assert!(self.is_normalized());
 
@@ -201,7 +201,7 @@ impl<T: Scalar> Poly<T> {
     /// let g = Poly::one();
     ///
     /// assert_eq!(f.compose(g), f);
-    pub fn compose(&self, x: Poly<T>) -> Self {
+    #[must_use] pub fn compose(&self, x: Self) -> Self {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(x.is_normalized());
@@ -223,7 +223,7 @@ impl<T: Scalar> Poly<T> {
         // TODO: prove that composing two normalized polynomials always results
         //       in a normalized polynomial or else disprove and call .normalize()
         (0..self.len_raw())
-            .map(|i| Poly::new(&[self.0[i].clone()]) * x.pow(i as u32))
+            .map(|i| Self::new(&[self.0[i].clone()]) * x.pow(i as u32))
             .sum()
     }
 }
