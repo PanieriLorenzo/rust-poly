@@ -5,6 +5,8 @@
 #![allow(unused)]
 
 extern crate nalgebra as na;
+use std::ops::Index;
+
 pub use num_complex;
 
 use num_complex::Complex;
@@ -240,5 +242,13 @@ impl<T: Scalar> Poly<T> {
         (0..self.len_raw())
             .map(|i| Self::new(&[self.0[i].clone()]) * x.pow_usize(i))
             .sum()
+    }
+}
+
+impl<T: Scalar> Index<usize> for Poly<T> {
+    type Output = Complex<T>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
     }
 }
