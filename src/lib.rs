@@ -133,14 +133,15 @@ impl<T: Scalar> Poly<T> {
         self.eval(na::DMatrix::<_>::from_row_slice(1, 1, &[x]))[0].clone()
     }
 
+    #[must_use]
     pub fn eval(&self, x: na::DMatrix<Complex<T>>) -> na::DMatrix<Complex<T>> {
         let mut c0: na::DMatrix<_> = na::DMatrix::<_>::from_element(
             x.nrows(),
             x.ncols(),
             self.0[self.len_raw() - 1].clone(),
         );
-        for i in 2..self.len_raw() + 1 {
-            c0 = c0 * x.clone();
+        for i in 2..=self.len_raw() {
+            c0 *= x.clone();
             c0.apply(|c| *c = (*c).clone() + &self.0[self.len_raw() - i]);
         }
         c0
@@ -302,6 +303,7 @@ impl<T: Scalar> Poly<T> {
     /// let expected1 = (Poly::new(&[Complex::new(3.0, 0.0)]), Poly::new(&[Complex::new(-8.0, 0.0), Complex::new(-4.0, 0.0)]));
     /// assert_eq!(c1.clone().div_rem(&c2), expected1);
     /// ```
+    #[must_use]
     pub fn div_rem(self, rhs: &Self) -> (Self, Self) {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());

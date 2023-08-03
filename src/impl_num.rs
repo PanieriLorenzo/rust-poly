@@ -99,10 +99,10 @@ impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Sub<&Poly<T>> for Poly<T> {
+impl<T: Scalar> Sub<&Self> for Poly<T> {
     type Output = Self;
 
-    fn sub(self, rhs: &Poly<T>) -> Self::Output {
+    fn sub(self, rhs: &Self) -> Self::Output {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
@@ -124,10 +124,10 @@ impl<T: Scalar> Sub<&Poly<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Sub<Poly<T>> for Poly<T> {
+impl<T: Scalar> Sub<Self> for Poly<T> {
     type Output = Self;
 
-    fn sub(self, rhs: Poly<T>) -> Self::Output {
+    fn sub(self, rhs: Self) -> Self::Output {
         self - &rhs
     }
 }
