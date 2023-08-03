@@ -55,11 +55,34 @@ impl<T: Scalar> Poly<T> {
             .fold(Self::one(), |acc, x| acc * x)
     }
 
-    pub fn line(offset: Complex<T>, scale: Complex<T>) -> Self {
-        if scale.is_zero() {
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num_complex::Complex;
+    /// use num_traits::{One, Zero};
+    ///
+    /// assert_eq!(Poly::line(Complex::one(), Complex::new(-1.0, 0.0)).eval_point(Complex::one()), Complex::zero());
+    /// ```
+    pub fn line(offset: Complex<T>, slope: Complex<T>) -> Self {
+        if slope.is_zero() {
             return Self::new(&[offset]);
         }
-        Self::new(&[offset, scale])
+        Self::new(&[offset, slope])
+    }
+
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num_complex::Complex;
+    /// use num_traits::{One, Zero};
+    ///
+    /// let p1 = (Complex::new(-1.0, 0.0), Complex::new(2.0, 0.0));
+    /// let p2 = (Complex::new(2.0, 0.0), Complex::new(-1.0, 0.0));
+    ///
+    /// assert_eq!(Poly::line_from_points(p1, p2).eval_point(Complex::one()), Complex::zero());
+    /// ```
+    pub fn line_from_points(p1: (Complex<T>, Complex<T>), p2: (Complex<T>, Complex<T>)) -> Self {
+        let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
+        let offset = p1.1 - slope.clone() * p1.0;
+        Self::line(offset, slope)
     }
 
     fn len_raw(&self) -> usize {
@@ -96,6 +119,31 @@ impl<T: Scalar> Poly<T> {
             end -= 1;
         }
         Self(na::DVector::from_column_slice(&self.0.as_slice()[0..end]))
+    }
+
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num_complex::Complex;
+    ///
+    /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)]);
+    /// let x = Complex::new(1.0, 0.0);
+    /// assert_eq!(p.eval_point(x), Complex::new(6.0, 0.0));
+    /// ```
+    pub fn eval_point(&self, x: Complex<T>) -> Complex<T> {
+        self.eval(na::DMatrix::<_>::from_row_slice(1, 1, &[x]))[0].clone()
+    }
+
+    pub fn eval(&self, x: na::DMatrix<Complex<T>>) -> na::DMatrix<Complex<T>> {
+        let mut c0: na::DMatrix<_> = na::DMatrix::<_>::from_element(
+            x.nrows(),
+            x.ncols(),
+            self.0[self.len_raw() - 1].clone(),
+        );
+        for i in 2..self.len_raw() + 1 {
+            c0 = c0 * x.clone();
+            c0.apply(|c| *c = (*c).clone() + &self.0[self.len_raw() - i]);
+        }
+        c0
     }
 
     #[must_use]
@@ -242,6 +290,69 @@ impl<T: Scalar> Poly<T> {
         (0..self.len_raw())
             .map(|i| Self::new(&[self.0[i].clone()]) * x.pow_usize(i))
             .sum()
+    }
+
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num_complex::Complex;
+    /// use num_traits::identities::One;
+    ///
+    /// let c1 = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)]);
+    /// let c2 = Poly::new(&[Complex::new(3.0, 0.0), Complex::new(2.0, 0.0), Complex::new(1.0, 0.0)]);
+    /// let expected1 = (Poly::new(&[Complex::new(3.0, 0.0)]), Poly::new(&[Complex::new(-8.0, 0.0), Complex::new(-4.0, 0.0)]));
+    /// assert_eq!(c1.clone().div_rem(&c2), expected1);
+    /// ```
+    pub fn div_rem(self, rhs: &Self) -> (Self, Self) {
+        // invariant: polynomials are normalized
+        debug_assert!(self.is_normalized());
+        debug_assert!(rhs.is_normalized());
+
+        // pre-condition: don't divide by zero
+        assert!(!rhs.is_zero(), "Attempted to divide a polynomial by zero");
+
+        let lhs_len = self.len_raw();
+        let rhs_len = self.len_raw();
+        if lhs_len < rhs_len {
+            return (Self::zero(), self);
+        }
+        if rhs_len == 1 {
+            return (
+                Self(self.0 / rhs.0[rhs.len_raw() - 1].clone()),
+                Self::zero(),
+            );
+        }
+        let len_delta = lhs_len - rhs_len;
+        let scale = rhs.0[rhs.len_raw() - 1].clone();
+        let rhs: na::DVector<_> = rhs
+            .0
+            .view_range(0..rhs.len_raw() - 1, 0..1)
+            // HACK: this shouldn't be necessary, but nalgebra turns DVector into
+            //       DMatrix when making a view, and needs to be politely reminded
+            //       that this is a column vector.
+            .column(0)
+            .into();
+        // TODO: useless clone of scale, it should be borrowed, but dvector does
+        //       not implement Div<&_>
+        let rhs: na::DVector<_> = rhs / scale.clone();
+        let mut lhs: na::DVector<_> = self.0.clone();
+        let mut i = len_delta as isize;
+        let mut j = (lhs_len - 1) as isize;
+        while i >= 0 {
+            lhs.view_range_mut(i as usize..j as usize, 0..1)
+                .iter_mut()
+                .zip((rhs.clone() * self.0[j as usize].clone()).iter())
+                .for_each(|p| *p.0 -= p.1);
+            i -= 1;
+            j -= 1;
+        }
+        (
+            Self(
+                (lhs.view_range(j as usize + 1..lhs.len(), 0..1) / scale)
+                    .column(0)
+                    .into(),
+            ),
+            Self(lhs.view_range(..(j + 1) as usize, 0..1).column(0).into()),
+        )
     }
 }
 
