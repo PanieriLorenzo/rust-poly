@@ -39,13 +39,21 @@ impl<T: Scalar> Poly<T> {
         Self(na::DVector::from_row_slice(coeffs))
     }
 
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num_complex::Complex;
+    /// use num_traits::{Zero, One};
+    ///
+    /// let p = Poly::from_roots(&[Complex::new(-1.0, 0.0), Complex::zero(), Complex::one()]);
+    /// assert_eq!(p, Poly::new(&[Complex::zero(), Complex::new(-1.0, 0.0), Complex::zero(), Complex::one()]))
+    /// ```
     #[must_use]
-    pub fn from_roots(roots: na::DVector<Complex<T>>) -> Self {
+    pub fn from_roots(roots: &[Complex<T>]) -> Self {
         if roots.is_empty() {
             return Self::one();
         }
 
-        let mut roots: na::DVector<Complex<T>> = roots;
+        let mut roots: na::DVector<Complex<T>> = na::DVector::from_column_slice(roots);
         complex_sort_mut(&mut roots);
 
         roots
