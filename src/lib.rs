@@ -1,8 +1,6 @@
 // TODO(version: v1.0.0): license/author header project-wide, see MIT guidelines
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
-// TODO(version: v1.0.0): remove these and remove all unused code
-#![allow(unused)]
 
 extern crate nalgebra as na;
 use std::ops::Index;
@@ -11,7 +9,7 @@ pub use num_complex;
 pub use num_traits;
 
 use num_complex::Complex;
-use num_traits::{FromPrimitive, One, Zero};
+use num_traits::{One, Zero};
 
 /// A more convenient way to write `Complex::new(...)`.
 ///
@@ -117,8 +115,6 @@ pub use scalar::Scalar;
 mod complex_util;
 use complex_util::{c_neg, complex_sort_mut};
 mod impl_num;
-mod num_util;
-
 mod linalg_util;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -133,6 +129,7 @@ impl<T: Scalar> Poly<T> {
         Self::new(value)
     }
 
+    #[allow(clippy::needless_pass_by_value)]
     fn from_complex_vec(value: Vec<Complex<T>>) -> Self {
         Self::new(value.as_slice())
     }
@@ -142,6 +139,7 @@ impl<T: Scalar> Poly<T> {
         Self::new(&temp_vec)
     }
 
+    #[allow(clippy::needless_pass_by_value)]
     fn from_real_vec(value: Vec<T>) -> Self {
         Self::from(value.as_slice())
     }
@@ -297,11 +295,11 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(p.eval_point(x), Complex::new(6.0, 0.0));
     /// ```
     pub fn eval_point(&self, x: Complex<T>) -> Complex<T> {
-        self.eval(na::DMatrix::<_>::from_row_slice(1, 1, &[x]))[0].clone()
+        self.eval(&na::DMatrix::<_>::from_row_slice(1, 1, &[x]))[0].clone()
     }
 
     #[must_use]
-    pub fn eval(&self, x: na::DMatrix<Complex<T>>) -> na::DMatrix<Complex<T>> {
+    pub fn eval(&self, x: &na::DMatrix<Complex<T>>) -> na::DMatrix<Complex<T>> {
         let mut c0: na::DMatrix<_> = na::DMatrix::<_>::from_element(
             x.nrows(),
             x.ncols(),
@@ -389,25 +387,34 @@ impl<T: Scalar> Poly<T> {
         mat
     }
 
+    /// Find the roots of a polynomial numerically.
+    ///
+    /// # Examples
     /// ```
-    /// use rust_poly::Poly;
+    /// use rust_poly::{poly, Poly};
     /// use rust_poly::num_complex::Complex;
     ///
-    /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0), Complex::new(4.0, 0.0)]);
-    /// dbg!(p.roots());
-    /// assert!(false);
+    /// let p: Poly<f64> = poly![-6.0, 11.0, -6.0, 1.0];
+    /// let expected_roots = &[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)];
+    /// let temp = p.roots();    // Rust is really annoying sometimes...
+    /// let calculated_roots = temp.as_slice();
+    ///
+    /// // assert almost equal
+    /// assert!((expected_roots[0] - calculated_roots[0]).re.abs() < 0.000001);
+    /// assert!((expected_roots[1] - calculated_roots[1]).re.abs() < 0.000001);
+    /// assert!((expected_roots[2] - calculated_roots[2]).re.abs() < 0.000001);
     /// ```
     #[must_use]
-    pub fn roots(&self) -> Option<na::DVector<Complex<T>>> {
+    pub fn roots(&self) -> na::DVector<Complex<T>> {
         // invariant: polynomial is normalized
         debug_assert!(self.is_normalized());
 
         if self.len_raw() < 2 {
-            return Some(na::dvector![]);
+            return na::dvector![];
         }
 
         if self.len_raw() == 2 {
-            return Some(na::dvector![c_neg(self.0[0].clone()) / self.0[1].clone()]);
+            return na::dvector![c_neg(self.0[0].clone()) / self.0[1].clone()];
         }
 
         // rotated companion matrix reduces error
@@ -418,9 +425,9 @@ impl<T: Scalar> Poly<T> {
             comp.swap_columns(i, n - i - 1);
         }
 
-        let mut r: na::DVector<Complex<T>> = comp.eigenvalues()?;
+        let mut r: na::DVector<Complex<T>> = comp.eigenvalues().expect("infallible");
         complex_sort_mut(&mut r);
-        Some(r)
+        r
     }
 
     /// Compose two polynomials, returning a new polynomial.
@@ -466,6 +473,13 @@ impl<T: Scalar> Poly<T> {
             .sum()
     }
 
+    /// Calculate the quotient and remainder uwing long division. More efficient than
+    /// calculating them separately.
+    ///
+    /// # Panics
+    /// Panics if a division by zero is attempted
+    ///
+    /// # Examples
     /// ```
     /// use rust_poly::Poly;
     /// use num_complex::Complex;
@@ -476,6 +490,8 @@ impl<T: Scalar> Poly<T> {
     /// let expected1 = (Poly::new(&[Complex::new(3.0, 0.0)]), Poly::new(&[Complex::new(-8.0, 0.0), Complex::new(-4.0, 0.0)]));
     /// assert_eq!(c1.clone().div_rem(&c2), expected1);
     /// ```
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_wrap)]
     #[must_use]
     pub fn div_rem(self, rhs: &Self) -> (Self, Self) {
         // invariant: polynomials are normalized

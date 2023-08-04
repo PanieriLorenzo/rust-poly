@@ -1,13 +1,9 @@
 // Implementation of traits related to numeric operations, operators and number theory
 
 use itertools::Itertools;
-use na::DVector;
 use num_complex::Complex;
 use num_traits::{One, Zero};
-use std::{
-    borrow::BorrowMut,
-    ops::{Add, Div, Mul, Neg, Rem, Sub},
-};
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
 
@@ -46,9 +42,10 @@ impl<T: Scalar> Add<&Self> for Poly<T> {
             .as_mut_slice()
             .iter_mut()
             .zip_longest(shortest.iter())
-            .for_each(|p| match p {
-                itertools::EitherOrBoth::Both(l, r) => *l += r,
-                _ => (),
+            .for_each(|p| {
+                if let itertools::EitherOrBoth::Both(l, r) = p {
+                    *l += r;
+                }
             });
         Self(longest).normalize()
     }
@@ -78,7 +75,7 @@ impl<T: Scalar> Mul<&Self> for Poly<T> {
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
 
-        let ret = convolve_1d(self.0, &rhs.0);
+        let ret = convolve_1d(&self.0, &rhs.0);
         Self(ret).normalize()
     }
 }
@@ -139,9 +136,10 @@ impl<T: Scalar> Sub<&Self> for Poly<T> {
             .as_mut_slice()
             .iter_mut()
             .zip_longest(shortest.iter())
-            .for_each(|p| match p {
-                itertools::EitherOrBoth::Both(l, r) => *l -= r,
-                _ => (),
+            .for_each(|p| {
+                if let itertools::EitherOrBoth::Both(l, r) = p {
+                    *l -= r;
+                }
             });
         Self(longest).normalize()
     }
