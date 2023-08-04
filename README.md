@@ -4,11 +4,10 @@ Numeric manipulation of real and complex polynomials.
 > Note: this crate is currently under development and should not be used
 
 Basic Goals:
-- [ ] addition, subtraction and multiplication of complex and real univariate polynomials
-- [ ] long division of complex and real univariate polynomials
--
-- [ ] finding complex roots of polynomials
-- [ ] generate chebyshev polynomials
+- [x] addition, subtraction and multiplication of complex and real univariate polynomials
+- [x] long division of complex and real univariate polynomials
+- [x] finding complex roots of polynomials
+- [x] generate chebyshev polynomials
 
 ## Licensing
 

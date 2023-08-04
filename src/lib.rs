@@ -200,6 +200,22 @@ impl<T: Scalar> Poly<T> {
         Self::line(offset, slope)
     }
 
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    ///
+    /// assert_eq!(Poly::cheby(2), poly![-1.0, 0.0, 2.0]);
+    /// assert_eq!(Poly::cheby(3), poly![0.0, -3.0, 0.0, 4.0]);
+    /// assert_eq!(Poly::cheby(4), poly![1.0, 0.0, -8.0, 0.0, 8.0])
+    /// ```
+    pub fn cheby(n: usize) -> Self {
+        // TODO: make the first 32-ish explicit for performance
+        match n {
+            0 => poly![T::one()],
+            1 => poly![T::zero(), T::one()],
+            _ => poly![T::zero(), T::one() + T::one()] * Self::cheby(n - 1) - Self::cheby(n - 2),
+        }
+    }
+
     fn len_raw(&self) -> usize {
         self.0.len()
     }
