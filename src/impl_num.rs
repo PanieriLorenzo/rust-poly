@@ -6,7 +6,7 @@ use num_complex::Complex;
 use num_traits::{One, Zero};
 use std::{
     borrow::BorrowMut,
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
 extern crate nalgebra as na;
@@ -58,10 +58,12 @@ impl<T: Scalar> Add for Poly<T> {
     type Output = Self;
 
     /// ```
-    /// use rust_poly::Poly;
+    /// use rust_poly::{poly, Poly};
     /// use num_complex::Complex;
     ///
-    /// let c1 = Poly::new()
+    /// let c1 = poly![1.0, 2.0, 3.0];
+    /// let c2 = poly![3.0, 2.0, 1.0];
+    /// assert_eq!(c1 + c2, poly![4.0; 3]);
     /// ```
     fn add(self, rhs: Self) -> Self::Output {
         self + &rhs
@@ -84,6 +86,14 @@ impl<T: Scalar> Mul<&Self> for Poly<T> {
 impl<T: Scalar> Mul for Poly<T> {
     type Output = Self;
 
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num_complex::Complex;
+    ///
+    /// let p1 = poly![1.0, 2.0, 3.0];
+    /// let p2 = poly![3.0, 2.0, 1.0];
+    /// assert_eq!(p1 * p2, poly![3.0, 8.0, 14.0, 8.0, 3.0]);
+    /// ```
     fn mul(self, rhs: Self) -> Self::Output {
         self * &rhs
     }
@@ -100,6 +110,13 @@ impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
 impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
     type Output = Self;
 
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num_complex::Complex;
+    ///
+    /// let p = poly![1.0, 2.0, 3.0];
+    /// assert_eq!(p * Complex::from(2.0), poly![2.0, 4.0, 6.0]);
+    /// ```
     fn mul(self, rhs: Complex<T>) -> Self::Output {
         self.mul(&rhs)
     }
@@ -133,8 +150,49 @@ impl<T: Scalar> Sub<&Self> for Poly<T> {
 impl<T: Scalar> Sub<Self> for Poly<T> {
     type Output = Self;
 
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num_complex::Complex;
+    ///
+    /// let c1 = poly![1.0, 2.0, 3.0];
+    /// let c2 = poly![3.0, 2.0, 1.0];
+    /// assert_eq!(c1.clone() - c2.clone(), poly![-2.0, 0.0, 2.0]);
+    /// assert_eq!(c2 - c1, poly![2.0, 0.0, -2.0]);
+    /// ```
     fn sub(self, rhs: Self) -> Self::Output {
         self - &rhs
+    }
+}
+
+impl<T: Scalar> Div<&Self> for Poly<T> {
+    type Output = Self;
+
+    fn div(self, rhs: &Self) -> Self::Output {
+        self.div_rem(rhs).0
+    }
+}
+
+impl<T: Scalar> Div<Self> for Poly<T> {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        self.div(&rhs)
+    }
+}
+
+impl<T: Scalar> Rem<&Self> for Poly<T> {
+    type Output = Self;
+
+    fn rem(self, rhs: &Self) -> Self::Output {
+        self.div_rem(rhs).1
+    }
+}
+
+impl<T: Scalar> Rem<Self> for Poly<T> {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        self.rem(&rhs)
     }
 }
 
