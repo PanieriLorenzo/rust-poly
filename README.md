@@ -9,6 +9,12 @@ Basic Goals:
 - [x] finding complex roots of polynomials
 - [x] generate chebyshev polynomials
 
+Future Goals:
+- [ ] Serde integration
+- [ ] Random integration
+- [ ] Real polynomial type
+- [ ] Rational functions
+
 ## Licensing
 
 This library is covered by the MIT license, see [LICENSE](LICENSE).

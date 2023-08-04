@@ -200,6 +200,40 @@ impl<T: Scalar> Poly<T> {
         Self::line(offset, slope)
     }
 
+    /// Create a polynomial from a single term (coefficient + degree)
+    ///
+    /// # Examples
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num_complex::Complex;
+    /// use num_traits::One;
+    ///
+    /// assert_eq!(Poly::term(Complex::one(), 3), poly![0.0, 0.0, 0.0, 1.0]);
+    /// ```
+    pub fn term(coeff: Complex<T>, degree: u32) -> Self {
+        Poly::line(Complex::zero(), coeff).pow(degree)
+    }
+
+    /// Get the nth term of the polynomial as a new polynomial
+    ///
+    /// Will return None if out of bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num_complex::Complex;
+    /// use num_traits::One;
+    ///
+    /// let p  = poly![1.0, 2.0, 3.0];
+    /// assert_eq!(p.get_term(1).unwrap(), poly![0.0, 2.0]);
+    /// ```
+    pub fn get_term(&self, degree: u32) -> Option<Self> {
+        if degree as usize >= self.len_raw() {
+            return None;
+        }
+        Some(Self::term(self[degree as usize].clone(), degree))
+    }
+
     /// ```
     /// use rust_poly::{poly, Poly};
     ///
