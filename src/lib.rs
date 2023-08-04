@@ -262,6 +262,12 @@ impl<T: Scalar> Poly<T> {
         c0
     }
 
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num_complex::Complex;
+    ///
+    /// assert_eq!(poly![1.0, 2.0, 3.0].pow(2), poly![1.0, 4.0, 10.0, 12.0, 9.0]);
+    /// ```
     #[must_use]
     pub fn pow(&self, pow: u32) -> Self {
         self.pow_usize(pow as usize)
