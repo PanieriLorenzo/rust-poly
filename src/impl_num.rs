@@ -57,6 +57,12 @@ impl<T: Scalar> Add<&Self> for Poly<T> {
 impl<T: Scalar> Add for Poly<T> {
     type Output = Self;
 
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num_complex::Complex;
+    ///
+    /// let c1 = Poly::new()
+    /// ```
     fn add(self, rhs: Self) -> Self::Output {
         self + &rhs
     }

@@ -8,14 +8,104 @@ extern crate nalgebra as na;
 use std::ops::Index;
 
 pub use num_complex;
+pub use num_traits;
 
 use num_complex::Complex;
-use num_traits::{One, Zero};
+use num_traits::{FromPrimitive, One, Zero};
 
+/// A more convenient way to write `Complex::new(...)`.
+///
+/// # Examples
+///
+/// ```
+/// use rust_poly::complex;
+/// use num_complex::Complex;
+///
+/// let c1: Complex<f32> = complex!();
+/// let c2 = Complex::new(0.0, 0.0);
+/// let c3 = complex!(1.0f32, 2.0);
+/// let c4 = Complex::new(1.0, 2.0);
+///
+/// assert_eq!(c1, c2);
+/// assert_eq!(c3, c4);
+/// ```
+#[macro_export]
 macro_rules! complex {
-    ($re:expr, $im:expr) => {
+    () => {{
+        <$crate::num_complex::Complex<_> as $crate::num_traits::Zero>::zero()
+    }};
+    ($re:expr, $im: expr) => {{
         $crate::num_complex::Complex::new($re, $im)
-    };
+    }};
+}
+
+/// A more convenient way of writing `Poly::new(&[Complex::new(...)...])`
+///
+/// It takes ownership of its arguments.
+///
+/// It can take a list of `Scalar` or `Complex<Scalar>`. If left empty, it is
+/// equivalent to `Poly::zero()`.
+///
+/// # Examples
+///
+/// Basic syntax
+/// ```
+/// use rust_poly::{poly, Poly};
+/// use num_traits::Zero;
+/// use num_complex::Complex;
+///
+/// let p1: Poly<f32> = poly![];
+/// let p2 = poly![1.0f32, 2.0, 3.0];
+/// let p3 = poly![Complex::from(1.0), Complex::from(2.0), Complex::from(3.0)];
+///
+/// assert_eq!(p1, Poly::zero());
+/// assert_eq!(p2, p3);
+/// ```
+///
+/// Similarly to `vec!`, you can initialize a large polynomial where all coefficients
+/// are equal like so:
+/// ```
+/// # use rust_poly::{poly, Poly};
+/// use num_complex::Complex;
+///
+/// let p1 = poly![2.0; 16];
+/// let p2 = poly![Complex::from(2.0); 16];
+///
+/// assert_eq!(p1, p2);
+/// ```
+///
+/// You can also express complex numbers as a tuple of two scalars, mixing and matching
+/// this syntax with the other syntax rules:
+/// ```
+/// use rust_poly::{poly, Poly};
+/// use num_complex::Complex;
+///
+/// let p1 = poly![(1.0, 2.0), (1.0, 2.0)];
+/// let p2 = poly![(1.0, 2.0); 2];
+/// let p3 = poly![Complex::new(1.0, 2.0); 2];
+/// let p4 = poly![Complex::new(1.0, 2.0), Complex::new(1.0, 2.0)];
+///
+/// assert_eq!(p1, p2);
+/// assert_eq!(p1, p3);
+/// assert_eq!(p1, p4);
+/// ```
+#[macro_export]
+macro_rules! poly {
+    () => {{
+        $crate::Poly::zero()
+    }};
+    (($re:expr, $im:expr); $n:expr) => {{
+        $crate::Poly::from(vec![$crate::complex!($re, $im); $n])
+    }};
+    ($elem:expr; $n:expr) => {{
+        $crate::Poly::from(vec![$elem; $n])
+    }};
+    ($(($re:expr, $im:expr)),+ $(,)?) => {{
+        $crate::Poly::from(vec![$($crate::complex!($re, $im)),*])
+    }};
+    ($($elems:expr),+ $(,)?) => {{
+        $crate::Poly::from(vec![$($elems),*])
+    }};
 }
 
 mod scalar;
@@ -37,6 +127,23 @@ pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
 impl<T: Scalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {
         Self(na::DVector::from_row_slice(coeffs))
+    }
+
+    fn from_complex_slice(value: &[Complex<T>]) -> Self {
+        Poly::new(value)
+    }
+
+    fn from_complex_vec(value: Vec<Complex<T>>) -> Self {
+        Poly::new(value.as_slice())
+    }
+
+    fn from_real_slice(value: &[T]) -> Self {
+        let temp_vec: Vec<_> = value.iter().map(|x| Complex::from(x)).collect();
+        Poly::new(&temp_vec)
+    }
+
+    fn from_real_vec(value: Vec<T>) -> Self {
+        Poly::from(value.as_slice())
     }
 
     /// ```
@@ -268,7 +375,7 @@ impl<T: Scalar> Poly<T> {
     /// ```
     /// use rust_poly::Poly;
     /// use num_complex::Complex;
-    /// use num_traits::identities::One;
+    /// use num_traits::One;
     ///
     /// let f = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
     /// let g = Poly::one();
@@ -371,5 +478,29 @@ impl<T: Scalar> Index<usize> for Poly<T> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl<T: Scalar> From<&[Complex<T>]> for Poly<T> {
+    fn from(value: &[Complex<T>]) -> Self {
+        Poly::from_complex_slice(value)
+    }
+}
+
+impl<T: Scalar> From<Vec<Complex<T>>> for Poly<T> {
+    fn from(value: Vec<Complex<T>>) -> Self {
+        Poly::from_complex_vec(value)
+    }
+}
+
+impl<T: Scalar> From<&[T]> for Poly<T> {
+    fn from(value: &[T]) -> Self {
+        Poly::from_real_slice(value)
+    }
+}
+
+impl<T: Scalar> From<Vec<T>> for Poly<T> {
+    fn from(value: Vec<T>) -> Self {
+        Poly::from_real_vec(value)
     }
 }
