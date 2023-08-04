@@ -130,20 +130,20 @@ impl<T: Scalar> Poly<T> {
     }
 
     fn from_complex_slice(value: &[Complex<T>]) -> Self {
-        Poly::new(value)
+        Self::new(value)
     }
 
     fn from_complex_vec(value: Vec<Complex<T>>) -> Self {
-        Poly::new(value.as_slice())
+        Self::new(value.as_slice())
     }
 
     fn from_real_slice(value: &[T]) -> Self {
-        let temp_vec: Vec<_> = value.iter().map(|x| Complex::from(x)).collect();
-        Poly::new(&temp_vec)
+        let temp_vec: Vec<_> = value.iter().map(Complex::from).collect();
+        Self::new(&temp_vec)
     }
 
     fn from_real_vec(value: Vec<T>) -> Self {
-        Poly::from(value.as_slice())
+        Self::from(value.as_slice())
     }
 
     /// ```
@@ -211,7 +211,7 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(Poly::term(Complex::one(), 3), poly![0.0, 0.0, 0.0, 1.0]);
     /// ```
     pub fn term(coeff: Complex<T>, degree: u32) -> Self {
-        Poly::line(Complex::zero(), coeff).pow(degree)
+        Self::line(Complex::zero(), coeff).pow(degree)
     }
 
     /// Get the nth term of the polynomial as a new polynomial
@@ -227,6 +227,7 @@ impl<T: Scalar> Poly<T> {
     /// let p  = poly![1.0, 2.0, 3.0];
     /// assert_eq!(p.get_term(1).unwrap(), poly![0.0, 2.0]);
     /// ```
+    #[must_use]
     pub fn get_term(&self, degree: u32) -> Option<Self> {
         if degree as usize >= self.len_raw() {
             return None;
@@ -241,6 +242,7 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(Poly::cheby(3), poly![0.0, -3.0, 0.0, 4.0]);
     /// assert_eq!(Poly::cheby(4), poly![1.0, 0.0, -8.0, 0.0, 8.0])
     /// ```
+    #[must_use]
     pub fn cheby(n: usize) -> Self {
         // TODO: make the first 32-ish explicit for performance
         match n {
@@ -539,24 +541,24 @@ impl<T: Scalar> Index<usize> for Poly<T> {
 
 impl<T: Scalar> From<&[Complex<T>]> for Poly<T> {
     fn from(value: &[Complex<T>]) -> Self {
-        Poly::from_complex_slice(value)
+        Self::from_complex_slice(value)
     }
 }
 
 impl<T: Scalar> From<Vec<Complex<T>>> for Poly<T> {
     fn from(value: Vec<Complex<T>>) -> Self {
-        Poly::from_complex_vec(value)
+        Self::from_complex_vec(value)
     }
 }
 
 impl<T: Scalar> From<&[T]> for Poly<T> {
     fn from(value: &[T]) -> Self {
-        Poly::from_real_slice(value)
+        Self::from_real_slice(value)
     }
 }
 
 impl<T: Scalar> From<Vec<T>> for Poly<T> {
     fn from(value: Vec<T>) -> Self {
-        Poly::from_real_vec(value)
+        Self::from_real_vec(value)
     }
 }
