@@ -1,7 +1,7 @@
 # rust-poly
 Numeric manipulation of real and complex polynomials.
 
-> Note: this crate is currently under development and should not be used
+> Note: this crate is still in development and might change in the future.
 
 Basic Goals:
 - [x] addition, subtraction and multiplication of complex and real univariate polynomials
