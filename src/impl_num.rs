@@ -17,7 +17,7 @@ impl<T: Scalar> One for Poly<T> {
 
 impl<T: Scalar> Zero for Poly<T> {
     fn zero() -> Self {
-        Self(na::DVector::from_vec(vec![Complex::<T>::zero()]))
+        Self(na::DVector::from_vec(vec![]))
     }
 
     fn is_zero(&self) -> bool {
@@ -54,13 +54,15 @@ impl<T: Scalar> Add<&Self> for Poly<T> {
 impl<T: Scalar> Add for Poly<T> {
     type Output = Self;
 
+    /// Add two polynomials
+    ///
+    /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
     ///
-    /// let c1 = poly![1.0, 2.0, 3.0];
-    /// let c2 = poly![3.0, 2.0, 1.0];
-    /// assert_eq!(c1 + c2, poly![4.0; 3]);
+    /// let p1 = poly![1.0, 2.0, 3.0];
+    /// let p2 = poly![4.0, 5.0];
+    /// assert_eq!(p1 + p2, poly![5.0, 7.0, 3.0]);
     /// ```
     fn add(self, rhs: Self) -> Self::Output {
         self + &rhs
@@ -75,6 +77,16 @@ impl<T: Scalar> Mul<&Self> for Poly<T> {
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
 
+        if self.is_zero() || rhs.is_zero() {
+            return Self::zero();
+        }
+        if self.is_one() {
+            return rhs.clone();
+        }
+        if rhs.is_one() {
+            return self;
+        }
+
         let ret = convolve_1d(&self.0, &rhs.0);
         Self(ret).normalize()
     }
@@ -83,6 +95,9 @@ impl<T: Scalar> Mul<&Self> for Poly<T> {
 impl<T: Scalar> Mul for Poly<T> {
     type Output = Self;
 
+    /// Multiply two polynomials.
+    ///
+    /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
     /// use num_complex::Complex;
@@ -100,7 +115,7 @@ impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
     type Output = Self;
 
     fn mul(self, rhs: &Complex<T>) -> Self::Output {
-        Self(self.0.map(|e| e * rhs))
+        Self(self.0.map(|e| e * rhs)).normalize()
     }
 }
 
@@ -115,7 +130,7 @@ impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
     /// assert_eq!(p * Complex::from(2.0), poly![2.0, 4.0, 6.0]);
     /// ```
     fn mul(self, rhs: Complex<T>) -> Self::Output {
-        self.mul(&rhs)
+        self * &rhs
     }
 }
 
@@ -148,6 +163,9 @@ impl<T: Scalar> Sub<&Self> for Poly<T> {
 impl<T: Scalar> Sub<Self> for Poly<T> {
     type Output = Self;
 
+    /// Subtract two polynomials.
+    ///
+    /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
     /// use num_complex::Complex;
@@ -174,7 +192,7 @@ impl<T: Scalar> Div<Self> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        self.div(&rhs)
+        self / &rhs
     }
 }
 
@@ -190,7 +208,7 @@ impl<T: Scalar> Rem<Self> for Poly<T> {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        self.rem(&rhs)
+        self % &rhs
     }
 }
 

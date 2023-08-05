@@ -109,9 +109,6 @@ macro_rules! poly {
 mod scalar;
 pub use scalar::Scalar;
 
-// mod roots;
-// pub use roots::Roots;
-
 mod complex_util;
 use complex_util::{c_neg, complex_sort_mut};
 mod impl_num;
@@ -122,28 +119,32 @@ pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
 
 impl<T: Scalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {
-        Self(na::DVector::from_row_slice(coeffs))
+        Self(na::DVector::from_row_slice(coeffs)).normalize()
     }
 
-    fn from_complex_slice(value: &[Complex<T>]) -> Self {
+    /// The same as `Poly::new()`
+    pub fn from_complex_slice(value: &[Complex<T>]) -> Self {
         Self::new(value)
     }
 
     #[allow(clippy::needless_pass_by_value)]
-    fn from_complex_vec(value: Vec<Complex<T>>) -> Self {
+    pub fn from_complex_vec(value: Vec<Complex<T>>) -> Self {
         Self::new(value.as_slice())
     }
 
-    fn from_real_slice(value: &[T]) -> Self {
+    pub fn from_real_slice(value: &[T]) -> Self {
         let temp_vec: Vec<_> = value.iter().map(Complex::from).collect();
         Self::new(&temp_vec)
     }
 
     #[allow(clippy::needless_pass_by_value)]
-    fn from_real_vec(value: Vec<T>) -> Self {
+    pub fn from_real_vec(value: Vec<T>) -> Self {
         Self::from(value.as_slice())
     }
 
+    /// Monic polynomial from its complex roots.
+    ///
+    /// # Examples
     /// ```
     /// use rust_poly::Poly;
     /// use num_complex::Complex;
@@ -166,8 +167,12 @@ impl<T: Scalar> Poly<T> {
             .iter()
             .map(|e| Self::line(c_neg(e.clone()), Complex::<T>::one()))
             .fold(Self::one(), |acc, x| acc * x)
+            .normalize()
     }
 
+    /// Linear function as a polynomial.
+    ///
+    /// # Examples
     /// ```
     /// use rust_poly::Poly;
     /// use num_complex::Complex;
@@ -182,6 +187,13 @@ impl<T: Scalar> Poly<T> {
         Self::new(&[offset, slope])
     }
 
+    /// Line between two points with complex coordinates.
+    ///
+    /// Note that the points are determined by two complex numbers, so they are
+    /// in a four dimensional space. Leave the imaginary component as zero for lines
+    /// in a 2D plane.
+    ///
+    /// # Examples
     /// ```
     /// use rust_poly::Poly;
     /// use num_complex::Complex;
@@ -233,6 +245,8 @@ impl<T: Scalar> Poly<T> {
         Some(Self::term(self[degree as usize].clone(), degree))
     }
 
+    /// Get the nth [chebyshev polynomial](https://en.wikipedia.org/wiki/Chebyshev_polynomials)
+    ///
     /// ```
     /// use rust_poly::{poly, Poly};
     ///
@@ -266,6 +280,9 @@ impl<T: Scalar> Poly<T> {
 
     fn is_normalized(&self) -> bool {
         let n = self.len_raw();
+        if n == 0 {
+            return true;
+        }
         !self.0.index(n - 1).is_zero()
     }
 
@@ -273,19 +290,25 @@ impl<T: Scalar> Poly<T> {
         if self.len_raw() == 0 {
             return self.clone();
         }
-        // while self.0.iter().last().unwrap().is_zero() {
-        //     self.0.remove_row(self.len_raw() - 1);
-        // }
         let mut end = self.len_raw();
         loop {
-            if !self.0.iter().last().unwrap().is_zero() {
+            if end == 0 {
+                return Self::zero();
+            }
+            if !self.0.as_slice()[end - 1].is_zero() {
                 break;
             }
             end -= 1;
         }
-        Self(na::DVector::from_column_slice(&self.0.as_slice()[0..end]))
+        let ret = Self(na::DVector::from_column_slice(&self.0.as_slice()[0..end]));
+
+        // post-condition: polynomial is now normalized
+        debug_assert!(ret.is_normalized());
+        return ret;
     }
 
+    /// Evaluate the polynomial at a single value of `x`.
+    ///
     /// ```
     /// use rust_poly::Poly;
     /// use num_complex::Complex;
@@ -298,6 +321,7 @@ impl<T: Scalar> Poly<T> {
         self.eval(&na::DMatrix::<_>::from_row_slice(1, 1, &[x]))[0].clone()
     }
 
+    /// Evaluate the polynomial for each entry of a matrix.
     #[must_use]
     pub fn eval(&self, x: &na::DMatrix<Complex<T>>) -> na::DMatrix<Complex<T>> {
         let mut c0: na::DMatrix<_> = na::DMatrix::<_>::from_element(
@@ -312,6 +336,8 @@ impl<T: Scalar> Poly<T> {
         c0
     }
 
+    /// Raises a polynomial to an integer power.
+    ///
     /// ```
     /// use rust_poly::{poly, Poly};
     /// use num_complex::Complex;
@@ -341,15 +367,9 @@ impl<T: Scalar> Poly<T> {
         for _ in 2..=pow {
             res = res * self;
         }
-        res
+        res.normalize()
     }
 
-    /// ```
-    /// use rust_poly::Poly;
-    /// use rust_poly::num_complex::Complex;
-    ///
-    /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0), Complex::new(0.0, -1.5)]);
-    /// ```
     fn companion(&self) -> na::DMatrix<Complex<T>> {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
@@ -466,8 +486,6 @@ impl<T: Scalar> Poly<T> {
         }
         // end
 
-        // TODO: prove that composing two normalized polynomials always results
-        //       in a normalized polynomial or else disprove and call .normalize()
         (0..self.len_raw())
             .map(|i| Self::new(&[self.0[i].clone()]) * x.pow_usize(i))
             .sum()
@@ -541,8 +559,9 @@ impl<T: Scalar> Poly<T> {
                 (lhs.view_range(j as usize + 1..lhs.len(), 0..1) / scale)
                     .column(0)
                     .into(),
-            ),
-            Self(lhs.view_range(..(j + 1) as usize, 0..1).column(0).into()),
+            )
+            .normalize(),
+            Self(lhs.view_range(..(j + 1) as usize, 0..1).column(0).into()).normalize(),
         )
     }
 }
@@ -576,5 +595,77 @@ impl<T: Scalar> From<&[T]> for Poly<T> {
 impl<T: Scalar> From<Vec<T>> for Poly<T> {
     fn from(value: Vec<T>) -> Self {
         Self::from_real_vec(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn macro_complex() {
+        assert_eq!(complex!(), Complex::<f64>::zero());
+        assert_eq!(complex!(1.0, 2.0), Complex::<f64>::new(1.0, 2.0));
+    }
+
+    #[test]
+    fn macro_poly() {
+        assert_eq!(poly!(), Poly::<f64>::zero());
+        assert_eq!(poly!(1.0), Poly::<f64>::one());
+        assert_eq!(
+            poly!(1.0, 2.0, 3.0),
+            Poly::<f64>::new(&[
+                Complex::new(1.0, 0.0),
+                Complex::new(2.0, 0.0),
+                Complex::new(3.0, 0.0),
+            ])
+        );
+        assert_eq!(poly!((1.0, 0.0)), Poly::<f64>::one());
+        assert_eq!(
+            poly!((1.0, 1.0), (2.0, 2.0), (3.0, 3.0)),
+            Poly::<f64>::new(&[
+                Complex::new(1.0, 1.0),
+                Complex::new(2.0, 2.0),
+                Complex::new(3.0, 3.0)
+            ])
+        );
+        assert_eq!(
+            poly!(2.0; 3),
+            Poly::<f64>::new(&[
+                Complex::new(2.0, 0.0),
+                Complex::new(2.0, 0.0),
+                Complex::new(2.0, 0.0)
+            ])
+        );
+        assert_eq!(
+            poly!((1.0, -1.0); 3),
+            Poly::<f64>::new(&[
+                Complex::new(1.0, -1.0),
+                Complex::new(1.0, -1.0),
+                Complex::new(1.0, -1.0)
+            ])
+        );
+    }
+
+    #[test]
+    fn poly_new() {
+        // trivial, but here for completeness
+        Poly::new(&[Complex::new(2.0, -2.0)]);
+    }
+
+    #[test]
+    fn poly_from_complex_slice() {
+        let p = Poly::from_complex_slice(&[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let e = poly!((1.0, 2.0), (3.0, 4.0));
+        assert_eq!(p, e);
+    }
+
+    // TODO: test the rest of the "boring" functions
+
+    #[test]
+    fn poly_line() {
+        let p = Poly::<f64>::line(Complex::<f64>::new(1.0, 0.0), Complex::<f64>::new(2.0, 0.0));
+        let e = poly!(1.0, 2.0);
+        assert_eq!(p, e);
     }
 }

@@ -10,6 +10,8 @@ pub fn convolve_1d<T: Scalar>(
 ) -> DVector<Complex<T>> {
     let input_len = input.len();
     let kernel_len = kernel.len();
+
+    debug_assert!(input_len + kernel_len > 0);
     let output_len = input_len + kernel_len - 1;
 
     let mut output: DVector<Complex<T>> = DVector::<Complex<T>>::zeros(output_len);

@@ -8,6 +8,7 @@ Basic Goals:
 - [x] long division of complex and real univariate polynomials
 - [x] finding complex roots of polynomials
 - [x] generate chebyshev polynomials
+- [ ] indexing, slicing and iterating
 
 Future Goals:
 - [ ] Serde integration
