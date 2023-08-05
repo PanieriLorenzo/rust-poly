@@ -9,6 +9,7 @@ Basic Goals:
 - [x] finding complex roots of polynomials
 - [x] generate chebyshev polynomials
 - [ ] indexing, slicing and iterating
+- [ ] into traits
 
 Future Goals:
 - [ ] Serde integration

@@ -122,6 +122,10 @@ impl<T: Scalar> Poly<T> {
         Self(na::DVector::from_row_slice(coeffs)).normalize()
     }
 
+    pub fn from_dvector(value: na::DVector<Complex<T>>) -> Self {
+        Self(value)
+    }
+
     /// The same as `Poly::new()`
     pub fn from_complex_slice(value: &[Complex<T>]) -> Self {
         Self::new(value)
@@ -566,6 +570,38 @@ impl<T: Scalar> Poly<T> {
             Self(lhs.view_range(..(j + 1) as usize, 0..1).column(0).into()).normalize(),
         )
     }
+
+    pub fn as_slice(&self) -> &[Complex<T>] {
+        self.0.as_slice()
+    }
+
+    pub fn as_mut_slice(&mut self) -> &mut [Complex<T>] {
+        self.0.as_mut_slice()
+    }
+
+    pub fn as_ptr(&self) -> *const Complex<T> {
+        self.0.as_ptr()
+    }
+
+    pub fn as_mut_ptr(&mut self) -> *mut Complex<T> {
+        self.0.as_mut_ptr()
+    }
+
+    pub fn as_view(&self) -> na::DMatrixView<Complex<T>> {
+        self.0.as_view()
+    }
+
+    pub fn as_view_mut(&mut self) -> na::DMatrixViewMut<Complex<T>> {
+        self.0.as_view_mut()
+    }
+
+    pub fn to_vec(&self) -> Vec<Complex<T>> {
+        Vec::from(self.as_slice())
+    }
+
+    pub fn to_dvector(&self) -> na::DVector<Complex<T>> {
+        self.0.clone()
+    }
 }
 
 impl<T: Scalar> Index<usize> for Poly<T> {
@@ -573,6 +609,12 @@ impl<T: Scalar> Index<usize> for Poly<T> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl<T: Scalar> From<na::DVector<Complex<T>>> for Poly<T> {
+    fn from(value: na::DVector<Complex<T>>) -> Self {
+        Self::from_dvector(value)
     }
 }
 
@@ -597,6 +639,30 @@ impl<T: Scalar> From<&[T]> for Poly<T> {
 impl<T: Scalar> From<Vec<T>> for Poly<T> {
     fn from(value: Vec<T>) -> Self {
         Self::from_real_vec(value)
+    }
+}
+
+impl<T: Scalar> Into<*const Complex<T>> for Poly<T> {
+    fn into(self) -> *const Complex<T> {
+        self.as_ptr()
+    }
+}
+
+impl<T: Scalar> Into<*mut Complex<T>> for Poly<T> {
+    fn into(mut self) -> *mut Complex<T> {
+        self.as_mut_ptr()
+    }
+}
+
+impl<T: Scalar> Into<Vec<Complex<T>>> for Poly<T> {
+    fn into(self) -> Vec<Complex<T>> {
+        self.to_vec()
+    }
+}
+
+impl<T: Scalar> Into<na::DVector<Complex<T>>> for Poly<T> {
+    fn into(self) -> na::DVector<Complex<T>> {
+        self.to_dvector()
     }
 }
 
