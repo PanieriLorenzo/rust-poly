@@ -128,6 +128,7 @@ impl<T: Scalar> Poly<T> {
     }
 
     #[allow(clippy::needless_pass_by_value)]
+    #[must_use]
     pub fn from_complex_vec(value: Vec<Complex<T>>) -> Self {
         Self::new(value.as_slice())
     }
@@ -138,6 +139,7 @@ impl<T: Scalar> Poly<T> {
     }
 
     #[allow(clippy::needless_pass_by_value)]
+    #[must_use]
     pub fn from_real_vec(value: Vec<T>) -> Self {
         Self::from(value.as_slice())
     }
@@ -304,7 +306,7 @@ impl<T: Scalar> Poly<T> {
 
         // post-condition: polynomial is now normalized
         debug_assert!(ret.is_normalized());
-        return ret;
+        ret
     }
 
     /// Evaluate the polynomial at a single value of `x`.

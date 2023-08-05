@@ -2,7 +2,7 @@ use num_complex::Complex;
 use num_traits::Zero;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rust_poly::{complex, poly, Poly};
+use rust_poly::{complex, Poly};
 
 fn gen_rand_roots(rng: &mut impl Rng) -> Vec<Complex<f64>> {
     const MAX_LEN: u32 = 7;
