@@ -1,8 +1,8 @@
-use num_complex::Complex;
+use num_complex::{Complex, ComplexFloat};
 use num_traits::Zero;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rust_poly::{complex, Poly};
+use rust_poly::{complex, poly, Poly};
 
 fn gen_rand_roots(rng: &mut impl Rng) -> Vec<Complex<f64>> {
     const MAX_LEN: u32 = 7;
@@ -50,5 +50,19 @@ fn stress_test_1() {
         };
         let res = res.pow(rng.next_u32() % MAX_POW);
         let _ = res.roots();
+    }
+}
+
+#[test]
+fn back_and_forth_1() {
+    let p = poly![2.0, -3.0, 4.0, 1.0];
+
+    // because p is monic, we expect pp to be almost identical
+    let pp = Poly::from_roots(p.roots().as_slice());
+
+    // assert almost equal
+    const EPSILON: f64 = 1E-14;
+    for i in 0..p.len() {
+        assert!((p[i] - pp[i]).abs() < EPSILON);
     }
 }
