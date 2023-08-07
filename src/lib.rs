@@ -117,6 +117,9 @@ mod linalg_util;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
 
+pub type Poly32 = Poly<f32>;
+pub type Poly64 = Poly<f64>;
+
 impl<T: Scalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {
         Self(na::DVector::from_row_slice(coeffs)).normalize()
