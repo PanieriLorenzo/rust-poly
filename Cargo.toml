@@ -10,7 +10,7 @@ homepage = "https://github.com/PanieriLorenzo/rust-poly"
 repository = "https://github.com/PanieriLorenzo/rust-poly"
 readme = "README.md"
 keywords = ["mathematics", "numerics", "polynomial", "solver"]
-categories = ["Math"]
+categories = ["mathematics"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
