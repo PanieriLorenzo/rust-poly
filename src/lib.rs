@@ -435,16 +435,16 @@ impl<T: Scalar> Poly<T> {
     /// assert!((expected_roots[2] - calculated_roots[2]).re.abs() < 0.000001);
     /// ```
     #[must_use]
-    pub fn roots(&self) -> na::DVector<Complex<T>> {
+    pub fn roots(&self) -> Vec<Complex<T>> {
         // invariant: polynomial is normalized
         debug_assert!(self.is_normalized());
 
         if self.len_raw() < 2 {
-            return na::dvector![];
+            return vec![];
         }
 
         if self.len_raw() == 2 {
-            return na::dvector![c_neg(self.0[0].clone()) / self.0[1].clone()];
+            return vec![c_neg(self.0[0].clone()) / self.0[1].clone()];
         }
 
         // rotated companion matrix reduces error
@@ -457,7 +457,7 @@ impl<T: Scalar> Poly<T> {
 
         let mut r: na::DVector<Complex<T>> = comp.eigenvalues().expect("infallible");
         complex_sort_mut(&mut r);
-        r
+        r.as_slice().to_vec()
     }
 
     /// Compose two polynomials, returning a new polynomial.
