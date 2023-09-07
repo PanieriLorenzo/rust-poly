@@ -5,6 +5,7 @@
 extern crate nalgebra as na;
 use std::ops::Index;
 
+use na::Normed;
 pub use num_complex;
 pub use num_traits;
 
@@ -499,6 +500,23 @@ impl<T: Scalar> Poly<T> {
         (0..self.len_raw())
             .map(|i| Self::new(&[self.0[i].clone()]) * x.pow_usize(i))
             .sum()
+    }
+
+    /// Returns true if every coefficient in the polynomial is smaller than the
+    /// tolerance (using complex norm).
+    ///
+    /// # Examples
+    /// ```
+    /// use rust_poly::{Poly, poly};
+    ///
+    /// assert!(poly![0.01, -0.01].almost_zero(0.1));
+    /// ```
+    #[must_use]
+    pub fn almost_zero(&self, tolerance: T) -> bool {
+        // invariant: polynomials are normalized
+        debug_assert!(self.is_normalized());
+
+        self.as_slice().iter().all(|c| c.norm() <= tolerance)
     }
 
     /// Calculate the quotient and remainder uwing long division. More efficient than
