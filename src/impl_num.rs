@@ -283,6 +283,22 @@ impl<T: Scalar> Div<Complex<T>> for Poly<T> {
     }
 }
 
+impl<T: Scalar> Div<Complex<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: Complex<T>) -> Self::Output {
+        self.clone() / rhs
+    }
+}
+
+impl<T: Scalar> Div<&Complex<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: &Complex<T>) -> Self::Output {
+        self / rhs.clone()
+    }
+}
+
 impl<T: Scalar> Rem<&Self> for Poly<T> {
     type Output = Self;
 
