@@ -69,6 +69,22 @@ impl<T: Scalar> Add for Poly<T> {
     }
 }
 
+impl<T: Scalar> Add<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn add(self, rhs: Poly<T>) -> Self::Output {
+        rhs + self
+    }
+}
+
+impl<T: Scalar> Add<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn add(self, rhs: &Poly<T>) -> Self::Output {
+        self + rhs.clone()
+    }
+}
+
 impl<T: Scalar> Mul<&Self> for Poly<T> {
     type Output = Self;
 
@@ -108,6 +124,22 @@ impl<T: Scalar> Mul for Poly<T> {
     /// ```
     fn mul(self, rhs: Self) -> Self::Output {
         self * &rhs
+    }
+}
+
+impl<T: Scalar> Mul<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: Poly<T>) -> Self::Output {
+        rhs + self
+    }
+}
+
+impl<T: Scalar> Mul<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: &Poly<T>) -> Self::Output {
+        self + rhs.clone()
     }
 }
 
@@ -180,6 +212,22 @@ impl<T: Scalar> Sub<Self> for Poly<T> {
     }
 }
 
+impl<T: Scalar> Sub<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn sub(self, rhs: Poly<T>) -> Self::Output {
+        rhs + self
+    }
+}
+
+impl<T: Scalar> Sub<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn sub(self, rhs: &Poly<T>) -> Self::Output {
+        self + rhs.clone()
+    }
+}
+
 impl<T: Scalar> Div<&Self> for Poly<T> {
     type Output = Self;
 
@@ -193,6 +241,22 @@ impl<T: Scalar> Div<Self> for Poly<T> {
 
     fn div(self, rhs: Self) -> Self::Output {
         self / &rhs
+    }
+}
+
+impl<T: Scalar> Div<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: Poly<T>) -> Self::Output {
+        rhs + self
+    }
+}
+
+impl<T: Scalar> Div<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: &Poly<T>) -> Self::Output {
+        self + rhs.clone()
     }
 }
 
@@ -235,11 +299,35 @@ impl<T: Scalar> Rem<Self> for Poly<T> {
     }
 }
 
+impl<T: Scalar> Rem<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn rem(self, rhs: Poly<T>) -> Self::Output {
+        rhs + self
+    }
+}
+
+impl<T: Scalar> Rem<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn rem(self, rhs: &Poly<T>) -> Self::Output {
+        self + rhs.clone()
+    }
+}
+
 impl<T: Scalar> Neg for Poly<T> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
         Self(-self.0)
+    }
+}
+
+impl<T: Scalar> Neg for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn neg(self) -> Self::Output {
+        -self.clone()
     }
 }
 
