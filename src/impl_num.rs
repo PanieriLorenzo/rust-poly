@@ -196,6 +196,29 @@ impl<T: Scalar> Div<Self> for Poly<T> {
     }
 }
 
+impl<T: Scalar> Div<&Complex<T>> for Poly<T> {
+    type Output = Self;
+
+    fn div(self, rhs: &Complex<T>) -> Self::Output {
+        Self(self.0.map(|e| e / rhs)).normalize()
+    }
+}
+
+impl<T: Scalar> Div<Complex<T>> for Poly<T> {
+    type Output = Self;
+
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num_complex::Complex;
+    ///
+    /// let p = poly![2.0, 4.0, 6.0];
+    /// assert_eq!(p / Complex::from(2.0), poly![1.0, 2.0, 3.0]);
+    /// ```
+    fn div(self, rhs: Complex<T>) -> Self::Output {
+        self / &rhs
+    }
+}
+
 impl<T: Scalar> Rem<&Self> for Poly<T> {
     type Output = Self;
 
