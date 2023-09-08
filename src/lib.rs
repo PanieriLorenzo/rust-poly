@@ -538,7 +538,7 @@ impl<T: Scalar> Poly<T> {
     /// ```
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn div_rem(self, rhs: Self) -> Result<(Self, Self)> {
+    pub fn div_rem(self, rhs: &Self) -> Result<(Self, Self)> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
@@ -596,12 +596,12 @@ impl<T: Scalar> Poly<T> {
 
     #[deprecated]
     pub fn delete_me_checked_div(self, rhs: &Self) -> Result<Self> {
-        Ok(self.div_rem(rhs.clone())?.0)
+        Ok(self.div_rem(rhs)?.0)
     }
 
     #[deprecated]
     pub fn delete_me_checked_rem(self, rhs: &Self) -> Result<Self> {
-        Ok(self.div_rem(rhs.clone())?.1)
+        Ok(self.div_rem(rhs)?.1)
     }
 
     #[must_use]
