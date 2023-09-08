@@ -12,6 +12,8 @@ pub use num_traits;
 use num_complex::Complex;
 use num_traits::{One, Zero};
 
+use anyhow::{bail, Result};
+
 /// A more convenient way to write `Complex::new(...)`.
 ///
 /// # Examples
@@ -527,36 +529,38 @@ impl<T: Scalar> Poly<T> {
     ///
     /// # Examples
     /// ```
-    /// use rust_poly::Poly;
+    /// use rust_poly::{Poly, poly};
     /// use num_complex::Complex;
     /// use num_traits::identities::One;
     ///
-    /// let c1 = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)]);
-    /// let c2 = Poly::new(&[Complex::new(3.0, 0.0), Complex::new(2.0, 0.0), Complex::new(1.0, 0.0)]);
-    /// let expected1 = (Poly::new(&[Complex::new(3.0, 0.0)]), Poly::new(&[Complex::new(-8.0, 0.0), Complex::new(-4.0, 0.0)]));
-    /// assert_eq!(c1.clone().div_rem(&c2), expected1);
+    /// let c1 = poly![1.0, 2.0, 3.0];
+    /// let c2 = poly![3.0, 2.0, 1.0];
+    /// let expected1 = (poly![3.0], poly![-8.0, -4.0]);
+    /// assert_eq!(c1.clone().div_rem(&c2).unwrap(), expected1);
     /// ```
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
     #[must_use]
-    pub fn div_rem(self, rhs: &Self) -> (Self, Self) {
+    pub fn div_rem(self, rhs: &Self) -> Result<(Self, Self)> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
 
         // pre-condition: don't divide by zero
-        assert!(!rhs.is_zero(), "Attempted to divide a polynomial by zero");
+        if rhs.is_zero() {
+            bail!("Attempted to divide a polynomial by zero");
+        }
 
         let lhs_len = self.len_raw();
         let rhs_len = self.len_raw();
         if lhs_len < rhs_len {
-            return (Self::zero(), self);
+            return Ok((Self::zero(), self));
         }
         if rhs_len == 1 {
-            return (
+            return Ok((
                 Self(self.0 / rhs.0[rhs.len_raw() - 1].clone()),
                 Self::zero(),
-            );
+            ));
         }
         let len_delta = lhs_len - rhs_len;
         let scale = rhs.0[rhs.len_raw() - 1].clone();
@@ -582,7 +586,7 @@ impl<T: Scalar> Poly<T> {
             i -= 1;
             j -= 1;
         }
-        (
+        Ok((
             Self(
                 (lhs.view_range(j as usize + 1..lhs.len(), 0..1) / scale)
                     .column(0)
@@ -590,7 +594,7 @@ impl<T: Scalar> Poly<T> {
             )
             .normalize(),
             Self(lhs.view_range(..(j + 1) as usize, 0..1).column(0).into()).normalize(),
-        )
+        ))
     }
 
     #[must_use]
