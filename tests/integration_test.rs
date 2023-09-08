@@ -1,5 +1,4 @@
-use num_complex::{Complex, ComplexFloat};
-use num_traits::Zero;
+use num::{complex::ComplexFloat, Complex, Zero};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rust_poly::{complex, poly, Poly};

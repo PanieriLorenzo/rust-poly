@@ -6,11 +6,9 @@ extern crate nalgebra as na;
 use std::ops::Index;
 
 use na::Normed;
-pub use num_complex;
-pub use num_traits;
+pub use num;
 
-use num_complex::Complex;
-use num_traits::{One, Zero};
+use num::{Complex, One, Zero};
 
 use anyhow::{bail, Result};
 
@@ -20,7 +18,7 @@ use anyhow::{bail, Result};
 ///
 /// ```
 /// use rust_poly::complex;
-/// use num_complex::Complex;
+/// use num::Complex;
 ///
 /// let c1: Complex<f32> = complex!();
 /// let c2 = Complex::new(0.0, 0.0);
@@ -33,10 +31,10 @@ use anyhow::{bail, Result};
 #[macro_export]
 macro_rules! complex {
     () => {{
-        <$crate::num_complex::Complex<_> as $crate::num_traits::Zero>::zero()
+        <$crate::num::Complex<_> as $crate::num::Zero>::zero()
     }};
     ($re:expr, $im: expr) => {{
-        $crate::num_complex::Complex::new($re, $im)
+        $crate::num::Complex::new($re, $im)
     }};
 }
 
@@ -52,8 +50,8 @@ macro_rules! complex {
 /// Basic syntax
 /// ```
 /// use rust_poly::{poly, Poly};
-/// use num_traits::Zero;
-/// use num_complex::Complex;
+/// use num::Zero;
+/// use num::Complex;
 ///
 /// let p1: Poly<f32> = poly![];
 /// let p2 = poly![1.0f32, 2.0, 3.0];
@@ -67,7 +65,7 @@ macro_rules! complex {
 /// are equal like so:
 /// ```
 /// # use rust_poly::{poly, Poly};
-/// use num_complex::Complex;
+/// use num::Complex;
 ///
 /// let p1 = poly![2.0; 16];
 /// let p2 = poly![Complex::from(2.0); 16];
@@ -79,7 +77,7 @@ macro_rules! complex {
 /// this syntax with the other syntax rules:
 /// ```
 /// use rust_poly::{poly, Poly};
-/// use num_complex::Complex;
+/// use num::Complex;
 ///
 /// let p1 = poly![(1.0, 2.0), (1.0, 2.0)];
 /// let p2 = poly![(1.0, 2.0); 2];
@@ -160,8 +158,8 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::Poly;
-    /// use num_complex::Complex;
-    /// use num_traits::{Zero, One};
+    /// use num::Complex;
+    /// use num::{Zero, One};
     ///
     /// let p = Poly::from_roots(&[Complex::new(-1.0, 0.0), Complex::zero(), Complex::one()]);
     /// assert_eq!(p, Poly::new(&[Complex::zero(), Complex::new(-1.0, 0.0), Complex::zero(), Complex::one()]))
@@ -188,8 +186,8 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::Poly;
-    /// use num_complex::Complex;
-    /// use num_traits::{One, Zero};
+    /// use num::Complex;
+    /// use num::{One, Zero};
     ///
     /// assert_eq!(Poly::line(Complex::one(), Complex::new(-1.0, 0.0)).eval_point(Complex::one()), Complex::zero());
     /// ```
@@ -209,8 +207,8 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::Poly;
-    /// use num_complex::Complex;
-    /// use num_traits::{One, Zero};
+    /// use num::Complex;
+    /// use num::{One, Zero};
     ///
     /// let p1 = (Complex::new(-1.0, 0.0), Complex::new(2.0, 0.0));
     /// let p2 = (Complex::new(2.0, 0.0), Complex::new(-1.0, 0.0));
@@ -228,8 +226,8 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
-    /// use num_traits::One;
+    /// use num::Complex;
+    /// use num::One;
     ///
     /// assert_eq!(Poly::term(Complex::one(), 3), poly![0.0, 0.0, 0.0, 1.0]);
     /// ```
@@ -244,8 +242,8 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
-    /// use num_traits::One;
+    /// use num::Complex;
+    /// use num::One;
     ///
     /// let p  = poly![1.0, 2.0, 3.0];
     /// assert_eq!(p.get_term(1).unwrap(), poly![0.0, 2.0]);
@@ -324,7 +322,7 @@ impl<T: Scalar> Poly<T> {
     ///
     /// ```
     /// use rust_poly::Poly;
-    /// use num_complex::Complex;
+    /// use num::Complex;
     ///
     /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)]);
     /// let x = Complex::new(1.0, 0.0);
@@ -353,7 +351,7 @@ impl<T: Scalar> Poly<T> {
     ///
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
+    /// use num::Complex;
     ///
     /// assert_eq!(poly![1.0, 2.0, 3.0].pow(2), poly![1.0, 4.0, 10.0, 12.0, 9.0]);
     /// ```
@@ -425,7 +423,7 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use rust_poly::num_complex::Complex;
+    /// use num::Complex;
     ///
     /// let p: Poly<f64> = poly![-6.0, 11.0, -6.0, 1.0];
     /// let expected_roots = &[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)];
@@ -473,8 +471,8 @@ impl<T: Scalar> Poly<T> {
     ///
     /// ```
     /// use rust_poly::Poly;
-    /// use num_complex::Complex;
-    /// use num_traits::One;
+    /// use num::Complex;
+    /// use num::One;
     ///
     /// let f = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
     /// let g = Poly::one();
@@ -512,7 +510,7 @@ impl<T: Scalar> Poly<T> {
     /// ```
     /// use rust_poly::{Poly, poly};
     ///
-    /// assert!(poly![0.01, -0.01].almost_zero(0.1));
+    /// assert!(poly![0.01, -0.01].almost_zero(&0.1));
     /// ```
     #[must_use]
     pub fn almost_zero(&self, tolerance: &T) -> bool {
@@ -531,8 +529,7 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::{Poly, poly};
-    /// use num_complex::Complex;
-    /// use num_traits::identities::One;
+    /// use num::{Complex, One};
     ///
     /// let c1 = poly![1.0, 2.0, 3.0];
     /// let c2 = poly![3.0, 2.0, 1.0];
@@ -597,11 +594,13 @@ impl<T: Scalar> Poly<T> {
         ))
     }
 
-    pub fn checked_div(self, rhs: &Self) -> Result<Self> {
+    #[deprecated]
+    pub fn delete_me_checked_div(self, rhs: &Self) -> Result<Self> {
         Ok(self.div_rem(rhs)?.0)
     }
 
-    pub fn checked_rem(self, rhs: &Self) -> Result<Self> {
+    #[deprecated]
+    pub fn delete_me_checked_rem(self, rhs: &Self) -> Result<Self> {
         Ok(self.div_rem(rhs)?.1)
     }
 

@@ -2,8 +2,7 @@
 
 use std::cmp::Ordering;
 
-use num_complex::Complex;
-use num_traits::Zero;
+use num::{Complex, Zero};
 
 use crate::Scalar;
 

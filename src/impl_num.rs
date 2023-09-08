@@ -1,8 +1,7 @@
 // Implementation of traits related to numeric operations, operators and number theory
 
 use itertools::Itertools;
-use num_complex::Complex;
-use num_traits::{One, Zero};
+use num::{Complex, One, Zero};
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
@@ -116,7 +115,7 @@ impl<T: Scalar> Mul for Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
+    /// use num::Complex;
     ///
     /// let p1 = poly![1.0, 2.0, 3.0];
     /// let p2 = poly![3.0, 2.0, 1.0];
@@ -156,7 +155,7 @@ impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
 
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
+    /// use num::Complex;
     ///
     /// let p = poly![1.0, 2.0, 3.0];
     /// assert_eq!(p * Complex::from(2.0), poly![2.0, 4.0, 6.0]);
@@ -200,7 +199,7 @@ impl<T: Scalar> Sub<Self> for Poly<T> {
     /// # Examples
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
+    /// use num::Complex;
     ///
     /// let c1 = poly![1.0, 2.0, 3.0];
     /// let c2 = poly![3.0, 2.0, 1.0];
@@ -232,7 +231,7 @@ impl<T: Scalar> Div<&Self> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: &Self) -> Self::Output {
-        self.checked_div(rhs).unwrap()
+        self.delete_me_checked_div(rhs).unwrap()
     }
 }
 
@@ -273,7 +272,7 @@ impl<T: Scalar> Div<Complex<T>> for Poly<T> {
 
     /// ```
     /// use rust_poly::{poly, Poly};
-    /// use num_complex::Complex;
+    /// use num::Complex;
     ///
     /// let p = poly![2.0, 4.0, 6.0];
     /// assert_eq!(p / Complex::from(2.0), poly![1.0, 2.0, 3.0]);
@@ -303,7 +302,7 @@ impl<T: Scalar> Rem<&Self> for Poly<T> {
     type Output = Self;
 
     fn rem(self, rhs: &Self) -> Self::Output {
-        self.checked_rem(rhs).unwrap()
+        self.delete_me_checked_rem(rhs).unwrap()
     }
 }
 
