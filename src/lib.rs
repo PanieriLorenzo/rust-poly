@@ -538,23 +538,24 @@ impl<T: Scalar> Poly<T> {
     /// ```
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn div_rem(self, rhs: &Self) -> Result<(Self, Self)> {
+    pub fn div_rem(self, rhs: &Self) -> Option<(Self, Self)> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
 
         // pre-condition: don't divide by zero
         if rhs.is_zero() {
-            bail!("Attempted to divide a polynomial by zero");
+            // bail!("Attempted to divide a polynomial by zero");
+            return None;
         }
 
         let lhs_len = self.len_raw();
         let rhs_len = self.len_raw();
         if lhs_len < rhs_len {
-            return Ok((Self::zero(), self));
+            return Some((Self::zero(), self));
         }
         if rhs_len == 1 {
-            return Ok((
+            return Some((
                 Self(self.0 / rhs.0[rhs.len_raw() - 1].clone()),
                 Self::zero(),
             ));
@@ -583,7 +584,7 @@ impl<T: Scalar> Poly<T> {
             i -= 1;
             j -= 1;
         }
-        Ok((
+        Some((
             Self(
                 (lhs.view_range(j as usize + 1..lhs.len(), 0..1) / scale)
                     .column(0)
@@ -594,14 +595,12 @@ impl<T: Scalar> Poly<T> {
         ))
     }
 
-    #[deprecated]
-    pub fn delete_me_checked_div(self, rhs: &Self) -> Result<Self> {
-        Ok(self.div_rem(rhs)?.0)
+    fn checked_div_impl(self, rhs: &Self) -> Option<Self> {
+        Some(self.div_rem(rhs)?.0)
     }
 
-    #[deprecated]
-    pub fn delete_me_checked_rem(self, rhs: &Self) -> Result<Self> {
-        Ok(self.div_rem(rhs)?.1)
+    fn checked_rem_impl(self, rhs: &Self) -> Option<Self> {
+        Some(self.div_rem(rhs)?.1)
     }
 
     #[must_use]

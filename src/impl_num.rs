@@ -1,7 +1,7 @@
 // Implementation of traits related to numeric operations, operators and number theory
 
 use itertools::Itertools;
-use num::{Complex, One, Zero};
+use num::{traits::CheckedRem, CheckedDiv, Complex, One, Zero};
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
@@ -227,11 +227,23 @@ impl<T: Scalar> Sub<&Poly<T>> for &Poly<T> {
     }
 }
 
+impl<T: Scalar> CheckedDiv for Poly<T> {
+    fn checked_div(&self, rhs: &Self) -> Option<Self> {
+        self.clone().checked_div_impl(rhs)
+    }
+}
+
+impl<T: Scalar> CheckedRem for Poly<T> {
+    fn checked_rem(&self, rhs: &Self) -> Option<Self> {
+        self.clone().checked_rem_impl(rhs)
+    }
+}
+
 impl<T: Scalar> Div<&Self> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: &Self) -> Self::Output {
-        self.delete_me_checked_div(rhs).unwrap()
+        self.checked_div(rhs).unwrap()
     }
 }
 
@@ -302,7 +314,7 @@ impl<T: Scalar> Rem<&Self> for Poly<T> {
     type Output = Self;
 
     fn rem(self, rhs: &Self) -> Self::Output {
-        self.delete_me_checked_rem(rhs).unwrap()
+        self.checked_rem(rhs).unwrap()
     }
 }
 
