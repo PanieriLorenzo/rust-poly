@@ -10,8 +10,6 @@ pub use num;
 
 use num::{Complex, One, Zero};
 
-
-
 /// A more convenient way to write `Complex::new(...)`.
 ///
 /// # Examples
@@ -469,14 +467,13 @@ impl<T: Scalar> Poly<T> {
     /// # Examples
     ///
     /// ```
-    /// use rust_poly::Poly;
-    /// use num::Complex;
-    /// use num::One;
+    /// use rust_poly::{Poly, poly};
+    /// use num::{One, Complex};
     ///
-    /// let f = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
+    /// let f = poly![1.0, 2.0];
     /// let g = Poly::one();
     ///
-    /// assert_eq!(f.compose(g), f);
+    /// assert_eq!(f.clone().compose(g), f);
     #[must_use]
     pub fn compose(self, x: Self) -> Self {
         // invariant: polynomials are normalized
@@ -537,7 +534,8 @@ impl<T: Scalar> Poly<T> {
     /// ```
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
-    #[must_use] pub fn div_rem(self, rhs: &Self) -> Option<(Self, Self)> {
+    #[must_use]
+    pub fn div_rem(self, rhs: &Self) -> Option<(Self, Self)> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
