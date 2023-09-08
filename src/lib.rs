@@ -174,9 +174,7 @@ impl<T: Scalar> Poly<T> {
         complex_sort_mut(&mut roots);
 
         roots
-            .as_slice()
-            .iter()
-            .map(|e| Self::line(c_neg(e.clone()), Complex::<T>::one()))
+            .map(|e| Self::line(c_neg(e), Complex::<T>::one()))
             .fold(Self::one(), |acc, x| acc * x)
             .normalize()
     }
@@ -216,8 +214,8 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(Poly::line_from_points(p1, p2).eval_point(Complex::one()), Complex::zero());
     /// ```
     pub fn line_from_points(p1: (Complex<T>, Complex<T>), p2: (Complex<T>, Complex<T>)) -> Self {
-        let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
-        let offset = p1.1 - slope.clone() * p1.0;
+        let slope = (p2.1 - &p1.1) / (p2.0 - &p1.0);
+        let offset = p1.1 - &slope * p1.0;
         Self::line(offset, slope)
     }
 
@@ -281,7 +279,8 @@ impl<T: Scalar> Poly<T> {
 
     #[must_use]
     pub fn len(&self) -> usize {
-        self.normalize().len_raw()
+        debug_assert!(self.is_normalized());
+        self.len_raw()
     }
 
     #[must_use]
@@ -297,9 +296,9 @@ impl<T: Scalar> Poly<T> {
         !self.0.index(n - 1).is_zero()
     }
 
-    fn normalize(&self) -> Self {
-        if self.len_raw() == 0 {
-            return self.clone();
+    fn normalize(self) -> Self {
+        if self.is_normalized() {
+            return self;
         }
         let mut end = self.len_raw();
         loop {
@@ -479,7 +478,7 @@ impl<T: Scalar> Poly<T> {
     ///
     /// assert_eq!(f.compose(g), f);
     #[must_use]
-    pub fn compose(&self, x: Self) -> Self {
+    pub fn compose(self, x: Self) -> Self {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(x.is_normalized());
@@ -494,7 +493,7 @@ impl<T: Scalar> Poly<T> {
         }
 
         if x.is_one() {
-            return self.clone();
+            return self;
         }
         // end
 
@@ -636,8 +635,8 @@ impl<T: Scalar> Poly<T> {
     }
 
     #[must_use]
-    pub fn to_dvector(&self) -> na::DVector<Complex<T>> {
-        self.0.clone()
+    pub fn to_dvector(self) -> na::DVector<Complex<T>> {
+        self.0
     }
 }
 
