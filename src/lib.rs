@@ -356,12 +356,12 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(poly![1.0, 2.0, 3.0].pow(2), poly![1.0, 4.0, 10.0, 12.0, 9.0]);
     /// ```
     #[must_use]
-    pub fn pow(&self, pow: u32) -> Self {
+    pub fn pow(self, pow: u32) -> Self {
         self.pow_usize(pow as usize)
     }
 
     #[must_use]
-    pub fn pow_usize(&self, pow: usize) -> Self {
+    pub fn pow_usize(self, pow: usize) -> Self {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
 
@@ -370,13 +370,13 @@ impl<T: Scalar> Poly<T> {
         }
 
         if pow == 1 {
-            return self.clone();
+            return self;
         }
 
         // TODO: divide and conquer with powers of 2
         let mut res = self.clone();
         for _ in 2..=pow {
-            res = res * self;
+            res = res * self.clone();
         }
         res.normalize()
     }
@@ -499,7 +499,7 @@ impl<T: Scalar> Poly<T> {
         // end
 
         (0..self.len_raw())
-            .map(|i| Self::new(&[self.0[i].clone()]) * x.pow_usize(i))
+            .map(|i| Self::new(&[self.0[i].clone()]) * x.clone().pow_usize(i))
             .sum()
     }
 
