@@ -232,7 +232,7 @@ impl<T: Scalar> Div<&Self> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: &Self) -> Self::Output {
-        self.div_rem(rhs).unwrap().0
+        self.checked_div(rhs).unwrap()
     }
 }
 
@@ -303,7 +303,7 @@ impl<T: Scalar> Rem<&Self> for Poly<T> {
     type Output = Self;
 
     fn rem(self, rhs: &Self) -> Self::Output {
-        self.div_rem(rhs).unwrap().1
+        self.checked_rem(rhs).unwrap()
     }
 }
 

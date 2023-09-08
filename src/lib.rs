@@ -598,6 +598,16 @@ impl<T: Scalar> Poly<T> {
     }
 
     #[must_use]
+    pub fn checked_div(self, rhs: &Self) -> Result<Self> {
+        Ok(self.div_rem(rhs)?.0)
+    }
+
+    #[must_use]
+    pub fn checked_rem(self, rhs: &Self) -> Result<Self> {
+        Ok(self.div_rem(rhs)?.1)
+    }
+
+    #[must_use]
     pub fn as_slice(&self) -> &[Complex<T>] {
         self.0.as_slice()
     }
