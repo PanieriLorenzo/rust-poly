@@ -111,7 +111,9 @@ pub use scalar::Scalar;
 mod complex_util;
 use complex_util::{c_neg, complex_sort_mut};
 mod impl_num;
+mod indexing;
 mod linalg_util;
+pub use indexing::Get;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
