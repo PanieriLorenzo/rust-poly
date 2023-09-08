@@ -267,7 +267,10 @@ impl<T: Scalar> Poly<T> {
         match n {
             0 => poly![T::one()],
             1 => poly![T::zero(), T::one()],
-            _ => poly![T::zero(), T::one() + T::one()] * Self::cheby(n - 1) - Self::cheby(n - 2),
+            2 => poly![-T::one(), T::zero(), T::two()],
+            3 => poly![T::zero(), -T::three(), T::zero(), T::four()],
+            4 => poly![T::one(), T::zero(), -T::eight(), T::zero(), T::eight()],
+            _ => poly![T::zero(), T::two()] * Self::cheby(n - 1) - Self::cheby(n - 2),
         }
     }
 

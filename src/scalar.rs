@@ -4,6 +4,8 @@ use nalgebra::RealField;
 use num::Num;
 use std::ops::{AddAssign, DivAssign, MulAssign, Neg, RemAssign, SubAssign};
 
+use numeric_constant_traits::{Eight, Four, Three, Two};
+
 pub trait Scalar:
     Neg
     + Num
@@ -17,6 +19,10 @@ pub trait Scalar:
     + 'static
     + RealField
     + PartialOrd
+    + Two
+    + Three
+    + Four
+    + Eight
 {
 }
 
