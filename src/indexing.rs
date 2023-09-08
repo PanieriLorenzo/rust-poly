@@ -17,6 +17,8 @@ impl<T: Scalar> Get<usize, T> for Poly<T> {
 }
 
 impl<T: Scalar> Get<isize, T> for Poly<T> {
+    #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::cast_sign_loss)]
     fn get(&self, idx: isize) -> Option<Complex<T>> {
         if idx >= 0 {
             return self.get(idx as usize);
@@ -29,7 +31,7 @@ impl<T: Scalar> Get<isize, T> for Poly<T> {
             return None;
         }
 
-        return self.get(idx as usize);
+        self.get(idx as usize)
     }
 }
 
