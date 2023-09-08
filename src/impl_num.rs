@@ -50,6 +50,30 @@ impl<T: Scalar> Add<Poly<T>> for Poly<T> {
     }
 }
 
+impl<T: Scalar> Add<&Poly<T>> for Poly<T> {
+    type Output = Poly<T>;
+
+    fn add(self, rhs: &Poly<T>) -> Self::Output {
+        self + rhs.clone()
+    }
+}
+
+impl<T: Scalar> Add<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn add(self, rhs: Poly<T>) -> Self::Output {
+        self.clone() + rhs
+    }
+}
+
+impl<T: Scalar> Add<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn add(self, rhs: &Poly<T>) -> Self::Output {
+        self.clone() + rhs.clone()
+    }
+}
+
 impl<T: Scalar> Mul<Self> for Poly<T> {
     type Output = Self;
 
@@ -73,6 +97,38 @@ impl<T: Scalar> Mul<Self> for Poly<T> {
     }
 }
 
+impl<T: Scalar> Mul<&Poly<T>> for Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: &Poly<T>) -> Self::Output {
+        self * rhs.clone()
+    }
+}
+
+impl<T: Scalar> Mul<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: Poly<T>) -> Self::Output {
+        self.clone() * rhs
+    }
+}
+
+impl<T: Scalar> Mul<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: &Poly<T>) -> Self::Output {
+        self.clone() * rhs.clone()
+    }
+}
+
+impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: Complex<T>) -> Self::Output {
+        self * &rhs
+    }
+}
+
 impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
     type Output = Self;
 
@@ -80,6 +136,22 @@ impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
         let mut lhs = self;
         lhs.0.apply(|c| *c *= rhs);
         lhs.normalize()
+    }
+}
+
+impl<T: Scalar> Mul<Complex<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: Complex<T>) -> Self::Output {
+        self.clone() * rhs
+    }
+}
+
+impl<T: Scalar> Mul<&Complex<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn mul(self, rhs: &Complex<T>) -> Self::Output {
+        self.clone() * rhs
     }
 }
 
@@ -109,6 +181,30 @@ impl<T: Scalar> Sub<Poly<T>> for Poly<T> {
     }
 }
 
+impl<T: Scalar> Sub<&Poly<T>> for Poly<T> {
+    type Output = Poly<T>;
+
+    fn sub(self, rhs: &Poly<T>) -> Self::Output {
+        self - rhs.clone()
+    }
+}
+
+impl<T: Scalar> Sub<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn sub(self, rhs: Poly<T>) -> Self::Output {
+        self.clone() - rhs
+    }
+}
+
+impl<T: Scalar> Sub<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn sub(self, rhs: &Poly<T>) -> Self::Output {
+        self.clone() - rhs.clone()
+    }
+}
+
 impl<T: Scalar> CheckedDiv for Poly<T> {
     fn checked_div(&self, rhs: &Self) -> Option<Self> {
         self.clone().checked_div_impl(rhs)
@@ -121,6 +217,14 @@ impl<T: Scalar> CheckedRem for Poly<T> {
     }
 }
 
+impl<T: Scalar> Div<Poly<T>> for Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: Poly<T>) -> Self::Output {
+        self / &rhs
+    }
+}
+
 impl<T: Scalar> Div<&Poly<T>> for Poly<T> {
     type Output = Poly<T>;
 
@@ -129,10 +233,26 @@ impl<T: Scalar> Div<&Poly<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Div<Poly<T>> for Poly<T> {
+impl<T: Scalar> Div<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn div(self, rhs: Poly<T>) -> Self::Output {
+        self.clone() / &rhs
+    }
+}
+
+impl<T: Scalar> Div<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: &Poly<T>) -> Self::Output {
+        self.clone() / rhs
+    }
+}
+
+impl<T: Scalar> Div<Complex<T>> for Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: Complex<T>) -> Self::Output {
         self / &rhs
     }
 }
@@ -147,11 +267,19 @@ impl<T: Scalar> Div<&Complex<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Rem<&Poly<T>> for Poly<T> {
+impl<T: Scalar> Div<Complex<T>> for &Poly<T> {
     type Output = Poly<T>;
 
-    fn rem(self, rhs: &Poly<T>) -> Self::Output {
-        self.checked_rem_impl(rhs).expect("Division by zero")
+    fn div(self, rhs: Complex<T>) -> Self::Output {
+        self.clone() / rhs
+    }
+}
+
+impl<T: Scalar> Div<&Complex<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn div(self, rhs: &Complex<T>) -> Self::Output {
+        self.clone() / rhs
     }
 }
 
@@ -160,6 +288,30 @@ impl<T: Scalar> Rem<Poly<T>> for Poly<T> {
 
     fn rem(self, rhs: Poly<T>) -> Self::Output {
         self % &rhs
+    }
+}
+
+impl<T: Scalar> Rem<&Poly<T>> for Poly<T> {
+    type Output = Poly<T>;
+
+    fn rem(self, rhs: &Poly<T>) -> Self::Output {
+        self.checked_rem_impl(rhs).expect("Division by zero")
+    }
+}
+
+impl<T: Scalar> Rem<Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn rem(self, rhs: Poly<T>) -> Self::Output {
+        self.clone() % &rhs
+    }
+}
+
+impl<T: Scalar> Rem<&Poly<T>> for &Poly<T> {
+    type Output = Poly<T>;
+
+    fn rem(self, rhs: &Poly<T>) -> Self::Output {
+        self.clone() % rhs
     }
 }
 
