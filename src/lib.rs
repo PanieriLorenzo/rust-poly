@@ -10,7 +10,7 @@ pub use num;
 
 use num::{Complex, One, Zero};
 
-use anyhow::{bail, Result};
+
 
 /// A more convenient way to write `Complex::new(...)`.
 ///
@@ -537,7 +537,7 @@ impl<T: Scalar> Poly<T> {
     /// ```
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn div_rem(self, rhs: &Self) -> Option<(Self, Self)> {
+    #[must_use] pub fn div_rem(self, rhs: &Self) -> Option<(Self, Self)> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(rhs.is_normalized());
