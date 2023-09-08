@@ -25,11 +25,18 @@ use num::{Complex, One, Zero};
 ///
 /// assert_eq!(c1, c2);
 /// assert_eq!(c3, c4);
+/// assert_eq!(complex!(4.20), complex!(4.20, 0.0));
 /// ```
 #[macro_export]
 macro_rules! complex {
     () => {{
         <$crate::num::Complex<_> as $crate::num::Zero>::zero()
+    }};
+    ($re:expr) => {{
+        $crate::num::Complex::new(
+            $re,
+            <$crate::num::Complex<_> as $crate::num::Zero>::zero().im,
+        )
     }};
     ($re:expr, $im: expr) => {{
         $crate::num::Complex::new($re, $im)
