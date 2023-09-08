@@ -131,7 +131,7 @@ impl<T: Scalar> Mul<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn mul(self, rhs: Poly<T>) -> Self::Output {
-        rhs + self
+        rhs * self
     }
 }
 
@@ -139,7 +139,7 @@ impl<T: Scalar> Mul<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn mul(self, rhs: &Poly<T>) -> Self::Output {
-        self + rhs.clone()
+        self * rhs.clone()
     }
 }
 
@@ -216,7 +216,7 @@ impl<T: Scalar> Sub<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn sub(self, rhs: Poly<T>) -> Self::Output {
-        rhs + self
+        rhs - self
     }
 }
 
@@ -224,7 +224,7 @@ impl<T: Scalar> Sub<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn sub(self, rhs: &Poly<T>) -> Self::Output {
-        self + rhs.clone()
+        self - rhs.clone()
     }
 }
 
@@ -248,7 +248,7 @@ impl<T: Scalar> Div<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn div(self, rhs: Poly<T>) -> Self::Output {
-        rhs + self
+        rhs / self
     }
 }
 
@@ -256,7 +256,7 @@ impl<T: Scalar> Div<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn div(self, rhs: &Poly<T>) -> Self::Output {
-        self + rhs.clone()
+        self / rhs.clone()
     }
 }
 
@@ -319,7 +319,7 @@ impl<T: Scalar> Rem<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn rem(self, rhs: Poly<T>) -> Self::Output {
-        rhs + self
+        rhs % self
     }
 }
 
@@ -327,7 +327,7 @@ impl<T: Scalar> Rem<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn rem(self, rhs: &Poly<T>) -> Self::Output {
-        self + rhs.clone()
+        self % rhs.clone()
     }
 }
 

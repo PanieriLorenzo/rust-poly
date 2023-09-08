@@ -437,6 +437,7 @@ impl<T: Scalar> Poly<T> {
     /// assert!((expected_roots[1] - calculated_roots[1]).re.abs() < 0.000001);
     /// assert!((expected_roots[2] - calculated_roots[2]).re.abs() < 0.000001);
     /// ```
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn roots(&self) -> Vec<Complex<T>> {
         // invariant: polynomial is normalized
@@ -514,11 +515,11 @@ impl<T: Scalar> Poly<T> {
     /// assert!(poly![0.01, -0.01].almost_zero(0.1));
     /// ```
     #[must_use]
-    pub fn almost_zero(&self, tolerance: T) -> bool {
+    pub fn almost_zero(&self, tolerance: &T) -> bool {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
 
-        self.as_slice().iter().all(|c| c.norm() <= tolerance)
+        self.as_slice().iter().all(|c| c.norm() <= *tolerance)
     }
 
     /// Calculate the quotient and remainder uwing long division. More efficient than
@@ -540,7 +541,6 @@ impl<T: Scalar> Poly<T> {
     /// ```
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
-    #[must_use]
     pub fn div_rem(self, rhs: &Self) -> Result<(Self, Self)> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
@@ -597,12 +597,10 @@ impl<T: Scalar> Poly<T> {
         ))
     }
 
-    #[must_use]
     pub fn checked_div(self, rhs: &Self) -> Result<Self> {
         Ok(self.div_rem(rhs)?.0)
     }
 
-    #[must_use]
     pub fn checked_rem(self, rhs: &Self) -> Result<Self> {
         Ok(self.div_rem(rhs)?.1)
     }
