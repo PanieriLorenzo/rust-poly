@@ -263,6 +263,16 @@ impl<T: Scalar> Poly<T> {
         Some(Self::term(self[degree as usize].clone(), degree))
     }
 
+    /// Iterate over coefficients, from the least significant
+    pub fn iter(&self) -> std::slice::Iter<'_, na::Complex<T>> {
+        self.0.as_slice().iter()
+    }
+
+    /// Iterate over coefficients, from the least significant
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, na::Complex<T>> {
+        self.0.as_mut_slice().iter_mut()
+    }
+
     /// Get the nth [Chebyshev polynomial](https://en.wikipedia.org/wiki/Chebyshev_polynomials)
     ///
     /// ```
@@ -296,8 +306,10 @@ impl<T: Scalar> Poly<T> {
         Some(poly)
     }
 
-    pub fn reverse_bessel(_n: usize) -> Self {
-        todo!()
+    pub fn reverse_bessel(n: usize) -> Option<Self> {
+        let p = Poly::bessel(n)?;
+        let v: Vec<_> = p.iter().cloned().rev().collect();
+        Some(Poly::from_complex_vec(v))
     }
 
     fn len_raw(&self) -> usize {
