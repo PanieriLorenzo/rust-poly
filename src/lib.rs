@@ -823,6 +823,20 @@ mod tests {
 
     #[test]
     fn poly_bessel() {
-        let p = Poly64::bessel(2);
+        assert_eq!(Poly64::bessel(0).unwrap(), poly![1.0]);
+        assert_eq!(Poly64::bessel(1).unwrap(), poly![1.0, 1.0]);
+        assert_eq!(Poly64::bessel(2).unwrap(), poly![1.0, 3.0, 3.0]);
+        assert_eq!(Poly64::bessel(3).unwrap(), poly![1.0, 6.0, 15.0, 15.0]);
+    }
+
+    #[test]
+    fn poly_reverse_bessel() {
+        assert_eq!(Poly64::reverse_bessel(0).unwrap(), poly![1.0]);
+        assert_eq!(Poly64::reverse_bessel(1).unwrap(), poly![1.0, 1.0]);
+        assert_eq!(Poly64::reverse_bessel(2).unwrap(), poly![3.0, 3.0, 1.0]);
+        assert_eq!(
+            Poly64::reverse_bessel(3).unwrap(),
+            poly![15.0, 15.0, 6.0, 1.0]
+        );
     }
 }
