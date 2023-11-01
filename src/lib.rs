@@ -5,6 +5,7 @@
 extern crate nalgebra as na;
 use std::ops::Index;
 
+use bessel::bessel_coeff;
 use na::Normed;
 pub use num;
 
@@ -121,6 +122,7 @@ mod impl_num;
 mod indexing;
 mod linalg_util;
 pub use indexing::Get;
+mod bessel;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
@@ -261,7 +263,7 @@ impl<T: Scalar> Poly<T> {
         Some(Self::term(self[degree as usize].clone(), degree))
     }
 
-    /// Get the nth [chebyshev polynomial](https://en.wikipedia.org/wiki/Chebyshev_polynomials)
+    /// Get the nth [Chebyshev polynomial](https://en.wikipedia.org/wiki/Chebyshev_polynomials)
     ///
     /// ```
     /// use rust_poly::{poly, Poly};
@@ -281,6 +283,21 @@ impl<T: Scalar> Poly<T> {
             4 => poly![T::one(), T::zero(), -T::eight(), T::zero(), T::eight()],
             _ => poly![T::zero(), T::two()] * Self::cheby(n - 1) - Self::cheby(n - 2),
         }
+    }
+
+    /// Get the nth [Bessel polynomial](https://en.wikipedia.org/wiki/Bessel_polynomials)
+    #[must_use]
+    pub fn bessel(n: usize) -> Option<Self> {
+        let mut poly = poly![];
+        for k in 0..=n {
+            let c = T::from_f64(bessel_coeff(n, k))?;
+            poly = poly + Poly::term(complex!(c), k as u32);
+        }
+        Some(poly)
+    }
+
+    pub fn reverse_bessel(_n: usize) -> Self {
+        todo!()
     }
 
     fn len_raw(&self) -> usize {

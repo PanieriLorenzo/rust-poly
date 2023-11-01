@@ -1,7 +1,7 @@
 use duplicate::duplicate_item;
 use nalgebra::RealField;
 
-use num::Num;
+use num::{FromPrimitive, Num};
 use std::ops::{AddAssign, DivAssign, MulAssign, Neg, RemAssign, SubAssign};
 
 use numeric_constant_traits::{Eight, Four, Three, Two};
@@ -23,6 +23,7 @@ pub trait Scalar:
     + Three
     + Four
     + Eight
+    + FromPrimitive
 {
 }
 
