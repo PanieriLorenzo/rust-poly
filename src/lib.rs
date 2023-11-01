@@ -239,7 +239,7 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(Poly::term(Complex::one(), 3), poly![0.0, 0.0, 0.0, 1.0]);
     /// ```
     pub fn term(coeff: Complex<T>, degree: u32) -> Self {
-        Self::line(Complex::zero(), coeff).pow(degree)
+        Self::line(Complex::zero(), complex!(T::one())).pow(degree) * coeff
     }
 
     /// Get the nth term of the polynomial as a new polynomial
@@ -301,7 +301,9 @@ impl<T: Scalar> Poly<T> {
         let mut poly = poly![];
         for k in 0..=n {
             let c = T::from_f64(bessel_coeff(n, k))?;
-            poly = poly + Poly::term(complex!(c), k as u32);
+            let term = Poly::term(complex!(c), k as u32);
+            dbg!(&term);
+            poly = poly + term
         }
         Some(poly)
     }
@@ -810,5 +812,17 @@ mod tests {
         let p = Poly::<f64>::line(Complex::<f64>::new(1.0, 0.0), Complex::<f64>::new(2.0, 0.0));
         let e = poly!(1.0, 2.0);
         assert_eq!(p, e);
+    }
+
+    #[test]
+    fn poly_term() {
+        let p = Poly64::term(complex!(2.0), 2);
+        let e = poly!(0.0, 0.0, 2.0);
+        assert_eq!(p, e);
+    }
+
+    #[test]
+    fn poly_bessel() {
+        let p = Poly64::bessel(2);
     }
 }
