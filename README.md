@@ -1,6 +1,6 @@
 
 # rust-poly
-![Crates.io](https://img.shields.io/crates/v/rust-poly)
+<img alt="Crates.io" src="https://img.shields.io/crates/v/rust-poly?link=https%3A%2F%2Fcrates.io%2Fcrates%2Frust-poly">
 
 Numeric manipulation of real and complex polynomials.
 
