@@ -1,4 +1,7 @@
+
 # rust-poly
+![Crates.io](https://img.shields.io/crates/v/rust-poly)
+
 Numeric manipulation of real and complex polynomials.
 
 > Note: this crate is still in development and might change in the future.
