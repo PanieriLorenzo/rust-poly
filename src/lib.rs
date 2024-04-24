@@ -596,6 +596,7 @@ impl<T: Scalar> Poly<T> {
         }
         if rhs_len == 1 {
             return Some((
+                // TODO: should use checked operations
                 Self(self.0 / rhs.0[rhs.len_raw() - 1].clone()),
                 Self::zero(),
             ));
@@ -612,6 +613,7 @@ impl<T: Scalar> Poly<T> {
             .into();
         // TODO: useless clone of scale, it should be borrowed, but dvector does
         //       not implement Div<&_>
+        // TODO: should use checked operations
         let rhs: na::DVector<_> = rhs / scale.clone();
         let mut lhs: na::DVector<_> = self.0.clone();
         let mut i = len_delta as isize;

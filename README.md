@@ -10,15 +10,31 @@ Basic Goals:
 - [x] addition, subtraction and multiplication of complex and real univariate polynomials
 - [x] long division of complex and real univariate polynomials
 - [x] finding complex roots of polynomials
-- [x] generate chebyshev polynomials
 - [ ] indexing, slicing and iterating
+    - [x] indexing by term
+    - [ ] indexing by coefficient
+    - [x] iterating by coefficient
+    - [ ] iterating by term
+    - [ ] slicing coefficients by range
+    - [ ] slicing terms by range
+    - [ ] IntoIterator traits
 - [x] from/into traits
 
 Future Goals:
+- [ ] Generating important polynomial sequences
+    - [x] Chebyshev type 1 polynomials
+    - [ ] Chebyshev type 2 polynomials
+    - [x] Bessel polynomials
+    - [x] Reverse Bessel polynomials
+    - [ ] Hermite polynomials
+    - [ ] Lagrange polynomials
+    - more to come...
 - [ ] Serde integration
 - [ ] Random integration
 - [ ] Real polynomial type
+    - [ ] Real polynomial factoring
 - [ ] Rational functions
+    - [ ] Simplification
 
 ## Licensing
 
