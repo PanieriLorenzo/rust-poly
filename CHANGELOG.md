@@ -2,13 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.1.13] - 2023-11-01
 
-### ⚙️ Miscellaneous Tasks
+### Changes
+- Add Bessel polynomials
+- Add revere bessel polynomials
 
-- Update itertools to 0.12.1
-- Updated TODOs
-- Added commitlint to pre-commit hooks
+### Bug Fixes
+- `Poly::term()` having incorrect coefficients
 
 ## [0.1.12] - 2023-09-08
 
