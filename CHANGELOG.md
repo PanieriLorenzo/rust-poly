@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2024-05-04
+
+### 🚀 Features
+
+- Impl `IntoIterator` for `&Poly` and `&mut Poly`
+
+### 🐛 Bug Fixes
+
+- [**breaking**] Clippy warnings
+
+### 📚 Documentation
+
+- Added developer documentation
+
+### ⚙️ Miscellaneous Tasks
+
+- Update itertools to 0.12.1
+- Updated TODOs
+- Added commitlint to pre-commit hooks
+- Added git-cliff dev tool
+- Added old changes to CHANGELOG.md
+
 ## [0.1.13] - 2023-11-01
 
 ### Changes
