@@ -5,7 +5,7 @@
 extern crate nalgebra as na;
 use std::ops::Index;
 
-use bessel::bessel_coeff;
+use bessel::coeff;
 use na::Normed;
 pub use num;
 
@@ -123,6 +123,8 @@ mod indexing;
 mod linalg_util;
 pub use indexing::Get;
 mod bessel;
+mod casting_util;
+use casting_util::usize_to_u32;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
@@ -300,18 +302,19 @@ impl<T: Scalar> Poly<T> {
     pub fn bessel(n: usize) -> Option<Self> {
         let mut poly = poly![];
         for k in 0..=n {
-            let c = T::from_f64(bessel_coeff(n, k))?;
-            let term = Poly::term(complex!(c), k as u32);
+            let c = T::from_f64(coeff(n, k))?;
+            let term = Self::term(complex!(c), usize_to_u32(k));
             dbg!(&term);
-            poly = poly + term
+            poly = poly + term;
         }
         Some(poly)
     }
 
+    #[must_use]
     pub fn reverse_bessel(n: usize) -> Option<Self> {
-        let p = Poly::bessel(n)?;
+        let p = Self::bessel(n)?;
         let v: Vec<_> = p.iter().cloned().rev().collect();
-        Some(Poly::from_complex_vec(v))
+        Some(Self::from_complex_vec(v))
     }
 
     fn len_raw(&self) -> usize {

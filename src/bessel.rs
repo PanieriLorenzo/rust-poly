@@ -2,10 +2,12 @@
 
 use num::{BigUint, Num};
 
+use crate::casting_util::{usize_to_f64, usize_to_i32};
+
+#[allow(clippy::too_many_lines)]
 fn factorial_lut(n: usize) -> BigUint {
     let s = match n {
-        0 => "1",
-        1 => "1",
+        0 | 1 => "1",
         2 => "2",
         3 => "6",
         4 => "24",
@@ -142,29 +144,31 @@ fn factorial(n: usize) -> BigUint {
     if n <= 128 {
         return factorial_lut(n);
     }
-    return BigUint::from(n) * factorial(n - 1);
+    BigUint::from(n) * factorial(n - 1)
 }
 
-fn biguint_to_f64(x: BigUint) -> f64 {
+#[allow(clippy::cast_precision_loss)]
+fn biguint_to_f64(x: &BigUint) -> f64 {
     let mut x_f: f64 = 0.0;
     for (i, d) in x.to_u64_digits().iter().enumerate() {
-        x_f += (*d as f64) * 2.0f64.powi(i as i32 * 64);
+        x_f += (*d as f64) * 2.0f64.powi(usize_to_i32(i) * 64);
     }
     x_f
 }
 
 /// The coefficient for the k-th term of the n-th bessel polynomial
-pub fn bessel_coeff(n: usize, k: usize) -> f64 {
+pub fn coeff(n: usize, k: usize) -> f64 {
     // NOTE: in theory f64 can do factorials up to 170!, but if we do it with
     //       BigUint, as we divide by factorial(n - k), we get a smaller number
     //       out, so this way we can squeeze a few more terms before f64
     //       goes to infinity than if we computed the factorials with f64 directly
     let aux_a = factorial(n + k) / factorial(n - k) / factorial(k);
-    let aux_b = 1.0 / 2.0f64.powf(k as f64);
-    biguint_to_f64(aux_a) * aux_b
+    let aux_b = 1.0 / (usize_to_f64(k)).exp2();
+    biguint_to_f64(&aux_a) * aux_b
 }
 
 #[cfg(test)]
+#[allow(clippy::pedantic)]
 mod test {
     use num::{BigUint, Num};
 
@@ -183,6 +187,6 @@ mod test {
     fn test_biguint_to_f64() {
         let i = 1u128 << 90;
         let x = BigUint::from(i);
-        assert_eq!(i as f64, biguint_to_f64(x))
+        assert_eq!(i as f64, biguint_to_f64(&x));
     }
 }

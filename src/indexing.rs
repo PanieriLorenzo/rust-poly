@@ -53,7 +53,7 @@ mod test {
 
         // out of bounds
         assert!(p.get(4isize).is_none());
-        assert!(p.get(-5isize).is_none())
+        assert!(p.get(-5isize).is_none());
     }
 
     #[test]
