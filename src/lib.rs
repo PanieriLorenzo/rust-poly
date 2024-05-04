@@ -748,6 +748,22 @@ impl<T: Scalar> From<Poly<T>> for na::DVector<Complex<T>> {
     }
 }
 
+impl<'a, T: Scalar> IntoIterator for &'a Poly<T> {
+    type IntoIter = std::slice::Iter<'a, na::Complex<T>>;
+    type Item = &'a na::Complex<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, T: Scalar> IntoIterator for &'a mut Poly<T> {
+    type IntoIter = std::slice::IterMut<'a, na::Complex<T>>;
+    type Item = &'a mut na::Complex<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
