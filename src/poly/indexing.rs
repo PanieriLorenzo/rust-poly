@@ -1,6 +1,8 @@
+use std::ops::Index;
+
 use super::{Complex, Poly, Scalar};
 
-pub trait Get<I, T: Scalar> {
+pub trait Get<I, T> {
     fn get(&self, idx: I) -> Option<Complex<T>>;
 }
 
@@ -32,6 +34,15 @@ impl<T: Scalar> Get<isize, T> for Poly<T> {
         }
 
         self.get(idx as usize)
+    }
+}
+
+// TODO: should be defined in terms of Get or vice-versa
+impl<T: Scalar> Index<usize> for Poly<T> {
+    type Output = Complex<T>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
     }
 }
 

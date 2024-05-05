@@ -28,7 +28,11 @@ Future Goals:
     - [x] Reverse Bessel polynomials
     - [ ] Hermite polynomials
     - [ ] Lagrange polynomials
+    - [ ] Bezier polynomials
     - more to come...
+- [ ] transformations
+  - [ ] Fourier Transform
+  - [ ] Laplace Transform
 - [ ] Serde integration
 - [ ] Random integration
 - [ ] Real polynomial type

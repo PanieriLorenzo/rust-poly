@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 use num::{Complex, Zero};
 
-use crate::Scalar;
+use crate::{FloatScalar, Scalar};
 
 // neg operator for Complex, as it does not implement std::ops::Neg
 pub fn c_neg<T: Scalar>(x: Complex<T>) -> Complex<T> {
@@ -13,7 +13,7 @@ pub fn c_neg<T: Scalar>(x: Complex<T>) -> Complex<T> {
 
 // sort a vector of complex numbers  in place by their real component first,
 // then their imaginary component
-pub fn complex_sort_mut<T: Scalar>(v: &mut na::DVector<Complex<T>>) {
+pub fn complex_sort_mut<T: Scalar + PartialOrd>(v: &mut na::DVector<Complex<T>>) {
     v.as_mut_slice().sort_by(|a, b| {
         let re_ord = a.re.partial_cmp(&b.re).unwrap_or(Ordering::Equal);
         if re_ord != Ordering::Equal {
