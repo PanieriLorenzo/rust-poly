@@ -127,7 +127,7 @@ mod casting_util;
 use casting_util::usize_to_u32;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Poly<T: Scalar>(na::DVector<Complex<T>>);
+pub struct Poly<T>(na::DVector<Complex<T>>);
 
 pub type Poly32 = Poly<f32>;
 pub type Poly64 = Poly<f64>;
