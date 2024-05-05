@@ -1,9 +1,9 @@
 use crate::{
     casting_util::{usize_to_scalar, usize_to_u32},
     util::luts::factorial_lut,
-    Poly, Scalar, ScalarOps,
+    Poly, Scalar,
 };
-use num::{BigUint, FromPrimitive, Num, Zero};
+use num::{BigUint, FromPrimitive, Zero};
 
 use crate::casting_util::{usize_to_f64, usize_to_i32};
 

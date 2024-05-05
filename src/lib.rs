@@ -3,12 +3,8 @@
 #![warn(clippy::nursery)]
 
 extern crate nalgebra as na;
-use std::ops::Index;
 
-use na::Normed;
 pub use num;
-
-use num::{Complex, One, Zero};
 
 /// A more convenient way to write `Complex::new(...)`.
 ///
@@ -113,14 +109,12 @@ macro_rules! poly {
 }
 
 mod scalar;
-pub use scalar::{FloatScalar, Scalar, ScalarOps};
+pub use scalar::{Scalar, ScalarOps};
 
-mod complex_util;
-use complex_util::{c_neg, complex_sort_mut};
 mod bessel;
 mod casting_util;
+mod complex_util;
 mod linalg_util;
-use casting_util::usize_to_u32;
 mod poly;
 // TODO: wildcard bad
 pub use poly::*;
@@ -132,6 +126,8 @@ pub type Poly64 = Poly<f64>;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::na::Complex;
+    use num::{One, Zero};
 
     #[test]
     fn macro_complex() {

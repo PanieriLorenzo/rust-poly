@@ -2,13 +2,11 @@
 
 use itertools::Itertools;
 use num::{traits::CheckedRem, CheckedDiv, Complex, One, Zero};
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
-};
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
 
-use crate::{linalg_util::convolve_1d, scalar::ScalarOps, Poly, Scalar};
+use crate::{linalg_util::convolve_1d, Poly, Scalar, ScalarOps};
 
 impl<T: ScalarOps> Poly<T> {
     /// Calculate the quotient and remainder uwing long division. More efficient than

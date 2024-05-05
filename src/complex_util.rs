@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 use num::{Complex, Zero};
 
-use crate::{FloatScalar, Scalar};
+use crate::Scalar;
 
 // neg operator for Complex, as it does not implement std::ops::Neg
 pub fn c_neg<T: Scalar>(x: Complex<T>) -> Complex<T> {

@@ -1,4 +1,4 @@
-use nalgebra::{ComplexField, RealField};
+use nalgebra::RealField;
 use num::{Complex, Float, One, Zero};
 
 use crate::{
