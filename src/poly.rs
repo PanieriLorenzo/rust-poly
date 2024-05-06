@@ -6,6 +6,7 @@ use crate::{
     Scalar, ScalarOps,
 };
 
+mod calculus;
 mod conversions;
 mod impl_num;
 mod indexing;
@@ -138,6 +139,27 @@ impl<T: Scalar> Poly<T> {
             return None;
         }
         Some(Self::term(self[degree as usize].clone(), degree))
+    }
+
+    /// Iterate over the terms of a polynomial
+    ///
+    /// ```
+    /// # use rust_poly::{poly, Poly};
+    ///
+    /// let p = poly![1.0, 2.0, 3.0];
+    /// assert_eq!(p, p.terms().sum::<Poly<_>>());
+    /// ```
+    pub fn terms(
+        &self,
+    ) -> std::iter::Map<std::ops::Range<usize>, impl FnMut(usize) -> Poly<T> + '_> {
+        debug_assert!(self.is_normalized());
+        (0..self.len_raw()).map(|i| {
+            self.get_term(
+                i.try_into()
+                    .expect("degrees above u32::MAX are not supported"),
+            )
+            .expect("terms are within range len_raw, this should never fail")
+        })
     }
 }
 
