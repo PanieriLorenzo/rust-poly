@@ -262,6 +262,18 @@ impl<T: ScalarOps> Poly<T> {
     }
 }
 
+impl<T: ScalarOps + PartialOrd> Poly<T> {
+    /// Translate along x-axis (or x-plane) and y-axis (or y-plane).
+    ///
+    /// Using complex coordinates means you'll effectively be translating in
+    /// 4D space.
+    pub fn translate(mut self, x: Complex<T>, y: Complex<T>) -> Self {
+        self = self.compose(Poly::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
+        self.0[0] += y;
+        self
+    }
+}
+
 impl<T: Scalar + RealField> Poly<T> {
     /// Find the roots of a polynomial numerically.
     ///
@@ -324,5 +336,17 @@ impl<T: Scalar + Float> Poly<T> {
         debug_assert!(self.is_normalized());
 
         self.as_slice().iter().all(|c| c.norm() <= *tolerance)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn translate() {
+        let p = poly![1.0, 2.0, 3.0];
+        assert_eq!(
+            p.translate(complex!(1.0), complex!(2.0)),
+            poly![4.0, -4.0, 3.0]
+        );
     }
 }
