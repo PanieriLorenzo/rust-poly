@@ -101,7 +101,7 @@ macro_rules! poly {
         $crate::Poly::from(vec![$elem; $n])
     }};
     ($(($re:expr, $im:expr)),+ $(,)?) => {{
-        $crate::Poly::from(vec![$($crate::complex!($re, $im)),*])
+        $crate::Poly::from_complex_vec(vec![$($crate::complex!($re, $im)),*])
     }};
     ($($elems:expr),+ $(,)?) => {{
         $crate::Poly::from(vec![$($elems),*])
