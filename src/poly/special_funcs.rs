@@ -1,7 +1,7 @@
 use crate::{
     casting_util::{usize_to_scalar, usize_to_u32},
     util::luts::factorial_lut,
-    Poly, Scalar,
+    Poly, Scalar, ScalarOps,
 };
 use num::{BigUint, FromPrimitive, Zero};
 
@@ -70,6 +70,23 @@ impl<T: Scalar + FromPrimitive> Poly<T> {
     }
 }
 
+impl<T: ScalarOps> Poly<T> {
+    #[must_use]
+    pub fn legendre(n: usize) -> Self {
+        match n {
+            0 => poly![T::one()],
+            1 => poly![T::zero(), T::one()],
+            _ => {
+                let p1 = Self::legendre(n - 1);
+                let p2 = Self::legendre(n - 2);
+                let ns = usize_to_scalar::<T>(n);
+                poly![T::zero(), usize_to_scalar::<T>(2 * n - 1) / ns.clone()] * p1
+                    + poly![(T::one() - ns.clone()) / ns] * p2
+            }
+        }
+    }
+}
+
 fn factorial(n: usize) -> BigUint {
     if n <= 128 {
         return factorial_lut(n);
@@ -102,7 +119,7 @@ pub fn coeff(n: usize, k: usize) -> f64 {
 mod test {
     use num::{BigUint, Num};
 
-    use crate::poly::special_funcs::biguint_to_f64;
+    use crate::{poly::special_funcs::biguint_to_f64, Poly};
 
     use super::factorial;
 
@@ -118,5 +135,11 @@ mod test {
         let i = 1u128 << 90;
         let x = BigUint::from(i);
         assert_eq!(i as f64, biguint_to_f64(&x));
+    }
+
+    #[test]
+    fn legendre() {
+        let p = Poly::<f32>::legendre(3);
+        assert_eq!(p, poly![0.0, -1.5, 0.0, 2.5]);
     }
 }
