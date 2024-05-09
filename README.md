@@ -12,12 +12,10 @@ Basic Goals:
 - [x] finding complex roots of polynomials
 - [ ] indexing, slicing and iterating
     - [x] indexing by term
-    - [ ] indexing by coefficient
     - [x] iterating by coefficient
-    - [ ] iterating by term
-    - [ ] slicing coefficients by range
+    - [x] iterating by term
     - [ ] slicing terms by range
-    - [ ] IntoIterator traits
+    - [x] IntoIterator traits
 - [x] from/into traits
 
 Future Goals:
@@ -29,6 +27,7 @@ Future Goals:
     - [ ] Hermite polynomials
     - [ ] Lagrange polynomials
     - [ ] Bezier polynomials
+    - [ ] Legendre polynomials
     - more to come...
 - [ ] Serde integration
 - [ ] Random integration
@@ -36,6 +35,8 @@ Future Goals:
     - [ ] Real polynomial factoring
 - [ ] Rational functions
     - [ ] Simplification
+- [ ] Multivariate polynomials
+- [ ] Interpolation
 
 ## Development
 
