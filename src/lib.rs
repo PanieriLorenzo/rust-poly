@@ -56,7 +56,7 @@ macro_rules! complex {
 ///
 /// let p1: Poly<f32> = poly![];
 /// let p2 = poly![1.0f32, 2.0, 3.0];
-/// let p3 = poly![Complex::from(1.0), Complex::from(2.0), Complex::from(3.0)];
+/// let p3 = Poly::from_complex_vec(vec![Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)]);
 ///
 /// assert_eq!(p1, Poly::zero());
 /// assert_eq!(p2, p3);
@@ -68,26 +68,11 @@ macro_rules! complex {
 /// # use rust_poly::{poly, Poly};
 /// use num::Complex;
 ///
-/// let p1 = poly![2.0; 16];
-/// let p2 = poly![Complex::from(2.0); 16];
-///
+/// let p1 = poly![2.0; 4];
+/// let p2 = poly![(2.0, 0.0); 4];
+/// let p3 = poly![2.0, 2.0, 2.0, 2.0];
 /// assert_eq!(p1, p2);
-/// ```
-///
-/// You can also express complex numbers as a tuple of two scalars, mixing and matching
-/// this syntax with the other syntax rules:
-/// ```
-/// use rust_poly::{poly, Poly};
-/// use num::Complex;
-///
-/// let p1 = poly![(1.0, 2.0), (1.0, 2.0)];
-/// let p2 = poly![(1.0, 2.0); 2];
-/// let p3 = poly![Complex::new(1.0, 2.0); 2];
-/// let p4 = poly![Complex::new(1.0, 2.0), Complex::new(1.0, 2.0)];
-///
-/// assert_eq!(p1, p2);
-/// assert_eq!(p1, p3);
-/// assert_eq!(p1, p4);
+/// assert_eq!(p2, p3);
 /// ```
 #[macro_export]
 macro_rules! poly {
@@ -98,13 +83,13 @@ macro_rules! poly {
         $crate::Poly::from_complex_vec(vec![$crate::complex!($re, $im); $n])
     }};
     ($elem:expr; $n:expr) => {{
-        $crate::Poly::from(vec![$elem; $n])
+        $crate::Poly::from_real_vec(vec![$elem; $n])
     }};
     ($(($re:expr, $im:expr)),+ $(,)?) => {{
         $crate::Poly::from_complex_vec(vec![$($crate::complex!($re, $im)),*])
     }};
     ($($elems:expr),+ $(,)?) => {{
-        $crate::Poly::from(vec![$($elems),*])
+        $crate::Poly::from_real_vec(vec![$($elems),*])
     }};
 }
 

@@ -101,17 +101,20 @@ impl<T: Scalar> From<Vec<Complex<T>>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> From<&[T]> for Poly<T> {
-    fn from(value: &[T]) -> Self {
-        Self::from_real_slice(value)
-    }
-}
+// TODO: these are ambiguous and lead to making a `Poly<Complex<Complex<T>>>`
+//       but making a `Real` trait would preventing making blanket impls for
+//       numeric types.
+// impl<T: Scalar> From<&[T]> for Poly<T> {
+//     fn from(value: &[T]) -> Self {
+//         Self::from_real_slice(value)
+//     }
+// }
 
-impl<T: Scalar> From<Vec<T>> for Poly<T> {
-    fn from(value: Vec<T>) -> Self {
-        Self::from_real_vec(value)
-    }
-}
+// impl<T: Scalar> From<Vec<T>> for Poly<T> {
+//     fn from(value: Vec<T>) -> Self {
+//         Self::from_real_vec(value)
+//     }
+// }
 
 impl<T: Scalar> From<Poly<T>> for *const Complex<T> {
     fn from(val: Poly<T>) -> Self {

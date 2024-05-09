@@ -11,11 +11,10 @@ Project Description
 
 ### Bugs
 
-- [ ] `From` traits are ambiguous, because `Complex<T: Scalar>` could be any of `Complex<T>`, `Complex<Complex<T>>`, `Complex<Complex<Complex<T>>>` etc... Maybe make `From` more specific to concrete data-types? This also affects the `poly` macro.
 
 ### In Progress
 
 
 ### Done ✓
 
-
+- [x] `From` traits are ambiguous, because `Complex<T: Scalar>` could be any of `Complex<T>`, `Complex<Complex<T>>`, `Complex<Complex<Complex<T>>>` etc... Maybe make `From` more specific to concrete data-types? This also affects the `poly` macro.
