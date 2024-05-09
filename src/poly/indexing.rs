@@ -1,4 +1,9 @@
-use std::ops::{Index, Range};
+use std::ops::{
+    Bound, Index, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo,
+    RangeToInclusive,
+};
+
+use itertools::Itertools;
 
 use super::{Complex, Poly, Scalar};
 
@@ -13,6 +18,29 @@ pub trait Get<I, T>: sealed::Sealed {
 }
 
 impl<T> sealed::Sealed for Poly<T> {}
+
+use super::*;
+
+impl<T: Scalar> Poly<T> {
+    /// Implementation for all range-based indexing (because Rust is super annoying
+    /// around the different range iterators, see [#3550](https://github.com/rust-lang/rfcs/pull/3550))
+    fn get_range_inner(&self, idx_start: Bound<&usize>, idx_end: Bound<&usize>) -> Poly<T> {
+        debug_assert!(self.is_normalized());
+
+        let start = match idx_start {
+            Bound::Included(x) => *x,
+            Bound::Excluded(_) => panic!("range start can't be exclusive"),
+            Bound::Unbounded => 0,
+        };
+        let end = match idx_end {
+            Bound::Included(x) => *x + 1,
+            Bound::Excluded(x) => *x,
+            Bound::Unbounded => self.len_raw(),
+        };
+        let coeffs = &self.as_slice()[start..end];
+        Poly::from_complex_slice(coeffs).shift_up(start)
+    }
+}
 
 impl<T: Scalar> Get<usize, T> for Poly<T> {
     type Output = Complex<T>;
@@ -52,10 +80,31 @@ impl<T: Scalar> Get<isize, T> for Poly<T> {
 }
 
 // impl<T: Scalar> Get<Range<usize>, T> for Poly<T> {
-//     fn get(&self, idx: Range<usize>) -> Option<Complex<T>> {
-//         Some(self.terms().take(idx.end).skip(idx.start).sum())
+//     type Output = Poly<T>;
+
+//     fn get(&self, idx: Range<usize>) -> Option<Poly<T>> {
+//
 //     }
 // }
+
+macro_rules! impl_get_for_bounds {
+    ($r:ty) => {
+        impl<T: Scalar> Get<$r, T> for Poly<T> {
+            type Output = Poly<T>;
+
+            fn get(&self, idx: $r) -> Option<Poly<T>> {
+                Some(self.get_range_inner(idx.start_bound(), idx.end_bound()))
+            }
+        }
+    };
+}
+
+impl_get_for_bounds!(Range<usize>);
+impl_get_for_bounds!(RangeInclusive<usize>);
+impl_get_for_bounds!(RangeFrom<usize>);
+impl_get_for_bounds!(RangeTo<usize>);
+impl_get_for_bounds!(RangeToInclusive<usize>);
+impl_get_for_bounds!(RangeFull);
 
 // TODO: should be defined in terms of Get or vice-versa
 impl<T: Scalar> Index<usize> for Poly<T> {
@@ -96,5 +145,23 @@ mod test {
 
         // out of bounds
         assert!(p.get(4usize).is_none());
+    }
+
+    #[test]
+    fn get_range() {
+        let p = poly![1.0, 2.0, 3.0, 4.0];
+        assert_eq!(p.get(1..3), Some(poly![0.0, 2.0, 3.0]));
+    }
+
+    #[test]
+    fn get_range_inclusive() {
+        let p = poly![1.0, 2.0, 3.0, 4.0, 5.0];
+        assert_eq!(p.get(2..=4), p.get(2..5));
+    }
+
+    #[test]
+    fn get_range_full() {
+        let p = poly![1.0, 2.0, 3.0];
+        assert_eq!(p.get(..), Some(p));
     }
 }
