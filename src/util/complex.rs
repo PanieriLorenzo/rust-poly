@@ -28,10 +28,10 @@ pub fn complex_fmt<T: std::fmt::Display + Zero + One + PartialEq>(c: &Complex<T>
     let r = &c.re;
     let i = &c.im;
     if i.is_zero() {
-        format!("{}", r)
+        format!("{r}")
     } else if i.is_one() {
-        format!("({}+i)", r)
+        format!("({r}+i)")
     } else {
-        format!("({}+i{})", r, i)
+        format!("({r}+i{i})")
     }
 }

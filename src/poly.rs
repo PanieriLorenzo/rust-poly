@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use nalgebra::{DVector, RealField};
+use nalgebra::RealField;
 use num::{Complex, Float, One, Zero};
 
 use crate::{
@@ -25,10 +25,11 @@ impl<T: Scalar> Poly<T> {
     /// let p = poly![1.0, 2.0, 3.0];
     /// assert_eq!(p.shift_up(2), poly![0.0, 0.0, 1.0, 2.0, 3.0]);
     /// ```
-    pub fn shift_up(&self, n: usize) -> Poly<T> {
+    #[must_use]
+    pub fn shift_up(&self, n: usize) -> Self {
         let mut v = vec![Complex::<T>::zero(); n];
         v.extend_from_slice(self.as_slice());
-        Poly::from_complex_vec(v)
+        Self::from_complex_vec(v)
     }
 
     /// # Examples
@@ -37,8 +38,9 @@ impl<T: Scalar> Poly<T> {
     /// let p = poly![1.0, 2.0, 3.0, 4.0];
     /// assert_eq!(p.shift_down(2), poly![3.0, 4.0]);
     /// ```
-    pub fn shift_down(&self, n: usize) -> Poly<T> {
-        Poly::from_complex_slice(&self.as_slice()[n..])
+    #[must_use]
+    pub fn shift_down(&self, n: usize) -> Self {
+        Self::from_complex_slice(&self.as_slice()[n..])
     }
 }
 
@@ -175,9 +177,7 @@ impl<T: Scalar> Poly<T> {
     /// let p = poly![1.0, 2.0, 3.0];
     /// assert_eq!(p, p.terms().sum::<Poly<_>>());
     /// ```
-    pub fn terms(
-        &self,
-    ) -> std::iter::Map<std::ops::Range<usize>, impl FnMut(usize) -> Poly<T> + '_> {
+    pub fn terms(&self) -> std::iter::Map<std::ops::Range<usize>, impl FnMut(usize) -> Self + '_> {
         debug_assert!(self.is_normalized());
         (0..self.len_raw()).map(|i| {
             self.get_term(
@@ -294,7 +294,7 @@ impl<T: ScalarOps + PartialOrd> Poly<T> {
     /// Using complex coordinates means you'll effectively be translating in
     /// 4D space.
     pub fn translate(mut self, x: Complex<T>, y: Complex<T>) -> Self {
-        self = self.compose(Poly::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
+        self = self.compose(Self::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
         self.0[0] += y;
         self
     }
@@ -321,7 +321,6 @@ impl<T: Scalar + RealField> Poly<T> {
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn roots(&self) -> Vec<Complex<T>> {
-        // invariant: polynomial is normalized
         debug_assert!(self.is_normalized());
 
         if self.len_raw() < 2 {

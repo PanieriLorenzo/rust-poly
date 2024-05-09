@@ -1,5 +1,5 @@
 use itertools::chain;
-use num::{complex::ComplexFloat, Complex, Zero};
+use num::{Complex, Zero};
 
 use crate::{util::casting::usize_to_scalar, Poly, Scalar};
 

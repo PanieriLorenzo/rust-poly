@@ -3,8 +3,6 @@ use std::ops::{
     RangeToInclusive,
 };
 
-use itertools::Itertools;
-
 use super::{Complex, Poly, Scalar};
 
 mod sealed {
@@ -20,7 +18,7 @@ impl<T> sealed::Sealed for Poly<T> {}
 impl<T: Scalar> Poly<T> {
     /// Implementation for all range-based indexing (because Rust is super annoying
     /// around the different range iterators, see [#3550](https://github.com/rust-lang/rfcs/pull/3550))
-    fn get_range_inner(&self, idx_start: Bound<&usize>, idx_end: Bound<&usize>) -> Option<Poly<T>> {
+    fn get_range_inner(&self, idx_start: Bound<&usize>, idx_end: Bound<&usize>) -> Option<Self> {
         debug_assert!(self.is_normalized());
 
         let start = match idx_start {
@@ -37,12 +35,12 @@ impl<T: Scalar> Poly<T> {
             return None;
         }
         let coeffs = &self.as_slice()[start..end];
-        Some(Poly::from_complex_slice(coeffs).shift_up(start))
+        Some(Self::from_complex_slice(coeffs).shift_up(start))
     }
 }
 
 impl<T: Scalar> Get<usize, T> for Poly<T> {
-    fn get(&self, idx: usize) -> Option<Poly<T>> {
+    fn get(&self, idx: usize) -> Option<Self> {
         debug_assert!(self.is_normalized());
         self.terms().nth(idx)
     }
@@ -51,7 +49,7 @@ impl<T: Scalar> Get<usize, T> for Poly<T> {
 impl<T: Scalar> Get<isize, T> for Poly<T> {
     #[allow(clippy::cast_possible_wrap)]
     #[allow(clippy::cast_sign_loss)]
-    fn get(&self, idx: isize) -> Option<Poly<T>> {
+    fn get(&self, idx: isize) -> Option<Self> {
         debug_assert!(self.is_normalized());
 
         if idx >= 0 {
@@ -105,8 +103,6 @@ impl<T: Scalar> Index<usize> for Poly<T> {
 
 #[cfg(test)]
 mod test {
-    use num::{complex::Complex64, One, Zero};
-    use numeric_constant_traits::{Three, Two};
 
     use super::*;
 
