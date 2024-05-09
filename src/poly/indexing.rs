@@ -1,12 +1,22 @@
-use std::ops::Index;
+use std::ops::{Index, Range};
 
 use super::{Complex, Poly, Scalar};
 
-pub trait Get<I, T> {
-    fn get(&self, idx: I) -> Option<Complex<T>>;
+mod sealed {
+    pub trait Sealed {}
 }
 
+pub trait Get<I, T>: sealed::Sealed {
+    type Output;
+
+    fn get(&self, idx: I) -> Option<Self::Output>;
+}
+
+impl<T> sealed::Sealed for Poly<T> {}
+
 impl<T: Scalar> Get<usize, T> for Poly<T> {
+    type Output = Complex<T>;
+
     fn get(&self, idx: usize) -> Option<Complex<T>> {
         debug_assert!(self.is_normalized());
 
@@ -19,9 +29,13 @@ impl<T: Scalar> Get<usize, T> for Poly<T> {
 }
 
 impl<T: Scalar> Get<isize, T> for Poly<T> {
+    type Output = Complex<T>;
+
     #[allow(clippy::cast_possible_wrap)]
     #[allow(clippy::cast_sign_loss)]
     fn get(&self, idx: isize) -> Option<Complex<T>> {
+        debug_assert!(self.is_normalized());
+
         if idx >= 0 {
             return self.get(idx as usize);
         }
@@ -36,6 +50,12 @@ impl<T: Scalar> Get<isize, T> for Poly<T> {
         self.get(idx as usize)
     }
 }
+
+// impl<T: Scalar> Get<Range<usize>, T> for Poly<T> {
+//     fn get(&self, idx: Range<usize>) -> Option<Complex<T>> {
+//         Some(self.terms().take(idx.end).skip(idx.start).sum())
+//     }
+// }
 
 // TODO: should be defined in terms of Get or vice-versa
 impl<T: Scalar> Index<usize> for Poly<T> {
