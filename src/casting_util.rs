@@ -14,6 +14,7 @@ pub fn usize_to_f64(x: usize) -> f64 {
     cast(x).unwrap_or(f64::INFINITY)
 }
 
+/// Convert usize to Scalar without any primitive casting
 pub fn usize_to_scalar<T: Scalar>(x: usize) -> T {
     match x {
         0 => T::zero(),
