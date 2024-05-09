@@ -4,7 +4,7 @@ use nalgebra::{DVector, RealField};
 use num::{Complex, Float, One, Zero};
 
 use crate::{
-    complex_util::{c_neg, complex_fmt, complex_sort_mut},
+    util::complex::{c_neg, complex_fmt, complex_sort_mut},
     Scalar, ScalarOps,
 };
 

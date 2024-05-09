@@ -1,4 +1,4 @@
-use crate::{complex_util::c_neg, Scalar, ScalarOps};
+use crate::{util::complex::c_neg, Scalar, ScalarOps};
 
 use super::Poly;
 use num::{Complex, One, Zero};

@@ -96,10 +96,6 @@ macro_rules! poly {
 mod scalar;
 pub use scalar::{Scalar, ScalarOps};
 
-mod bessel;
-mod casting_util;
-mod complex_util;
-mod linalg_util;
 mod poly;
 // TODO: wildcard bad
 pub use poly::*;

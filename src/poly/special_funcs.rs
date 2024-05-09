@@ -1,11 +1,9 @@
 use crate::{
-    casting_util::{usize_to_scalar, usize_to_u32},
+    util::casting::{usize_to_f64, usize_to_i32, usize_to_scalar, usize_to_u32},
     util::luts::factorial_lut,
     Poly, Scalar, ScalarOps,
 };
 use num::{BigUint, FromPrimitive, Zero};
-
-use crate::casting_util::{usize_to_f64, usize_to_i32};
 
 impl<T: Scalar + FromPrimitive> Poly<T> {
     #[deprecated(note = "use cheby1 instead")]

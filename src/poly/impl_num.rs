@@ -6,7 +6,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
 
-use crate::{linalg_util::convolve_1d, Poly, Scalar, ScalarOps};
+use crate::{util::linalg::convolve_1d, Poly, Scalar, ScalarOps};
 
 impl<T: ScalarOps> Poly<T> {
     /// Calculate the quotient and remainder uwing long division. More efficient than
