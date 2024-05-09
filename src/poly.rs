@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use nalgebra::RealField;
+use nalgebra::{DVector, RealField};
 use num::{Complex, Float, One, Zero};
 
 use crate::{
@@ -17,6 +17,30 @@ mod special_funcs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T>(pub(crate) na::DVector<Complex<T>>);
+
+impl<T: Scalar> Poly<T> {
+    /// # Examples
+    /// ```
+    /// # use rust_poly::{poly, Poly};
+    /// let p = poly![1.0, 2.0, 3.0];
+    /// assert_eq!(p.shift_up(2), poly![0.0, 0.0, 1.0, 2.0, 3.0]);
+    /// ```
+    pub fn shift_up(&self, n: usize) -> Poly<T> {
+        let mut v = vec![Complex::<T>::zero(); n];
+        v.extend_from_slice(self.as_slice());
+        Poly::from_complex_vec(v)
+    }
+
+    /// # Examples
+    /// ```
+    /// # use rust_poly::{poly, Poly};
+    /// let p = poly![1.0, 2.0, 3.0, 4.0];
+    /// assert_eq!(p.shift_down(2), poly![3.0, 4.0]);
+    /// ```
+    pub fn shift_down(&self, n: usize) -> Poly<T> {
+        Poly::from_complex_slice(&self.as_slice()[n..])
+    }
+}
 
 impl<T: Scalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {
