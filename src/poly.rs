@@ -1,8 +1,10 @@
+use std::fmt::Display;
+
 use nalgebra::RealField;
 use num::{Complex, Float, One, Zero};
 
 use crate::{
-    complex_util::{c_neg, complex_sort_mut},
+    complex_util::{c_neg, complex_fmt, complex_sort_mut},
     Scalar, ScalarOps,
 };
 
@@ -339,6 +341,21 @@ impl<T: Scalar + Float> Poly<T> {
     }
 }
 
+impl<T: Scalar + Display + PartialOrd> Display for Poly<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut iter = self.iter().enumerate();
+        if let Some((_, c)) = iter.next() {
+            write!(f, "{}", complex_fmt(c))?;
+        } else {
+            return Ok(());
+        }
+        for (i, c) in iter {
+            write!(f, " + {}*x^{}", complex_fmt(c), i)?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     #[test]
@@ -347,6 +364,15 @@ mod test {
         assert_eq!(
             p.translate(complex!(1.0), complex!(2.0)),
             poly![4.0, -4.0, 3.0]
+        );
+    }
+
+    #[test]
+    fn display() {
+        let p = poly![(2.0, 0.0), (4.5, 0.0), (5.0, 1.0), (6.0, 1.5), (7.0, 2.0)];
+        assert_eq!(
+            p.to_string(),
+            "2 + 4.5*x^1 + (5+i)*x^2 + (6+i1.5)*x^3 + (7+i2)*x^4".to_string()
         );
     }
 }
