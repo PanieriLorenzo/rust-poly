@@ -10,12 +10,7 @@ Basic Goals:
 - [x] addition, subtraction and multiplication of complex and real univariate polynomials
 - [x] long division of complex and real univariate polynomials
 - [x] finding complex roots of polynomials
-- [ ] indexing, slicing and iterating
-    - [x] indexing by term
-    - [x] iterating by coefficient
-    - [x] iterating by term
-    - [ ] slicing terms by range
-    - [x] IntoIterator traits
+- [x] indexing, slicing and iterating
 - [x] from/into traits
 
 Future Goals:
@@ -27,7 +22,7 @@ Future Goals:
     - [ ] Hermite polynomials
     - [ ] Lagrange polynomials
     - [ ] Bezier polynomials
-    - [ ] Legendre polynomials
+    - [x] Legendre polynomials
     - more to come...
 - [ ] Serde integration
 - [ ] Random integration
