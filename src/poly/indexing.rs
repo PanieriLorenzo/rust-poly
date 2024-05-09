@@ -12,19 +12,15 @@ mod sealed {
 }
 
 pub trait Get<I, T>: sealed::Sealed {
-    type Output;
-
-    fn get(&self, idx: I) -> Option<Self::Output>;
+    fn get(&self, idx: I) -> Option<Poly<T>>;
 }
 
 impl<T> sealed::Sealed for Poly<T> {}
 
-use super::*;
-
 impl<T: Scalar> Poly<T> {
     /// Implementation for all range-based indexing (because Rust is super annoying
     /// around the different range iterators, see [#3550](https://github.com/rust-lang/rfcs/pull/3550))
-    fn get_range_inner(&self, idx_start: Bound<&usize>, idx_end: Bound<&usize>) -> Poly<T> {
+    fn get_range_inner(&self, idx_start: Bound<&usize>, idx_end: Bound<&usize>) -> Option<Poly<T>> {
         debug_assert!(self.is_normalized());
 
         let start = match idx_start {
@@ -37,31 +33,25 @@ impl<T: Scalar> Poly<T> {
             Bound::Excluded(x) => *x,
             Bound::Unbounded => self.len_raw(),
         };
+        if start >= self.len_raw() || end > self.len_raw() {
+            return None;
+        }
         let coeffs = &self.as_slice()[start..end];
-        Poly::from_complex_slice(coeffs).shift_up(start)
+        Some(Poly::from_complex_slice(coeffs).shift_up(start))
     }
 }
 
 impl<T: Scalar> Get<usize, T> for Poly<T> {
-    type Output = Complex<T>;
-
-    fn get(&self, idx: usize) -> Option<Complex<T>> {
+    fn get(&self, idx: usize) -> Option<Poly<T>> {
         debug_assert!(self.is_normalized());
-
-        if idx >= self.len_raw() {
-            return None;
-        }
-
-        Some(self.0[idx].clone())
+        self.terms().nth(idx)
     }
 }
 
 impl<T: Scalar> Get<isize, T> for Poly<T> {
-    type Output = Complex<T>;
-
     #[allow(clippy::cast_possible_wrap)]
     #[allow(clippy::cast_sign_loss)]
-    fn get(&self, idx: isize) -> Option<Complex<T>> {
+    fn get(&self, idx: isize) -> Option<Poly<T>> {
         debug_assert!(self.is_normalized());
 
         if idx >= 0 {
@@ -90,10 +80,8 @@ impl<T: Scalar> Get<isize, T> for Poly<T> {
 macro_rules! impl_get_for_bounds {
     ($r:ty) => {
         impl<T: Scalar> Get<$r, T> for Poly<T> {
-            type Output = Poly<T>;
-
             fn get(&self, idx: $r) -> Option<Poly<T>> {
-                Some(self.get_range_inner(idx.start_bound(), idx.end_bound()))
+                self.get_range_inner(idx.start_bound(), idx.end_bound())
             }
         }
     };
@@ -125,11 +113,11 @@ mod test {
     #[test]
     fn test_get_isize() {
         let p = poly![0.0, 1.0, 2.0, 3.0];
-        assert_eq!(p.get(0isize).unwrap(), Complex64::zero());
-        assert_eq!(p.get(1isize).unwrap(), Complex64::one());
-        assert_eq!(p.get(-1isize).unwrap(), Complex64::three());
-        assert_eq!(p.get(-2isize).unwrap(), Complex64::two());
-        assert_eq!(p.get(-4isize).unwrap(), Complex64::zero());
+        assert_eq!(p.get(0isize).unwrap(), poly![0.0]);
+        assert_eq!(p.get(1isize).unwrap(), poly![0.0, 1.0]);
+        assert_eq!(p.get(-1isize).unwrap(), poly![0.0, 0.0, 0.0, 3.0]);
+        assert_eq!(p.get(-2isize).unwrap(), poly![0.0, 0.0, 2.0]);
+        assert_eq!(p.get(-4isize).unwrap(), poly![0.0]);
 
         // out of bounds
         assert!(p.get(4isize).is_none());
@@ -139,9 +127,9 @@ mod test {
     #[test]
     fn test_get_usize() {
         let p = poly![0.0, 1.0, 2.0, 3.0];
-        assert_eq!(p.get(0usize).unwrap(), Complex64::zero());
-        assert_eq!(p.get(1usize).unwrap(), Complex64::one());
-        assert_eq!(p.get(3usize).unwrap(), Complex64::three());
+        assert_eq!(p.get(0usize).unwrap(), poly![0.0]);
+        assert_eq!(p.get(1usize).unwrap(), poly![0.0, 1.0]);
+        assert_eq!(p.get(3usize).unwrap(), poly![0.0, 0.0, 0.0, 3.0]);
 
         // out of bounds
         assert!(p.get(4usize).is_none());
