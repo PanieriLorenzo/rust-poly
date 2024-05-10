@@ -54,7 +54,6 @@ impl<T: Scalar + FromPrimitive> Poly<T> {
         for k in 0..=n {
             let c = T::from_f64(coeff(n, k))?;
             let term = Self::term(complex!(c), usize_to_u32(k));
-            dbg!(&term);
             poly = poly + term;
         }
         Some(poly)
