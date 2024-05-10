@@ -11,6 +11,7 @@ Project Description
 
 ### Bugs
 
+- [ ] `roots` hangs on some inputs (such as `legendre(7)`) due to [nalgebra#1291](https://github.com/dimforge/nalgebra/issues/1291).
 
 ### In Progress
 

@@ -116,7 +116,7 @@ pub fn coeff(n: usize, k: usize) -> f64 {
 mod test {
     use num::{BigUint, Num};
 
-    use crate::{poly::special_funcs::biguint_to_f64, Poly};
+    use crate::{poly::special_funcs::biguint_to_f64, Poly, Poly64};
 
     use super::factorial;
 
@@ -132,6 +132,18 @@ mod test {
         let i = 1u128 << 90;
         let x = BigUint::from(i);
         assert_eq!(i as f64, biguint_to_f64(&x));
+    }
+
+    #[test]
+    fn bessel_big() {
+        // largest computable bessel polynomial
+        let _ = Poly64::bessel(134).unwrap();
+    }
+
+    #[test]
+    fn reverse_bessel_big() {
+        // largest computable reverse bessel
+        let _ = Poly64::reverse_bessel(134).unwrap();
     }
 
     #[test]

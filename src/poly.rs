@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use anyhow::ensure;
 use nalgebra::RealField;
 use num::{Complex, Float, One, Zero};
 
@@ -320,15 +321,21 @@ impl<T: Scalar + RealField> Poly<T> {
     /// ```
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
-    pub fn roots(&self) -> Vec<Complex<T>> {
+    pub fn roots(&self) -> anyhow::Result<Vec<Complex<T>>> {
         debug_assert!(self.is_normalized());
 
+        // HACK: workaround for nalgebra#1291 (https://github.com/dimforge/nalgebra/issues/1291)
+        ensure!(
+            self.len_raw() < 52,
+            "It is not currently possible to take the roots of polynomials of degree 52 or higher"
+        );
+
         if self.len_raw() < 2 {
-            return vec![];
+            return Ok(vec![]);
         }
 
         if self.len_raw() == 2 {
-            return vec![c_neg(self.0[0].clone()) / self.0[1].clone()];
+            return Ok(vec![c_neg(self.0[0].clone()) / self.0[1].clone()]);
         }
 
         // rotated companion matrix reduces error
@@ -341,7 +348,7 @@ impl<T: Scalar + RealField> Poly<T> {
 
         let mut r: na::DVector<Complex<T>> = comp.eigenvalues().expect("infallible");
         complex_sort_mut(&mut r);
-        r.as_slice().to_vec()
+        Ok(r.as_slice().to_vec())
     }
 }
 

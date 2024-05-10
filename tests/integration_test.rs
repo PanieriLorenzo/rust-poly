@@ -1,6 +1,8 @@
+use std::f64::consts::PI;
+
 use num::{complex::ComplexFloat, Complex, Zero};
 use rand::prelude::*;
-use rust_poly::{complex, poly, Poly};
+use rust_poly::{complex, poly, Poly, Poly64};
 
 fn gen_rand_roots(rng: &mut impl Rng) -> Vec<Complex<f64>> {
     const MAX_LEN: u32 = 7;
@@ -56,11 +58,19 @@ fn back_and_forth_1() {
     let p = poly![2.0, -3.0, 4.0, 1.0];
 
     // because p is monic, we expect pp to be almost identical
-    let pp = Poly::from_roots(p.roots().as_slice());
+    let pp = Poly::from_roots(p.roots().unwrap().as_slice());
 
     // assert almost equal
     const EPSILON: f64 = 1E-14;
     for i in 0..p.len() {
         assert!((p[i] - pp[i]).abs() < EPSILON);
     }
+}
+
+/// Current max limits before things break down
+#[test]
+fn big_roots() {
+    let _ = Poly64::bessel(85).unwrap().roots().unwrap();
+    let _ = Poly64::reverse_bessel(50).unwrap().roots().unwrap();
+    let _ = Poly64::legendre(6).roots().unwrap();
 }
