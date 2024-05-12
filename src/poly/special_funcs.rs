@@ -71,16 +71,26 @@ impl<T: ScalarOps> Poly<T> {
     #[must_use]
     pub fn legendre(n: usize) -> Self {
         match n {
-            0 => poly![T::one()],
-            1 => poly![T::zero(), T::one()],
-            _ => {
-                let p1 = Self::legendre(n - 1);
-                let p2 = Self::legendre(n - 2);
-                let ns = usize_to_scalar::<T>(n);
-                poly![T::zero(), usize_to_scalar::<T>(2 * n - 1) / ns.clone()] * p1
-                    + poly![(T::one() - ns.clone()) / ns] * p2
-            }
+            0 => return poly![T::one()],
+            1 => return poly![T::zero(), T::one()],
+            _ => {}
         }
+
+        // this is the memoized form of the recursive recurrence relation definition
+        let mut memo = Vec::with_capacity(n - 1);
+        memo.push(poly![T::one()]);
+        memo.push(poly![T::zero(), T::one()]);
+
+        for i in 2..(n + 1) {
+            let p1 = &memo[i - 1];
+            let p2 = &memo[i - 2];
+            let ns = usize_to_scalar::<T>(i);
+            memo.push(
+                poly![T::zero(), usize_to_scalar::<T>(2 * i - 1) / ns.clone()] * p1
+                    + poly![(T::one() - ns.clone()) / ns] * p2,
+            );
+        }
+        memo.last().expect("infallible").clone()
     }
 }
 
@@ -150,5 +160,11 @@ mod test {
     fn legendre() {
         let p = Poly::<f32>::legendre(3);
         assert_eq!(p, poly![0.0, -1.5, 0.0, 2.5]);
+    }
+
+    #[test]
+    fn legendre_big() {
+        // TODO: largest computable legendre
+        let _ = Poly64::legendre(30);
     }
 }
