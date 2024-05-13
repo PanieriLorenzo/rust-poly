@@ -2,11 +2,11 @@ use na::{Complex, ComplexField, Normed, RealField, Scalar};
 use num::{traits::float::FloatCore, Float, One, Zero};
 
 use crate::{
-    util::{
-        casting::usize_to_scalar,
-        complex::{c_min, c_neg},
-    },
     Poly, ScalarOps,
+    __util::{
+        casting::usize_to_scalar,
+        complex::{c_min, c_neg, complex_sort_mut},
+    },
 };
 
 /// Polynomial root-finding algorithms
@@ -219,6 +219,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
             let maybe_roots = all_roots(this.clone());
             if let Ok(found_roots) = maybe_roots {
                 roots.extend(found_roots);
+                // TODO: sort
                 return Ok(roots);
             }
 

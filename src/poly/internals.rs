@@ -1,4 +1,4 @@
-use crate::{util::complex::c_neg, Scalar, ScalarOps};
+use crate::{__util::complex::c_neg, Scalar, ScalarOps};
 
 use super::Poly;
 use num::{traits::float::FloatCore, Complex, One, Zero};

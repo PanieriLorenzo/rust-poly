@@ -99,7 +99,9 @@ pub use scalar::{Scalar, ScalarOps};
 mod poly;
 // TODO: wildcard bad
 pub use poly::*;
-mod util;
+
+#[doc(hidden)]
+pub mod __util;
 
 pub type Poly32 = Poly<f32>;
 pub type Poly64 = Poly<f64>;

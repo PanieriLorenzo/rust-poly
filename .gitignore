@@ -131,3 +131,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# benchmarks
+flamegraph.svg
+perf.data
+perf.data.old

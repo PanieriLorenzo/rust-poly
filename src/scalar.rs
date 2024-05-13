@@ -1,9 +1,9 @@
-use num::Num;
+use num::{FromPrimitive, Num};
 use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
 
 /// The trait bounds necessary to provide the basic functionality of this crate.
-pub trait Scalar: Clone + PartialEq + std::fmt::Debug + Num + 'static {}
-impl<T: Clone + PartialEq + std::fmt::Debug + Num + 'static> Scalar for T {}
+pub trait Scalar: Clone + PartialEq + std::fmt::Debug + Num + FromPrimitive + 'static {}
+impl<T: Clone + PartialEq + std::fmt::Debug + Num + FromPrimitive + 'static> Scalar for T {}
 
 // TODO: these are required by nalgebra for things that shouldn't require them.
 //       perhaps in the future they can be dropped?

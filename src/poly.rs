@@ -7,11 +7,8 @@ use nalgebra::RealField;
 use num::{traits::real::Real, Complex, Float, One, Zero};
 
 use crate::{
-    util::{
-        casting::usize_to_scalar,
-        complex::{c_neg, complex_fmt, complex_sort_mut},
-    },
     Scalar, ScalarOps,
+    __util::complex::{c_neg, complex_fmt, complex_sort_mut},
 };
 
 mod calculus;

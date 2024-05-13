@@ -3,7 +3,7 @@ use num::{Complex, Zero};
 
 use crate::Scalar;
 
-pub fn convolve_1d<T: Scalar>(
+pub(crate) fn convolve_1d<T: Scalar>(
     input: &DVector<Complex<T>>,
     kernel: &DVector<Complex<T>>,
 ) -> DVector<Complex<T>> {

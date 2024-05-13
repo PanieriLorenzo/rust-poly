@@ -1,6 +1,6 @@
 use crate::{
-    util::casting::{usize_to_f64, usize_to_i32, usize_to_scalar, usize_to_u32},
-    util::luts::factorial_lut,
+    __util::casting::{usize_to_f64, usize_to_i32, usize_to_scalar, usize_to_u32},
+    __util::luts::factorial_lut,
     Poly, Scalar, ScalarOps,
 };
 use num::{BigUint, FromPrimitive, Zero};

@@ -1,7 +1,7 @@
 use itertools::chain;
 use num::{Complex, Zero};
 
-use crate::{util::casting::usize_to_scalar, Poly, Scalar};
+use crate::{__util::casting::usize_to_scalar, Poly, Scalar};
 
 impl<T: Scalar> Poly<T> {
     /// Derivative

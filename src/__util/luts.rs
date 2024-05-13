@@ -1,7 +1,7 @@
 use num::{BigUint, Num};
 
 #[allow(clippy::too_many_lines)]
-pub fn factorial_lut(n: usize) -> BigUint {
+pub(crate) fn factorial_lut(n: usize) -> BigUint {
     let s = match n {
         0 | 1 => "1",
         2 => "2",
