@@ -24,7 +24,6 @@ Future Goals:
     - [ ] Bezier polynomials
     - [x] Legendre polynomials
     - more to come...
-- [ ] Serde integration
 - [ ] Random integration
 - [ ] Real polynomial type
     - [ ] Real polynomial factoring
@@ -32,6 +31,12 @@ Future Goals:
     - [ ] Simplification
 - [ ] Multivariate polynomials
 - [ ] Interpolation
+- [ ] Integer polynomials
+- [ ] Stabilize API
+- [ ] `no_std` support
+
+Non-Goals:
+- [ ] Symbolic polynomial manipulation (use a symbolic algebra crate)
 
 ## Development
 
