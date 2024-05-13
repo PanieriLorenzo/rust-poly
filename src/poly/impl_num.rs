@@ -2,14 +2,18 @@
 
 use itertools::Itertools;
 use num::{traits::CheckedRem, CheckedDiv, Complex, One, Zero};
-use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use std::{
+    collections::VecDeque,
+    io::BufRead,
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
+};
 
 extern crate nalgebra as na;
 
 use crate::{util::linalg::convolve_1d, Poly, Scalar, ScalarOps};
 
 impl<T: ScalarOps> Poly<T> {
-    /// Calculate the quotient and remainder uwing long division. More efficient than
+    /// Calculate the quotient and remainder using long division. More efficient than
     /// calculating them separately.
     ///
     /// # Panics
@@ -28,63 +32,35 @@ impl<T: ScalarOps> Poly<T> {
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
     #[must_use]
-    pub fn div_rem(self, rhs: &Self) -> Option<(Self, Self)> {
-        // invariant: polynomials are normalized
+    pub fn div_rem(self, other: &Self) -> Option<(Self, Self)> {
         debug_assert!(self.is_normalized());
-        debug_assert!(rhs.is_normalized());
+        debug_assert!(other.is_normalized());
 
-        // pre-condition: don't divide by zero
-        if rhs.is_zero() {
+        if other.is_zero() {
             // bail!("Attempted to divide a polynomial by zero");
             return None;
         }
 
-        let lhs_len = self.len_raw();
-        let rhs_len = self.len_raw();
-        if lhs_len < rhs_len {
-            return Some((Self::zero(), self));
+        let expected_degree = self.degree_raw() - other.degree_raw();
+
+        let den_c = other.as_slice().last().unwrap();
+        let den_k = other.degree_raw();
+        let mut this = self;
+        let mut res = Poly::zero();
+        while this.degree_raw() >= other.degree_raw() {
+            let num_c = this.as_slice().last().unwrap();
+            let num_k = this.degree_raw();
+            let c = num_c / den_c;
+            let k = num_k - den_k;
+            let new_term = Poly::term(c, k as u32);
+            this = this.clone() - new_term.clone() * other;
+            res = res + new_term;
         }
-        if rhs_len == 1 {
-            return Some((
-                // TODO: should use checked operations
-                Self(self.0 / rhs.0[rhs.len_raw() - 1].clone()),
-                Self::zero(),
-            ));
-        }
-        let len_delta = lhs_len - rhs_len;
-        let scale = rhs.0[rhs.len_raw() - 1].clone();
-        let rhs: na::DVector<_> = rhs
-            .0
-            .view_range(0..rhs.len_raw() - 1, 0..1)
-            // HACK: this shouldn't be necessary, but nalgebra turns DVector into
-            //       DMatrix when making a view, and needs to be politely reminded
-            //       that this is a column vector.
-            .column(0)
-            .into();
-        // TODO: useless clone of scale, it should be borrowed, but dvector does
-        //       not implement Div<&_>
-        // TODO: should use checked operations
-        let rhs: na::DVector<_> = rhs / scale.clone();
-        let mut lhs: na::DVector<_> = self.0.clone();
-        let mut i = len_delta as isize;
-        let mut j = (lhs_len - 1) as isize;
-        while i >= 0 {
-            lhs.view_range_mut(i as usize..j as usize, 0..1)
-                .iter_mut()
-                .zip((rhs.clone() * self.0[j as usize].clone()).iter())
-                .for_each(|p| *p.0 -= p.1);
-            i -= 1;
-            j -= 1;
-        }
-        Some((
-            Self(
-                (lhs.view_range(j as usize + 1..lhs.len(), 0..1) / scale)
-                    .column(0)
-                    .into(),
-            )
-            .normalize(),
-            Self(lhs.view_range(..(j + 1) as usize, 0..1).column(0).into()).normalize(),
-        ))
+        let rem = this;
+
+        // sanity check: result has the expected degree
+        debug_assert_eq!(res.degree_raw(), expected_degree);
+        Some((res, rem))
     }
 }
 
@@ -414,5 +390,17 @@ impl<T: Scalar> Neg for &Poly<T> {
 impl<T: Scalar> std::iter::Sum for Poly<T> {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::zero(), |acc, x| acc + x).normalize()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn div() {
+        let dividend = poly![-4.0, 0.0, -2.0, 1.0];
+        let divisor = poly![-3.0, 1.0];
+        let (q, r) = dividend.div_rem(&divisor).unwrap();
+        assert_eq!(q, poly![3.0, 1.0, 1.0]);
+        assert_eq!(r, poly![5.0]);
     }
 }

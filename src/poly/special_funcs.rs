@@ -164,7 +164,12 @@ mod test {
 
     #[test]
     fn legendre_big() {
-        // TODO: largest computable legendre
-        let _ = Poly64::legendre(30);
+        // largest computable legendre
+        assert!(Poly64::legendre(813).is_well_formed());
+    }
+
+    #[test]
+    fn lel() {
+        println!("{}", Poly64::bessel(16).unwrap());
     }
 }
