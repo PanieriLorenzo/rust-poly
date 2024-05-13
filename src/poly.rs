@@ -1,11 +1,16 @@
-use std::fmt::Display;
+use std::{fmt::Display, thread::current};
 
-use anyhow::ensure;
+use anyhow::{anyhow, ensure};
+use itertools::Either;
+use na::{ComplexField, DMatrix, Normed};
 use nalgebra::RealField;
-use num::{Complex, Float, One, Zero};
+use num::{traits::real::Real, Complex, Float, One, Zero};
 
 use crate::{
-    util::complex::{c_neg, complex_fmt, complex_sort_mut},
+    util::{
+        casting::usize_to_scalar,
+        complex::{c_neg, complex_fmt, complex_sort_mut},
+    },
     Scalar, ScalarOps,
 };
 
@@ -14,6 +19,7 @@ mod conversions;
 mod impl_num;
 mod indexing;
 mod internals;
+mod roots;
 mod special_funcs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -108,6 +114,11 @@ impl<T: Scalar> Poly<T> {
     pub fn len(&self) -> usize {
         debug_assert!(self.is_normalized());
         self.len_raw()
+    }
+
+    pub fn degree(&self) -> i32 {
+        debug_assert!(self.is_normalized());
+        self.degree_raw()
     }
 
     #[must_use]
@@ -298,57 +309,6 @@ impl<T: ScalarOps + PartialOrd> Poly<T> {
         self = self.compose(Self::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
         self.0[0] += y;
         self
-    }
-}
-
-impl<T: Scalar + RealField> Poly<T> {
-    /// Find the roots of a polynomial numerically.
-    ///
-    /// # Examples
-    /// ```
-    /// use rust_poly::{poly, Poly};
-    /// use num::Complex;
-    ///
-    /// let p: Poly<f64> = poly![-6.0, 11.0, -6.0, 1.0];
-    /// let expected_roots = &[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)];
-    /// let temp = p.roots();    // Rust is really annoying sometimes...
-    /// let calculated_roots = temp.as_slice();
-    ///
-    /// // assert almost equal
-    /// assert!((expected_roots[0] - calculated_roots[0]).re.abs() < 0.000001);
-    /// assert!((expected_roots[1] - calculated_roots[1]).re.abs() < 0.000001);
-    /// assert!((expected_roots[2] - calculated_roots[2]).re.abs() < 0.000001);
-    /// ```
-    #[allow(clippy::missing_panics_doc)]
-    #[must_use]
-    pub fn roots(&self) -> anyhow::Result<Vec<Complex<T>>> {
-        debug_assert!(self.is_normalized());
-
-        // HACK: workaround for nalgebra#1291 (https://github.com/dimforge/nalgebra/issues/1291)
-        ensure!(
-            self.len_raw() < 52,
-            "It is not currently possible to take the roots of polynomials of degree 52 or higher"
-        );
-
-        if self.len_raw() < 2 {
-            return Ok(vec![]);
-        }
-
-        if self.len_raw() == 2 {
-            return Ok(vec![c_neg(self.0[0].clone()) / self.0[1].clone()]);
-        }
-
-        // rotated companion matrix reduces error
-        let mut comp = self.companion();
-        let n = comp.shape().0;
-        for i in 0..n / 2 {
-            comp.swap_rows(i, n - i - 1);
-            comp.swap_columns(i, n - i - 1);
-        }
-
-        let mut r: na::DVector<Complex<T>> = comp.eigenvalues().expect("infallible");
-        complex_sort_mut(&mut r);
-        Ok(r.as_slice().to_vec())
     }
 }
 

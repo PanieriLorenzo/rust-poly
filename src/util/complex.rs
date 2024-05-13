@@ -2,13 +2,30 @@
 
 use std::cmp::Ordering;
 
-use num::{Complex, One, Zero};
+use num::{traits::float::FloatCore, Complex, Float, One, Zero};
 
-use crate::Scalar;
+use crate::{Scalar, ScalarOps};
 
 // neg operator for Complex, as it does not implement std::ops::Neg
 pub fn c_neg<T: Scalar>(x: Complex<T>) -> Complex<T> {
     Complex::<T>::zero() - x
+}
+
+// min based on norm1
+pub fn c_min<T: Scalar + PartialOrd>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
+    if a.norm_sqr() < b.norm_sqr() {
+        a
+    } else {
+        b
+    }
+}
+
+pub fn c_max<T: Scalar + PartialOrd>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
+    if a.norm_sqr() > b.norm_sqr() {
+        a
+    } else {
+        b
+    }
 }
 
 // sort a vector of complex numbers  in place by their real component first,

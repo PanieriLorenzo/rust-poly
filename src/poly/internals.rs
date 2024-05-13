@@ -1,12 +1,17 @@
 use crate::{util::complex::c_neg, Scalar, ScalarOps};
 
 use super::Poly;
-use num::{Complex, One, Zero};
+use num::{traits::float::FloatCore, Complex, One, Zero};
 
 impl<T> Poly<T> {
     /// The length of the polynomial without checking pre-conditions
     pub(crate) fn len_raw(&self) -> usize {
         self.0.len()
+    }
+
+    /// The degree of the polynomial without checking pre-conditions
+    pub(crate) fn degree_raw(&self) -> i32 {
+        self.len_raw() as i32 - 1
     }
 }
 
@@ -85,5 +90,12 @@ impl<T: ScalarOps> Poly<T> {
 
     pub(crate) fn checked_rem_impl(self, rhs: &Self) -> Option<Self> {
         Some(self.div_rem(rhs)?.1)
+    }
+}
+
+impl<T: ScalarOps + FloatCore> Poly<T> {
+    // Check that the polynomial does not contain `NaN` or infinite values.
+    pub(crate) fn is_well_formed(&self) -> bool {
+        self.0.iter().all(|x| !x.is_nan() && x.is_finite())
     }
 }

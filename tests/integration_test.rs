@@ -49,28 +49,46 @@ fn stress_test_1() {
             _ => unreachable!(),
         };
         let res = res.pow(rng.next_u32() % MAX_POW);
-        let _ = res.roots();
+        let _ = res.try_roots(0.1, 100, 10, None, None, None);
     }
 }
 
 #[test]
 fn back_and_forth_1() {
+    const EPSILON: f64 = 1E-14;
+
     let p = poly![2.0, -3.0, 4.0, 1.0];
 
     // because p is monic, we expect pp to be almost identical
-    let pp = Poly::from_roots(p.roots().unwrap().as_slice());
+    let pp = Poly::from_roots(
+        p.try_roots(EPSILON, 100, 10, None, None, None)
+            .unwrap()
+            .as_slice(),
+    );
 
     // assert almost equal
-    const EPSILON: f64 = 1E-14;
     for i in 0..p.len() {
         assert!((p[i] - pp[i]).abs() < EPSILON);
     }
 }
 
-/// Current max limits before things break down
 #[test]
 fn big_roots() {
-    let _ = Poly64::bessel(85).unwrap().roots().unwrap();
-    let _ = Poly64::reverse_bessel(50).unwrap().roots().unwrap();
-    let _ = Poly64::legendre(6).roots().unwrap();
+    assert!(Poly64::bessel(85)
+        .unwrap()
+        .try_roots(1E-14, 1000, 10, None, None, None)
+        .unwrap()
+        .iter()
+        .all(|z| !z.is_nan()));
+    assert!(Poly64::reverse_bessel(50)
+        .unwrap()
+        .try_roots(1E-14, 1000, 10, None, None, None)
+        .unwrap()
+        .iter()
+        .all(|z| !z.is_nan()));
+    assert!(Poly64::legendre(100)
+        .try_roots(1E-14, 1000, 10, None, None, None)
+        .unwrap()
+        .iter()
+        .all(|z| !z.is_nan()));
 }
