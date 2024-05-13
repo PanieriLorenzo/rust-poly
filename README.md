@@ -12,6 +12,12 @@ Basic Goals:
 - [x] finding complex roots of polynomials
 - [x] indexing, slicing and iterating
 - [x] from/into traits
+- [ ] cross-compatibility with `num` types and others
+    - [x] primitive floats
+    - [x] Complex
+    - [ ] Ratio
+    - [ ] BigFloat
+    - [ ] easily implementable traits for custom types
 
 Future Goals:
 - [ ] Generating important polynomial sequences
@@ -34,6 +40,9 @@ Future Goals:
 - [ ] Integer polynomials
 - [ ] Stabilize API
 - [ ] `no_std` support
+- [ ] Rayon support
+- [ ] Fixed point support
+- [ ] SIMD support
 
 Non-Goals:
 - [ ] Symbolic polynomial manipulation (use a symbolic algebra crate)
@@ -75,6 +84,12 @@ Right now, changelogs are generated with [git-cliff](https://github.com/orhun/gi
 ### Releasing a New Version
 
 TODO
+
+### Benchmarking
+
+```bash
+cargo flamegraph --bench bench -- <name-of-bench> --bench
+```
 
 ## Licensing
 
