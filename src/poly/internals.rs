@@ -1,4 +1,4 @@
-use crate::{__util::complex::c_neg, Scalar, ScalarOps};
+use crate::{Scalar, ScalarOps, __util::complex::c_neg};
 
 use super::Poly;
 use num::{traits::float::FloatCore, Complex, One, Zero};
@@ -19,6 +19,11 @@ impl<T: Scalar> Poly<T> {
     pub(crate) fn is_normalized(&self) -> bool {
         let n = self.len_raw();
         if n == 0 {
+            // FIXME: maybe zero-polynomials should be illegal?
+            return true;
+        }
+        // a constant is always normalized, as it may be just a constant zero
+        if n == 1 {
             return true;
         }
         !self.0.index(n - 1).is_zero()
@@ -97,5 +102,27 @@ impl<T: ScalarOps + FloatCore> Poly<T> {
     // Check that the polynomial does not contain `NaN` or infinite values.
     pub(crate) fn is_well_formed(&self) -> bool {
         self.0.iter().all(|x| !x.is_nan() && x.is_finite())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use na::DVector;
+    use num::{complex::Complex64, Zero};
+
+    use crate::Poly;
+
+    /// This was a bug
+    #[test]
+    fn normalize0() {
+        let p = Poly(DVector::from_column_slice(&[Complex64::zero()]));
+        assert_eq!(p.normalize().0.as_slice(), &[Complex64::zero()]);
+    }
+
+    /// This was a bug
+    #[test]
+    fn is_normalized0() {
+        let p = Poly(DVector::from_column_slice(&[Complex64::zero()]));
+        assert!(p.is_normalized());
     }
 }
