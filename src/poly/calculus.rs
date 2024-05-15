@@ -1,15 +1,20 @@
 use itertools::chain;
 use num::{Complex, Zero};
 
-use crate::{__util::casting::usize_to_scalar, Poly, Scalar};
+use crate::{Poly, Scalar, __util::casting::usize_to_scalar};
 
 impl<T: Scalar> Poly<T> {
     /// Derivative
     pub fn diff(self) -> Self {
         debug_assert!(self.is_normalized());
 
+        // derivative of constant is zero
+        if self.degree_raw() == 0 {
+            return Poly::from_real_slice(&[T::zero()]);
+        }
+
         let coeffs: Vec<_> = (0..self.len())
-            .map(usize_to_scalar::<T>)
+            .map(|x| T::from_usize(x).expect("degree to high to convert to T"))
             .map(|x| Complex::new(x, T::zero()))
             .zip(self.0.iter())
             .map(|(n, c)| n * c)
@@ -37,11 +42,19 @@ impl<T: Scalar> Poly<T> {
 
 #[cfg(test)]
 mod test {
+    use crate::Poly64;
 
     #[test]
     fn diff() {
         let p = poly![1.0, 2.0, 3.0];
         assert_eq!(p.diff(), poly![2.0, 6.0]);
+    }
+
+    /// This was a bug
+    #[test]
+    fn diff1() {
+        let one = poly![1.0];
+        assert_eq!(one.diff().degree(), 0);
     }
 
     #[test]
