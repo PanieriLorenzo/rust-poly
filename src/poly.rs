@@ -273,6 +273,7 @@ impl<T: ScalarOps> Poly<T> {
         let mut c0: na::DMatrix<_> = na::DMatrix::<_>::from_element(
             x.nrows(),
             x.ncols(),
+            // FIXME: panics when len is zero, should check for it
             self.0[self.len_raw() - 1].clone(),
         );
         for i in 2..=self.len_raw() {

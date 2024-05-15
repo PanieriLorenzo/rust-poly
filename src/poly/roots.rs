@@ -1,5 +1,5 @@
 use na::{Complex, ComplexField, Normed, RealField, Scalar};
-use num::{traits::float::FloatCore, Float, One, Zero};
+use num::{traits::float::FloatCore, Float, FromPrimitive, One, Zero};
 
 use crate::{
     Poly, ScalarOps,
@@ -13,6 +13,7 @@ use crate::{
 #[non_exhaustive]
 pub enum OneRootAlgorithms {
     Newton,
+    Halley,
 }
 
 #[non_exhaustive]
@@ -73,7 +74,7 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         let mut x = initial_guess.unwrap_or(self.initial_guess_smallest());
         for _ in 0..max_iter {
             let px = self.eval_point(x);
-            if px.norm_sqr() <= epsilon {
+            if px.norm() <= epsilon {
                 return Ok(x);
             }
             let pdx = p_diff.eval_point(x);
@@ -82,8 +83,27 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         Err(x)
     }
 
-    fn one_root_halley(&self, epsilon: T, max_iter: usize) -> Result<Complex<T>, Complex<T>> {
-        todo!()
+    fn one_root_halley(
+        &self,
+        initial_guess: Option<Complex<T>>,
+        epsilon: T,
+        max_iter: usize,
+    ) -> Result<Complex<T>, Complex<T>> {
+        let p_diff = self.clone().diff();
+        let p_diff2 = p_diff.clone().diff();
+
+        let mut x = initial_guess.unwrap_or(self.initial_guess_smallest());
+        for _ in 0..max_iter {
+            let px = self.eval_point(x);
+            if px.norm() <= epsilon {
+                return Ok(x);
+            }
+            let pdx = p_diff.eval_point(x);
+            let pddx = p_diff2.eval_point(x);
+            let two = Complex::from_u32(2).expect("infallible");
+            x = x - (px * pdx * two) / (pdx.powu(2) * two - px * pddx);
+        }
+        Err(x)
     }
 
     fn one_root_laguerre(&self, epsilon: T, max_iter: usize) -> Result<Complex<T>, Complex<T>> {
@@ -162,17 +182,20 @@ impl<T: Scalar + Float + RealField> Poly<T> {
         );
 
         let algorithm = algorithm.unwrap_or(OneRootAlgorithms::Newton);
-        let one_root = match algorithm {
-            OneRootAlgorithms::Newton => {
-                |this: Poly<T>| this.one_root_newton(initial_guess, epsilon, max_iter)
-            }
-            _ => unimplemented!(),
-        };
 
         let mut roots = vec![];
         let mut this = self.clone();
         for i in 0..n {
-            let r = one_root(this.clone()).map_err(|_| roots.clone())?;
+            let r = match algorithm {
+                OneRootAlgorithms::Newton => this
+                    .clone()
+                    .one_root_newton(initial_guess, epsilon, max_iter)
+                    .map_err(|_| roots.clone())?,
+                OneRootAlgorithms::Halley => this
+                    .clone()
+                    .one_root_halley(initial_guess, epsilon, max_iter)
+                    .map_err(|_| roots.clone())?,
+            };
             roots.push(r.clone());
             if i < (n - 1) {
                 this = this / Poly::from_roots(&[r.clone()]);
@@ -204,12 +227,6 @@ impl<T: Scalar + Float + RealField> Poly<T> {
             AllRootsAlgorithms::Schur => |this: Poly<T>| this.roots_schur(epsilon, max_iter),
             _ => unimplemented!(),
         };
-        let one_root = match recovery_algorithm {
-            OneRootAlgorithms::Newton => {
-                |this: Poly<T>| this.one_root_newton(None, epsilon, max_recovery_iter)
-            }
-            _ => unimplemented!(),
-        };
 
         let mut roots = vec![];
         let mut this = self.clone();
@@ -225,8 +242,18 @@ impl<T: Scalar + Float + RealField> Poly<T> {
 
             // uses one iteration of single-root algorithm for recovery when
             // the multi-root algorithm gets stuck (for pathological cases like
-            // Legendre polynomials)
-            let r = one_root(this.clone()).map_err(|_| roots.clone())?;
+            // Legendre polynomials), this shrinks the problem by 1 degree
+            // and moves around the coefficients so they are not pathologic anymore
+            let r = match recovery_algorithm {
+                OneRootAlgorithms::Newton => this
+                    .clone()
+                    .one_root_newton(None, epsilon, max_recovery_iter)
+                    .map_err(|_| roots.clone())?,
+                OneRootAlgorithms::Halley => this
+                    .clone()
+                    .one_root_halley(None, epsilon, max_recovery_iter)
+                    .map_err(|_| roots.clone())?,
+            };
             roots.push(r.clone());
             this = this / Poly::from_roots(&[r.clone()]);
         }
@@ -239,7 +266,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
 mod test {
     use na::{Complex, ComplexField};
 
-    use crate::Poly;
+    use crate::{poly::roots::OneRootAlgorithms, Poly};
 
     #[test]
     fn initial_guess_smallest() {
@@ -256,5 +283,27 @@ mod test {
         dbg!(poly![1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
             .try_roots(0.01, 100, 10, None, None, None)
             .unwrap());
+    }
+
+    #[test]
+    fn roots_newton() {
+        let p = poly![1.0, 0.0, 1.0, 0.0, 1.0];
+
+        // takes exactly 10 iterations
+        let roots = p
+            .try_n_roots(4, None, 1E-14, 10, Some(OneRootAlgorithms::Newton))
+            .unwrap();
+        assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
+    }
+
+    #[test]
+    fn roots_halley() {
+        let p = poly![1.0, 0.0, 1.0, 0.0, 1.0];
+
+        // takes exactly 10 iterations
+        let roots = p
+            .try_n_roots(4, None, 1E-14, 10, Some(OneRootAlgorithms::Halley))
+            .unwrap();
+        assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
     }
 }
