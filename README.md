@@ -43,6 +43,8 @@ Future Goals:
 - [ ] Rayon support
 - [ ] Fixed point support
 - [ ] SIMD support
+- [ ] Make it go fast (fastest polynomial root finder?)
+    - [ ] use GCD method for determining multiplicity of roots
 
 Non-Goals:
 - [ ] Symbolic polynomial manipulation (use a symbolic algebra crate)

@@ -1,5 +1,5 @@
 use na::{Complex, ComplexField, Normed, RealField, Scalar};
-use num::{traits::float::FloatCore, Float, FromPrimitive, One, Zero};
+use num::{traits::float::FloatCore, Float, FromPrimitive, Num, One, Zero};
 
 use crate::{
     Poly, ScalarOps,
@@ -14,6 +14,7 @@ use crate::{
 pub enum OneRootAlgorithms {
     Newton,
     Halley,
+    Laguerre,
 }
 
 #[non_exhaustive]
@@ -106,8 +107,38 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         Err(x)
     }
 
-    fn one_root_laguerre(&self, epsilon: T, max_iter: usize) -> Result<Complex<T>, Complex<T>> {
-        todo!()
+    fn one_root_laguerre(
+        &self,
+        initial_guess: Option<Complex<T>>,
+        epsilon: T,
+        max_iter: usize,
+    ) -> Result<Complex<T>, Complex<T>> {
+        let p_diff = self.clone().diff();
+        let p_diff2 = p_diff.clone().diff();
+        let degree = Complex::from_i32(self.degree_raw()).expect("degree too big");
+        let mut x = initial_guess.unwrap_or(self.initial_guess_smallest());
+        for _ in 0..max_iter {
+            let px = self.eval_point(x);
+            if px.norm() <= epsilon {
+                return Ok(x);
+            }
+            let pdx = p_diff.eval_point(x);
+            let pddx = p_diff2.eval_point(x);
+            let g = pdx / px;
+            let g2 = g.powu(2);
+            let h = g2 - pddx / px;
+            let degree_m_1 = <Complex<T> as std::ops::Sub>::sub(degree, Complex::one());
+            let denom_pm = (degree_m_1 * (degree * h - g2)).sqrt();
+            let denom1 = g + denom_pm;
+            let denom2 = g - denom_pm;
+            let a = if denom1.norm() > denom2.norm() {
+                denom1
+            } else {
+                denom2
+            };
+            x = x - a;
+        }
+        Err(x)
     }
 
     fn one_root_ostrowski(&self, epsilon: T, max_iter: usize) -> Result<Complex<T>, Complex<T>> {
@@ -195,6 +226,10 @@ impl<T: Scalar + Float + RealField> Poly<T> {
                     .clone()
                     .one_root_halley(initial_guess, epsilon, max_iter)
                     .map_err(|_| roots.clone())?,
+                OneRootAlgorithms::Laguerre => this
+                    .clone()
+                    .one_root_laguerre(initial_guess, epsilon, max_iter)
+                    .map_err(|_| roots.clone())?,
             };
             roots.push(r.clone());
             if i < (n - 1) {
@@ -253,6 +288,10 @@ impl<T: Scalar + Float + RealField> Poly<T> {
                     .clone()
                     .one_root_halley(None, epsilon, max_recovery_iter)
                     .map_err(|_| roots.clone())?,
+                OneRootAlgorithms::Laguerre => this
+                    .clone()
+                    .one_root_laguerre(None, epsilon, max_recovery_iter)
+                    .map_err(|_| roots.clone())?,
             };
             roots.push(r.clone());
             this = this / Poly::from_roots(&[r.clone()]);
@@ -300,9 +339,20 @@ mod test {
     fn roots_halley() {
         let p = poly![1.0, 0.0, 1.0, 0.0, 1.0];
 
-        // takes exactly 10 iterations
+        // takes exactly 5 iterations
         let roots = p
-            .try_n_roots(4, None, 1E-14, 10, Some(OneRootAlgorithms::Halley))
+            .try_n_roots(4, None, 1E-14, 5, Some(OneRootAlgorithms::Halley))
+            .unwrap();
+        assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
+    }
+
+    #[test]
+    fn roots_laguerre() {
+        let p = poly![1.0, 0.0, 1.0, 0.0, 1.0];
+
+        // takes exactly 5 iterations
+        let roots = p
+            .try_n_roots(4, None, 1E-14, 100, Some(OneRootAlgorithms::Laguerre))
             .unwrap();
         assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
     }
