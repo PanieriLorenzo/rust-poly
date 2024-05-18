@@ -20,7 +20,7 @@ mod roots;
 mod special_funcs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Poly<T>(pub(crate) na::DVector<Complex<T>>);
+pub struct Poly<T: Scalar>(pub(crate) na::DVector<Complex<T>>);
 
 impl<T: Scalar> Poly<T> {
     /// # Examples

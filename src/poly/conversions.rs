@@ -2,7 +2,7 @@ use num::Complex;
 
 use crate::{Poly, Scalar};
 
-impl<T> Poly<T> {
+impl<T: Scalar> Poly<T> {
     #[must_use]
     pub const fn from_dvector(value: na::DVector<Complex<T>>) -> Self {
         Self(value)
@@ -51,7 +51,7 @@ impl<T> Poly<T> {
     }
 }
 
-impl<T: Clone> Poly<T> {
+impl<T: Scalar> Poly<T> {
     #[must_use]
     pub fn to_vec(&self) -> Vec<Complex<T>> {
         Vec::from(self.as_slice())
@@ -140,7 +140,7 @@ impl<T: Scalar> From<Poly<T>> for na::DVector<Complex<T>> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a Poly<T> {
+impl<'a, T: Scalar> IntoIterator for &'a Poly<T> {
     type IntoIter = std::slice::Iter<'a, na::Complex<T>>;
     type Item = &'a na::Complex<T>;
     fn into_iter(self) -> Self::IntoIter {
@@ -148,7 +148,7 @@ impl<'a, T> IntoIterator for &'a Poly<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a mut Poly<T> {
+impl<'a, T: Scalar> IntoIterator for &'a mut Poly<T> {
     type IntoIter = std::slice::IterMut<'a, na::Complex<T>>;
     type Item = &'a mut na::Complex<T>;
     fn into_iter(self) -> Self::IntoIter {

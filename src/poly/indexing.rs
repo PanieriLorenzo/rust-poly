@@ -9,11 +9,11 @@ mod sealed {
     pub trait Sealed {}
 }
 
-pub trait Get<I, T>: sealed::Sealed {
+pub trait Get<I, T: Scalar>: sealed::Sealed {
     fn get(&self, idx: I) -> Option<Poly<T>>;
 }
 
-impl<T> sealed::Sealed for Poly<T> {}
+impl<T: Scalar> sealed::Sealed for Poly<T> {}
 
 impl<T: Scalar> Poly<T> {
     /// Implementation for all range-based indexing (because Rust is super annoying
