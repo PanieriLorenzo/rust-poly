@@ -1,9 +1,9 @@
-use crate::{Scalar, ScalarOps, __util::complex::c_neg};
+use na::Complex;
+use num::{One, Zero};
 
-use super::Poly;
-use num::{traits::float::FloatCore, Complex, One, Zero};
+use crate::{Poly, Scalar, __util::complex::c_neg};
 
-impl<T> Poly<T> {
+impl<T: Scalar> Poly<T> {
     /// The length of the polynomial without checking pre-conditions
     pub(crate) fn len_raw(&self) -> usize {
         self.0.len()
@@ -13,9 +13,7 @@ impl<T> Poly<T> {
     pub(crate) fn degree_raw(&self) -> i32 {
         self.len_raw() as i32 - 1
     }
-}
 
-impl<T: Scalar> Poly<T> {
     pub(crate) fn is_normalized(&self) -> bool {
         let n = self.len_raw();
         if n == 0 {
@@ -97,23 +95,6 @@ impl<T: Scalar> Poly<T> {
     pub(crate) fn make_monic(&mut self) {
         let last_coeff = self.last();
         self.0.apply(|x| *x = x.clone() / last_coeff.clone());
-    }
-}
-
-impl<T: ScalarOps> Poly<T> {
-    pub(crate) fn checked_div_impl(self, rhs: &Self) -> Option<Self> {
-        Some(self.div_rem(rhs)?.0)
-    }
-
-    pub(crate) fn checked_rem_impl(self, rhs: &Self) -> Option<Self> {
-        Some(self.div_rem(rhs)?.1)
-    }
-}
-
-impl<T: ScalarOps + FloatCore> Poly<T> {
-    // Check that the polynomial does not contain `NaN` or infinite values.
-    pub(crate) fn is_well_formed(&self) -> bool {
-        self.0.iter().all(|x| !x.is_nan() && x.is_finite())
     }
 }
 

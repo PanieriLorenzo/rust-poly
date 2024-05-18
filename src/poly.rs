@@ -11,11 +11,11 @@ use crate::{
     __util::complex::{c_neg, complex_fmt, complex_sort_mut},
 };
 
+mod base;
 mod calculus;
 mod conversions;
 mod impl_num;
 mod indexing;
-mod internals;
 mod roots;
 mod special_funcs;
 

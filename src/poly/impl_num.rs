@@ -10,7 +10,7 @@ use std::{
 
 extern crate nalgebra as na;
 
-use crate::{__util::linalg::convolve_1d, Poly, Scalar, ScalarOps};
+use crate::{Poly, Scalar, ScalarOps, __util::linalg::convolve_1d};
 
 impl<T: ScalarOps> Poly<T> {
     /// Calculate the quotient and remainder using long division. More efficient than
@@ -390,6 +390,16 @@ impl<T: Scalar> Neg for &Poly<T> {
 impl<T: Scalar> std::iter::Sum for Poly<T> {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::zero(), |acc, x| acc + x).normalize()
+    }
+}
+
+impl<T: ScalarOps> Poly<T> {
+    pub(crate) fn checked_div_impl(self, rhs: &Self) -> Option<Self> {
+        Some(self.div_rem(rhs)?.0)
+    }
+
+    pub(crate) fn checked_rem_impl(self, rhs: &Self) -> Option<Self> {
+        Some(self.div_rem(rhs)?.1)
     }
 }
 

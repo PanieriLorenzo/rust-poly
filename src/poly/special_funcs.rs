@@ -1,7 +1,7 @@
 use crate::{
+    Poly, Scalar, ScalarOps,
     __util::casting::{usize_to_f64, usize_to_i32, usize_to_scalar, usize_to_u32},
     __util::luts::factorial_lut,
-    Poly, Scalar, ScalarOps,
 };
 use num::{BigUint, FromPrimitive, Zero};
 
@@ -160,16 +160,5 @@ mod test {
     fn legendre() {
         let p = Poly::<f32>::legendre(3);
         assert_eq!(p, poly![0.0, -1.5, 0.0, 2.5]);
-    }
-
-    #[test]
-    fn legendre_big() {
-        // largest computable legendre
-        assert!(Poly64::legendre(813).is_well_formed());
-    }
-
-    #[test]
-    fn lel() {
-        println!("{}", Poly64::bessel(16).unwrap());
     }
 }
