@@ -77,14 +77,26 @@ impl<T: Scalar> Poly<T> {
 
         // fill the rightmost column with the coefficients of the associated
         // monic polynomial
-        let monic = self
-            .0
-            .view((0, 0), (n, 1))
-            .map(|x| c_neg(x) / self.0[n].clone());
+        let mut monic = self.clone();
+        monic.make_monic();
         for i in 0..n {
             mat.column_mut(n - 1)[i] = monic[i].clone();
         }
         mat
+    }
+
+    /// The last coefficient
+    pub(crate) fn last(&self) -> Complex<T> {
+        self.0[self.len_raw() - 1].clone()
+    }
+
+    /// Make the polynomial monic in-place.
+    ///
+    /// Monic polynomials are scaled such that the last coefficient is 1, and
+    /// the roots are preserved
+    pub(crate) fn make_monic(&mut self) {
+        let last_coeff = self.last();
+        self.0.apply(|x| *x = x.clone() / last_coeff.clone());
     }
 }
 
