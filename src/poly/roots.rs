@@ -303,9 +303,11 @@ impl<T: Scalar + Float + RealField> Poly<T> {
 
 #[cfg(test)]
 mod test {
-    use na::{Complex, ComplexField};
+    use itertools::Itertools;
+    use na::Complex;
+    use num::complex::{Complex64, ComplexFloat};
 
-    use crate::{poly::roots::OneRootAlgorithms, Poly};
+    use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
 
     #[test]
     fn initial_guess_smallest() {
@@ -355,5 +357,54 @@ mod test {
             .try_n_roots(4, None, 1E-14, 100, Some(OneRootAlgorithms::Laguerre))
             .unwrap();
         assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
+    }
+
+    #[test]
+    #[ignore]
+    fn combinatorial_schur() {
+        fn u16_to_poly(x: u16) -> Poly64 {
+            let coeffs = (0..8)
+                .map(|n| {
+                    let re = ((x >> n) & 1) as f64;
+                    let im = ((x >> (n + 1)) & 1) as f64;
+                    Complex64::new(re, im)
+                })
+                .collect_vec();
+            Poly64::from_complex_vec(coeffs)
+        }
+        for n in 0..u16::MAX {
+            let poly = u16_to_poly(n);
+            if poly.len() < 2 {
+                continue;
+            }
+            match poly.clone().roots_schur(0.01, 30) {
+                Err(_) => println!("{poly}"),
+                _ => (),
+            }
+        }
+    }
+
+    /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
+    #[test]
+    fn schur_roots_of_reverse_bessel() {
+        let poly = Poly64::reverse_bessel(2).unwrap();
+        let roots = poly.roots_schur(1E-14, 1000).unwrap();
+        assert_eq!(roots[0].re(), -1.5);
+        assert!((roots[0].im().abs() - 0.866) < 0.01);
+        assert_eq!(roots[1].re(), -1.5);
+        assert!((roots[1].im().abs() - 0.866) < 0.01);
+    }
+
+    /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
+    #[test]
+    fn newton_roots_of_reverse_bessel() {
+        let poly = Poly64::reverse_bessel(2).unwrap();
+        let roots = poly
+            .try_n_roots(2, None, 1E-14, 1000, Some(OneRootAlgorithms::Newton))
+            .unwrap();
+        assert_eq!(roots[0].re(), -1.5);
+        assert!((roots[0].im().abs() - 0.866) < 0.01);
+        assert_eq!(roots[1].re(), -1.5);
+        assert!((roots[1].im().abs() - 0.866) < 0.01);
     }
 }
