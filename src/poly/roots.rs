@@ -170,18 +170,41 @@ impl<T: Scalar + RealField + Float> Poly<T> {
     }
 
     fn roots_schur(&self, epsilon: T, max_iter: usize) -> Result<Vec<Complex<T>>, ()> {
-        // NOTE: this algorithm has a pathological case when the polynomial
-        //       has only odd-degree or even-degree terms, where it does not
-        //       converge. Should have some sort of pattern defeating pre-processing step
-        let comp = self.companion();
+        // FIXME: there are some pathological polynomials (seems to be when there
+        //        lots of zero coefficients) where nalgebra's Schur implementation
+        //        either does not converge or hangs indeterminately. This is a
+        //        bug in nalgebra, as the [LAPACK implementation](https://netlib.org/lapack/explore-html/d5/d38/group__gees_ga59d7d13222ddc67c5ae0e9aa1a62cb61.html#ga59d7d13222ddc67c5ae0e9aa1a62cb61)
+        //        does not have this bug.
+        //
+        //        See nalgebra issues:
+        //        - [nalgebra-#1291](https://github.com/dimforge/nalgebra/issues/1291),
+        //        - [nalgebra-#764](https://github.com/dimforge/nalgebra/issues/764),
+        //        - [nalgebra-#611](https://github.com/dimforge/nalgebra/issues/611).
 
-        Ok(comp
+        if self.len_raw() < 2 {
+            return Ok(vec![]);
+        }
+
+        let mut comp = self.companion();
+
+        // rotating the matrix 90 degrees. This is equivalent to using similarity
+        // transforms so it does not move the eigenvalues. But NumPy does it
+        // and apparently it makes it more precise
+        let n = comp.shape().0;
+        for i in 0..n / 2 {
+            comp.swap_rows(i, n - i - 1);
+            comp.swap_columns(i, n - i - 1);
+        }
+
+        let mut roots = comp
             .try_schur(epsilon, max_iter)
             .ok_or(())?
             .eigenvalues()
-            .expect("never fails on complex matrices")
-            .as_slice()
-            .into())
+            .expect("should never fail on complex matrices");
+
+        complex_sort_mut(&mut roots);
+
+        Ok(roots.as_slice().into())
     }
 }
 
@@ -307,6 +330,7 @@ mod test {
     use na::Complex;
     use num::complex::{Complex64, ComplexFloat};
 
+    use crate::__util::test::binary_coeffs;
     use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
 
     #[test]
@@ -359,29 +383,42 @@ mod test {
         assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
     }
 
+    /// This test is to find the minimum number of iterations at various degrees
+    /// that achieves 90% success rate, using "binary coefficients" polynomials,
+    /// which are difficult for the nalgebra implementation of the Schur
+    /// algorithm, using a somewhat realistic epsilon of `1E-5`. This is a heuristic
+    /// for deciding when schur did not converge and should switch to single-root
+    /// strategy instead.
+    ///
+    /// If the [LAPACK implementation](https://netlib.org/lapack/explore-html/d5/d38/group__gees_ga59d7d13222ddc67c5ae0e9aa1a62cb61.html#ga59d7d13222ddc67c5ae0e9aa1a62cb61)
+    /// was used, this would not be necessary, because the LAPACK implementation
+    /// is more robust. But nalgebra has had this issue in a long time and they
+    /// don't seem to be working on fixing it at the moment. See nalgebra issues
+    /// [nalgebra-#1291](https://github.com/dimforge/nalgebra/issues/1291),
+    /// [nalgebra-#764](https://github.com/dimforge/nalgebra/issues/764),
+    /// [nalgebra-#611](https://github.com/dimforge/nalgebra/issues/611).
     #[test]
     #[ignore]
-    fn combinatorial_schur() {
-        fn u16_to_poly(x: u16) -> Poly64 {
-            let coeffs = (0..8)
-                .map(|n| {
-                    let re = ((x >> n) & 1) as f64;
-                    let im = ((x >> (n + 1)) & 1) as f64;
-                    Complex64::new(re, im)
-                })
-                .collect_vec();
-            Poly64::from_complex_vec(coeffs)
-        }
-        for n in 0..u16::MAX {
-            let poly = u16_to_poly(n);
-            if poly.len() < 2 {
-                continue;
+    fn schur_tuning() {
+        fn scenario(deg: usize, iter: usize) {
+            let mut ok = 0;
+            let mut err = 0;
+            for p in binary_coeffs(deg as i32, deg) {
+                match p.roots_schur(1E-5, iter) {
+                    Ok(_) => ok += 1,
+                    Err(_) => err += 1,
+                }
             }
-            match poly.clone().roots_schur(0.01, 30) {
-                Err(_) => println!("{poly}"),
-                _ => (),
-            }
+            assert!(ok as f32 / (ok + err) as f32 >= 0.9, "{}/{}", ok, ok + err);
         }
+        // scenario(4, 39);
+        // scenario(5, 49);
+        // scenario(6, 59);
+        // scenario(7, 36);
+        // scenario(8, 23);
+        // scenario(9, 23);
+        // scenario(10, 25);
+        scenario(15, 25);
     }
 
     /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)

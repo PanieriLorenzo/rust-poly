@@ -48,6 +48,7 @@ Future Goals:
 
 Non-Goals:
 - [ ] Symbolic polynomial manipulation (use a symbolic algebra crate)
+- [ ] LAPACK or BLAS integration (compiling shared libraries in a portable way is a pain and I don't want to do it. You're welcome to contribute)
 
 ## Development
 
