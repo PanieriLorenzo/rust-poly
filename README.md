@@ -99,3 +99,5 @@ cargo flamegraph --bench bench -- <name-of-bench> --bench
 This library is covered by the MIT license, see [LICENSE](LICENSE).
 
 Parts of the source code are based on the [NumPy](https://github.com/numpy/numpy) library for Python, used in accordance to the original license, see [licenses/numpy/LICENSE.txt](licenses/numpy/LICENSE.txt).
+
+The `__utils/linalg.rs` module is based on the [Rulinalg](https://github.com/AtheMathmo/rulinalg) crate, used in accordance to the original license, see [licenses/rulinalg/LICENSE.md](licenses/rulinalg/LICENSE.md).
