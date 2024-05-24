@@ -13,7 +13,7 @@ use na::{
 use nalgebra::DVector;
 use num::{complex::Complex64, Complex, One, Zero};
 
-use crate::Scalar;
+use crate::{Error, Scalar};
 
 pub(crate) fn convolve_1d<T: Scalar>(
     input: &DVector<Complex<T>>,
@@ -79,7 +79,7 @@ fn col_2_householder<T: Scalar + RealField>(mut col: DVector<Complex<T>>) -> DMa
 fn col_2_householder_vec<T: Scalar + RealField>(col: &mut DVector<Complex<T>>) {
     debug_assert!(
         col.len() > 0,
-        "can't construct householder matrix from empty vector"
+        "can't construct householder vector from empty vector"
     );
 
     let denom = col[0].clone() + col[0].clone().signum() * col.dot(&col).sqrt();
@@ -87,7 +87,7 @@ fn col_2_householder_vec<T: Scalar + RealField>(col: &mut DVector<Complex<T>>) {
     debug_assert_ne!(
         denom,
         Complex::zero(),
-        "can't construct householder matrix from column whose first entry is zero"
+        "can't construct householder vector from column whose first entry is zero"
     );
 
     col.apply(|z| *z = z.clone().div(denom.clone()));
@@ -105,6 +105,8 @@ fn upper_hessenberg<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>)
 
     for i in 0..n - 2 {
         let mut h_holder_vec: DVector<_> = this.view((i + 1, i), (n - i - 1, 1)).column(0).into();
+        println!("{this}");
+        println!("{h_holder_vec}");
         col_2_householder_vec(&mut h_holder_vec);
 
         {
@@ -162,19 +164,16 @@ fn complex_givens_rot_2d<T: Scalar + RealField>(
     matrix![cos.clone(), sin; -sin.conj(), cos.conj()]
 }
 
-fn get_diag<T: Clone>(this: DMatrixView<T>, idx: usize) -> T {
-    this.row(idx)[idx].clone()
-}
-
-fn set_diag<T>(mut this: DMatrixViewMut<T>, idx: usize, val: T) {
-    this.row_mut(idx)[idx] = val;
-}
-
 // TODO: document what LAPACK routine this corresponds to
-// TODO: this should take a view not a reference
 /// Port of [`rulinalg::matrix::decomposition::eigen::balance_matrix`](https://github.com/AtheMathmo/rulinalg/blob/0ea49678d2dfa0e0a0df9cd26f49f6330aef80c4/src/matrix/decomposition/eigen.rs#L12)
-fn balance_matrix<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>) {
+fn balance_matrix<T: Scalar + RealField>(
+    mut this: DMatrixViewMut<Complex<T>>,
+    max_iter: usize,
+) -> Result<(), Error> {
     // TODO: lots of single letter variables, make it more readable
+
+    // TODO: tune this to input size
+    const MAX_ITER_INNER: usize = 10;
 
     let n = this.nrows();
     let radix = T::one() + T::one();
@@ -185,8 +184,13 @@ fn balance_matrix<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>) {
     let mut d = DMatrix::<Complex<T>>::identity(n, n);
     let mut converged = false;
 
-    // TODO: max iter
+    // keep track of (outer) iterations
+    let mut niter = 0;
+
     while !converged {
+        if niter >= max_iter {
+            return Err(Error::max_iter_outer());
+        }
         converged = true;
 
         for i in 0..n {
@@ -196,18 +200,26 @@ fn balance_matrix<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>) {
             let s = c.clone() * c.clone() + r.clone() * r.clone();
             let mut f = T::one();
 
-            // TODO: max iter
+            let mut niter_inner = 0;
             while c < r.clone() / radix.clone() {
+                if niter_inner > MAX_ITER_INNER {
+                    return Err(Error::max_iter_inner());
+                }
                 c = c * radix.clone();
                 r = r / radix.clone();
                 f = f * radix.clone();
+                niter_inner += 1;
             }
 
-            // TODO: max iter
+            let mut niter_inner = 0;
             while c >= r.clone() * radix.clone() {
+                if niter_inner > MAX_ITER_INNER {
+                    return Err(Error::max_iter_inner());
+                }
                 c = c / radix.clone();
                 r = r * radix.clone();
                 f = f / radix.clone();
+                niter_inner += 1;
             }
 
             if (c.clone() * c.clone() + r.clone() * r.clone())
@@ -223,15 +235,24 @@ fn balance_matrix<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>) {
                 }
             }
         }
+
+        // iteration complete
+        niter += 1;
     }
+    Ok(())
 }
 
 /// Francis shift algorithm
 pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     mut this: DMatrixViewMut<Complex<T>>,
     epsilon: T,
-) -> Result<Vec<Complex<T>>, ()> {
+    max_iter: usize,
+    max_iter_per_deflation: usize,
+) -> Result<Vec<Complex<T>>, Error> {
     let n = this.nrows();
+
+    // TODO: tune this to input
+    const MAX_ITER_BALANCE: usize = 100;
 
     debug_assert!(n > 2, "use eigen_2x2 for 2x2 matrices");
     debug_assert_eq!(n, this.ncols(), "matrix must be square");
@@ -239,23 +260,27 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     // TODO: optional step, i.e. make a tuning option
     upper_hessenberg(this.as_view_mut());
     let mut h = this;
-    let _h_dbg: Vec<_> = h.iter().collect();
-    black_box(_h_dbg);
-    balance_matrix(h.as_view_mut());
-    let _h_dbg: Vec<_> = h.iter().collect();
-    black_box(_h_dbg);
+    balance_matrix(h.as_view_mut(), MAX_ITER_BALANCE).map_err(|e| e.map_inner())?;
 
-    // the final index of the active matrix (???)
+    // the final index of the active sub-matrix
     let mut p = n - 1;
 
-    // TODO: maxiter
+    // keeps track of total (outer) iterations
     let mut niter = 0;
+
+    // keeps track of total (inner) iterations per each deflation step
+    let mut piter = 0;
+
     while p > 1 {
-        if niter >= 100 {
-            panic!();
+        // give up if didn't converge
+        if niter >= max_iter {
+            return Err(Error::max_iter_user());
         }
-        niter += 1;
-        // TODO: what are these?
+        if piter >= max_iter_per_deflation {
+            return Err(Error::max_iter_inner());
+        }
+
+        // TODO: what is q?
         let q = p - 1;
         let s = h[(q, q)].clone() + h[(p, p)].clone();
         let t = h[(q, q)].clone() * h[(p, p)].clone() - h[(q, p)].clone() * h[(p, q)].clone();
@@ -280,8 +305,6 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
                 //       able to do in-place matmul
                 h_block.copy_from(&transformed);
             }
-            let _h_dbg: Vec<_> = h.iter().collect();
-            black_box(_h_dbg);
 
             // apply householder transformation to block (on the right)
             {
@@ -290,8 +313,6 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
                 let transformed = &h_block * householder.transpose();
                 h_block.copy_from(&transformed);
             }
-            let _h_dbg: Vec<_> = h.iter().collect();
-            black_box(_h_dbg);
 
             x = h.row(k + 1)[k].clone();
             y = h.row(k + 2)[k].clone();
@@ -309,8 +330,6 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
             let transformed = &givens_mat * &h_block;
             h_block.copy_from(&transformed);
         }
-        let _h_dbg: Vec<_> = h.iter().collect();
-        black_box(_h_dbg);
 
         {
             // apply givens rotation to block (on the right)
@@ -318,27 +337,31 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
             let transformed = &h_block * givens_mat.transpose();
             h_block.copy_from(&transformed);
         }
-        let _h_dbg: Vec<_> = h.iter().collect();
-        black_box(_h_dbg);
 
         // check for convergence
         if h[(p, q)].clone().abs()
             < epsilon.clone() * (h[(q, q)].clone().abs() + h[(p, p)].clone().abs())
         {
+            // deflation step:
             // if h[p,q] < epsilon we flush it to zero and shrink the problem
             h[(p, q)] = Complex::<T>::zero();
             p -= 1;
+            piter = 0;
         } else if h[(p - 1, q - 1)].clone().abs()
             < epsilon.clone() * (h[(q - 1, q - 1)].clone().abs() + h[(q, q)].clone().abs())
         {
+            // deflation step for 2x2 blocks
             h[(p - 1, q - 1)] = Complex::<T>::zero();
             p -= 2;
+            piter = 0;
+        } else {
+            // if no deflation happened, increment counter for current deflation
+            piter += 1;
         }
-        let _h_dbg: Vec<_> = h.iter().collect();
-        black_box(_h_dbg);
+
+        // iteration complete
+        niter += 1;
     }
-    let _h_dbg: Vec<_> = h.iter().collect();
-    black_box(_h_dbg);
 
     Ok(h.diagonal().as_slice().to_vec())
 }
@@ -353,7 +376,7 @@ mod test {
     #[test]
     fn test_balance_matrix() {
         let mut m = dmatrix![0.0, 1.0, 2.0; 3.0, 4.0, 5.0; 6.0, 7.0, 8.0].cast::<Complex64>();
-        balance_matrix(m.as_view_mut());
+        balance_matrix(m.as_view_mut(), 100).unwrap();
         assert_eq!(
             m,
             dmatrix![0.0, 2.0, 4.0; 1.5, 4.0, 5.0; 3.0, 7.0, 8.0].cast::<Complex64>()
@@ -364,7 +387,7 @@ mod test {
     fn test_egien_3x3() {
         let mut m =
             dmatrix![17.0, 22.0, 27.0; 22.0, 29.0, 36.0; 27.0, 36.0, 45.0].cast::<Complex64>();
-        let eigs = eigen_francis_shift(m.as_view_mut(), 1E-9).unwrap();
+        let eigs = eigen_francis_shift(m.as_view_mut(), 1E-9, 100, 100).unwrap();
         let eig_1 = 90.4026;
         let eig_2 = 0.5973;
         let eig_3 = 0.0;

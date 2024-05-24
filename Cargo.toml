@@ -23,10 +23,14 @@ itertools = "0.12.1"
 anyhow = "1.0.75"
 num = "0.4.1"
 numeric_constant_traits = "0.1.0"
+thiserror = "1.0.61"
+
 
 [dev-dependencies]
 criterion = "0.5.1"
+fastrand = "2.1.0"
 rand = "0.8.5"
+weird-data = "0.2.0"
 
 [[bench]]
 name = "bench"

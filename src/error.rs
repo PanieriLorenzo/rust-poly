@@ -12,6 +12,15 @@ pub(crate) enum ErrorKind {
     #[error("did not converge")]
     MaxIterInner,
 
+    /// Use this when the outermost defined maxiter is reached, but this wasn't
+    /// specified by the user
+    #[error("did not converge")]
+    MaxIterOuter,
+
+    /// Use this for errors that only appear on pathological inputs
+    #[error("did not converge")]
+    Pathological,
+
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -19,10 +28,8 @@ pub(crate) enum ErrorKind {
 /// The top-level error type for this crate.
 #[derive(Debug, Error)]
 pub struct Error {
-    do_recover: bool,
-
     #[source]
-    source: ErrorKind,
+    pub(crate) source: ErrorKind,
 }
 
 impl fmt::Display for Error {
@@ -32,17 +39,35 @@ impl fmt::Display for Error {
 }
 
 impl Error {
-    pub(crate) fn max_iter_user(do_recover: bool) -> Self {
+    pub(crate) fn max_iter_user() -> Self {
         Self {
-            do_recover,
             source: ErrorKind::MaxIterUser,
         }
     }
 
-    pub(crate) fn max_iter_inner(do_recover: bool) -> Self {
+    pub(crate) fn max_iter_inner() -> Self {
         Self {
-            do_recover,
             source: ErrorKind::MaxIterInner,
+        }
+    }
+
+    pub(crate) fn max_iter_outer() -> Self {
+        Self {
+            source: ErrorKind::MaxIterOuter,
+        }
+    }
+
+    pub(crate) fn pathological() -> Self {
+        Self {
+            source: ErrorKind::Pathological,
+        }
+    }
+
+    /// Maps [`ErrorKind::MaxIterOuter`] to [`ErrorKind::MaxIterInner`]
+    pub(crate) fn map_inner(self) -> Self {
+        match self.source {
+            ErrorKind::MaxIterOuter => Self::max_iter_inner(),
+            _ => self,
         }
     }
 }

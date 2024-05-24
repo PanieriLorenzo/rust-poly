@@ -4,9 +4,25 @@ use num::{One, Zero};
 use crate::{Poly, Scalar, __util::complex::c_neg};
 
 impl<T: Scalar> Poly<T> {
+    /// Applies a closure to each coefficient in-place
+    pub(crate) fn apply(&mut self, f: impl FnMut(&mut Complex<T>)) {
+        self.0.apply(f)
+    }
+
     /// The length of the polynomial without checking pre-conditions
     pub(crate) fn len_raw(&self) -> usize {
         self.0.len()
+    }
+
+    /// Scale a polynomial in-place
+    pub(crate) fn scale(&mut self, factor: Complex<T>) {
+        self.apply(|z| *z = z.clone() * factor.clone());
+    }
+
+    /// Moving version of `scale`
+    pub(crate) fn scaled(mut self, factor: Complex<T>) -> Self {
+        self.scale(factor);
+        self
     }
 
     /// The degree of the polynomial without checking pre-conditions
@@ -76,6 +92,7 @@ impl<T: Scalar> Poly<T> {
         // fill the rightmost column with the coefficients of the associated
         // monic polynomial
         let mut monic = self.clone();
+        println!("{monic:?}");
         monic.make_monic();
         for i in 0..n {
             mat.column_mut(n - 1)[i] = c_neg(monic[i].clone());
@@ -95,6 +112,19 @@ impl<T: Scalar> Poly<T> {
     pub(crate) fn make_monic(&mut self) {
         let last_coeff = self.last();
         self.0.apply(|x| *x = x.clone() / last_coeff.clone());
+    }
+}
+
+impl<T: Scalar + PartialOrd> Poly<T> {
+    /// Check if the polynomial is actually a monomial
+    pub(crate) fn is_monomial(&self, tol: T) -> bool {
+        debug_assert!(self.is_normalized());
+        let degree = self.degree_raw();
+        if degree < 0 {
+            return false;
+        }
+        let degree = degree as usize;
+        self.iter().take(degree).all(|z| z.norm_sqr() < tol)
     }
 }
 

@@ -6,11 +6,11 @@ Project Description
 
 ### Todo
 
-- [ ] Split further into `int` and `real` impls for better organization, when you get to integer polynomial algorithms.
-- [ ] Benchmarks
+- [ ] Utilize multishift QR algorithm (the one from `cgees` in LAPACK) from the Karen Braman, Ralph Byers and Roy Mathias papers (late 90s early 0s).
 
 ### In Progress
 
+- [ ] Benchmarks
 
 ### Done ✓
 
@@ -20,3 +20,4 @@ Project Description
 ### Backlog
 
 - [ ] Conform to [Rust API guidelines](https://rust-lang.github.io/api-guidelines/checklist.html)
+- [ ] Split further into `int` and `real` impls for better organization, when you get to integer polynomial algorithms.

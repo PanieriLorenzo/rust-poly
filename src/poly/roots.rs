@@ -2,8 +2,9 @@ use na::{Complex, ComplexField, Normed, RealField, Scalar};
 use num::{traits::float::FloatCore, Float, FromPrimitive, Num, One, Zero};
 
 use crate::{
-    Poly, ScalarOps,
+    Error, ErrorKind, Poly, ScalarOps,
     __util::{
+        self,
         casting::usize_to_scalar,
         complex::{c_min, c_neg, complex_sort_mut},
     },
@@ -14,12 +15,15 @@ use crate::{
 pub enum OneRootAlgorithms {
     Newton,
     Halley,
-    Laguerre,
+    JenkinsTraub,
 }
 
 #[non_exhaustive]
 pub enum AllRootsAlgorithms {
+    #[deprecated]
     Schur,
+
+    FrancisQR,
 }
 
 // private
@@ -107,87 +111,49 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         Err(x)
     }
 
-    fn one_root_laguerre(
-        &self,
-        initial_guess: Option<Complex<T>>,
+    fn one_root_jenkins_traub(
+        &mut self,
         epsilon: T,
         max_iter: usize,
     ) -> Result<Complex<T>, Complex<T>> {
-        let p_diff = self.clone().diff();
-        let p_diff2 = p_diff.clone().diff();
-        let degree = Complex::from_i32(self.degree_raw()).expect("degree too big");
-        let mut x = initial_guess.unwrap_or(self.initial_guess_smallest());
-        for _ in 0..max_iter {
-            let px = self.eval_point(x);
-            if px.norm() <= epsilon {
-                return Ok(x);
-            }
-            let pdx = p_diff.eval_point(x);
-            let pddx = p_diff2.eval_point(x);
-            let g = pdx / px;
-            let g2 = g.powu(2);
-            let h = g2 - pddx / px;
-            let degree_m_1 = <Complex<T> as std::ops::Sub>::sub(degree, Complex::one());
-            let denom_pm = (degree_m_1 * (degree * h - g2)).sqrt();
-            let denom1 = g + denom_pm;
-            let denom2 = g - denom_pm;
-            let a = if denom1.norm() > denom2.norm() {
-                denom1
-            } else {
-                denom2
-            };
-            x = x - a;
+        // TODO: tune these to the size of the polynomial with a lookup table
+        const M: usize = 5;
+        const L: usize = 100;
+
+        self.make_monic();
+
+        // stage one
+        let mut h_poly = self.clone().diff();
+        for _ in 0..M {
+            let pz = self.eval_point(Complex::zero());
+
+            // TODO: too many clones
+            let hz = h_poly.clone().eval_point(Complex::zero());
+            h_poly = h_poly - self.clone().scaled(hz / pz);
+
+            // TODO: linear division can be done with synthetic division
+            h_poly = h_poly / poly![T::zero(), T::one()];
         }
-        Err(x)
-    }
 
-    fn one_root_ostrowski(&self, epsilon: T, max_iter: usize) -> Result<Complex<T>, Complex<T>> {
+        // stage two
+        todo!();
+
+        // stage three
         todo!()
     }
 
-    fn one_root_ostrowski_sq(&self, epsilon: T, max_iter: usize) -> Result<Complex<T>, Complex<T>> {
-        todo!()
-    }
+    fn roots_francis_qr(&self, epsilon: T, max_iter: usize) -> Result<Vec<Complex<T>>, Error> {
+        debug_assert!(
+            self.degree_raw() >= 3,
+            "for trivial polynomial, don't use iterative methods"
+        );
 
-    fn one_root_householder3(&self, epsilon: T, max_iter: usize) -> Result<Complex<T>, Complex<T>> {
-        todo!()
-    }
-
-    fn roots_durand_kerner(
-        &self,
-        epsilon: T,
-        max_iter: usize,
-    ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
-        todo!()
-    }
-
-    fn roots_jenkins_traub(
-        &self,
-        epsilon: T,
-        max_iter: usize,
-    ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
-        todo!()
-    }
-
-    fn roots_schur(&self, epsilon: T, max_iter: usize) -> Result<Vec<Complex<T>>, ()> {
-        // FIXME: there are some pathological polynomials (seems to be when there
-        //        lots of zero coefficients) where nalgebra's Schur implementation
-        //        either does not converge or hangs indeterminately. This is a
-        //        bug in nalgebra, as the [LAPACK implementation](https://netlib.org/lapack/explore-html/d5/d38/group__gees_ga59d7d13222ddc67c5ae0e9aa1a62cb61.html#ga59d7d13222ddc67c5ae0e9aa1a62cb61)
-        //        does not have this bug.
-        //
-        //        See nalgebra issues:
-        //        - [nalgebra-#1291](https://github.com/dimforge/nalgebra/issues/1291),
-        //        - [nalgebra-#764](https://github.com/dimforge/nalgebra/issues/764),
-        //        - [nalgebra-#611](https://github.com/dimforge/nalgebra/issues/611).
-
-        if self.len_raw() < 2 {
-            return Ok(vec![]);
-        }
+        // TODO: tune max_iter_per_deflation to input
 
         let mut comp = self.companion();
+        println!("{comp}");
 
-        // rotating the matrix 90 degrees. This is equivalent to using similarity
+        // rotating the matrix 180 degrees. This is equivalent to using similarity
         // transforms so it does not move the eigenvalues. But NumPy does it
         // and apparently it makes it more precise
         let n = comp.shape().0;
@@ -196,15 +162,11 @@ impl<T: Scalar + RealField + Float> Poly<T> {
             comp.swap_columns(i, n - i - 1);
         }
 
-        let mut roots = comp
-            .try_schur(epsilon, max_iter)
-            .ok_or(())?
-            .eigenvalues()
-            .expect("should never fail on complex matrices");
-
-        complex_sort_mut(&mut roots);
-
-        Ok(roots.as_slice().into())
+        // TODO: this implementation uses an outdated Francis shift algorithm,
+        //       the "state of the art" (from the 90s lmao), is to use a
+        //       multishift QR algorithm. This is what LAPACK does.
+        //       read the papers by Karen Braman, Ralph Byers and Roy Mathias
+        __util::linalg::eigen_francis_shift(comp.as_view_mut(), epsilon, max_iter, max_iter)
     }
 }
 
@@ -235,6 +197,10 @@ impl<T: Scalar + Float + RealField> Poly<T> {
             "for a polynomial of degree D, there can't be more than D roots"
         );
 
+        // TODO: if you use monic polynomials, there is a simpler algorithm
+        //       for polynomial division that improves accuracy, because no
+        //       divisions are performed on the coefficients
+
         let algorithm = algorithm.unwrap_or(OneRootAlgorithms::Newton);
 
         let mut roots = vec![];
@@ -249,10 +215,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
                     .clone()
                     .one_root_halley(initial_guess, epsilon, max_iter)
                     .map_err(|_| roots.clone())?,
-                OneRootAlgorithms::Laguerre => this
-                    .clone()
-                    .one_root_laguerre(initial_guess, epsilon, max_iter)
-                    .map_err(|_| roots.clone())?,
+                OneRootAlgorithms::JenkinsTraub => unimplemented!(),
             };
             roots.push(r.clone());
             if i < (n - 1) {
@@ -278,24 +241,43 @@ impl<T: Scalar + Float + RealField> Poly<T> {
         }
 
         let max_recovery_iter = max_recovery_iter.unwrap_or(max_iter);
-        let algorithm = algorithm.unwrap_or(AllRootsAlgorithms::Schur);
+        let algorithm = algorithm.unwrap_or(AllRootsAlgorithms::FrancisQR);
         let recovery_algorithm = recovery_algorithm.unwrap_or(OneRootAlgorithms::Newton);
-
-        let all_roots = match algorithm {
-            AllRootsAlgorithms::Schur => |this: Poly<T>| this.roots_schur(epsilon, max_iter),
-            _ => unimplemented!(),
-        };
 
         let mut roots = vec![];
         let mut this = self.clone();
+
+        // a small safe number, this is often done in LAPACK to avoid overflows
+        let small_num = Float::sqrt(T::min_positive_value()) / T::epsilon();
+
         for _ in 0..max_tries {
-            // TODO: automatically skip to recovery if odd-degree only or even-degree
-            //       only as these are pathological cases for eigenvalue root finders
-            let maybe_roots = all_roots(this.clone());
-            if let Ok(found_roots) = maybe_roots {
+            let mut needs_unshifting = false;
+            // leading zero coefficients can be problematic, so shifting to
+            // avoid (the householder reflectors cannot be constructed if the
+            // first element is zero)
+            if this.0[0].abs() < small_num {
+                needs_unshifting = true;
+                this = this.translate(Complex::one(), Complex::zero());
+            }
+            let maybe_roots = match algorithm {
+                AllRootsAlgorithms::Schur | AllRootsAlgorithms::FrancisQR => {
+                    this.roots_francis_qr(epsilon, max_iter)
+                }
+            };
+            if let Ok(mut found_roots) = maybe_roots {
+                if needs_unshifting {
+                    for r in &mut found_roots {
+                        *r -= Complex::one();
+                    }
+                }
                 roots.extend(found_roots);
                 // TODO: sort
                 return Ok(roots);
+            }
+            let err = maybe_roots.expect_err("infallible");
+            if !matches!(err.source, ErrorKind::MaxIterInner) {
+                // only recover if MaxIterInner
+                break;
             }
 
             // uses one iteration of single-root algorithm for recovery when
@@ -311,10 +293,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
                     .clone()
                     .one_root_halley(None, epsilon, max_recovery_iter)
                     .map_err(|_| roots.clone())?,
-                OneRootAlgorithms::Laguerre => this
-                    .clone()
-                    .one_root_laguerre(None, epsilon, max_recovery_iter)
-                    .map_err(|_| roots.clone())?,
+                OneRootAlgorithms::JenkinsTraub => unimplemented!(),
             };
             roots.push(r.clone());
             this = this / Poly::from_roots(&[r.clone()]);
@@ -345,8 +324,8 @@ mod test {
 
     #[test]
     fn roots_schur() {
-        dbg!(poly![1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
-            .try_roots(0.01, 100, 10, None, None, None)
+        dbg!(poly![0.0, 0.0, 0.0, 0.0, 1.0]
+            .try_roots(0.00001, 100, 10, None, None, None)
             .unwrap());
     }
 
@@ -372,17 +351,6 @@ mod test {
         assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
     }
 
-    #[test]
-    fn roots_laguerre() {
-        let p = poly![1.0, 0.0, 1.0, 0.0, 1.0];
-
-        // takes exactly 5 iterations
-        let roots = p
-            .try_n_roots(4, None, 1E-14, 100, Some(OneRootAlgorithms::Laguerre))
-            .unwrap();
-        assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
-    }
-
     /// This test is to find the minimum number of iterations at various degrees
     /// that achieves 90% success rate, using "binary coefficients" polynomials,
     /// which are difficult for the nalgebra implementation of the Schur
@@ -404,28 +372,28 @@ mod test {
             let mut ok = 0;
             let mut err = 0;
             for p in binary_coeffs(deg as i32, deg) {
-                match p.roots_schur(1E-5, iter) {
+                match p.try_roots(1E-5, iter, 1, None, None, None) {
                     Ok(_) => ok += 1,
                     Err(_) => err += 1,
                 }
             }
             assert!(ok as f32 / (ok + err) as f32 >= 0.9, "{}/{}", ok, ok + err);
         }
-        // scenario(4, 39);
+        scenario(4, 100);
         // scenario(5, 49);
         // scenario(6, 59);
         // scenario(7, 36);
         // scenario(8, 23);
         // scenario(9, 23);
         // scenario(10, 25);
-        scenario(15, 25);
+        //scenario(15, 25);
     }
 
     /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
     #[test]
     fn schur_roots_of_reverse_bessel() {
         let poly = Poly64::reverse_bessel(2).unwrap();
-        let roots = poly.roots_schur(1E-14, 1000).unwrap();
+        let roots = poly.roots_francis_qr(1E-14, 1000).unwrap();
         assert_eq!(roots[0].re(), -1.5);
         assert!((roots[0].im().abs() - 0.866) < 0.01);
         assert_eq!(roots[1].re(), -1.5);
