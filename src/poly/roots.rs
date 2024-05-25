@@ -309,7 +309,7 @@ mod test {
     use na::Complex;
     use num::complex::{Complex64, ComplexFloat};
 
-    use crate::__util::test::binary_coeffs;
+    use crate::__util::testing::binary_coeffs;
     use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
 
     #[test]

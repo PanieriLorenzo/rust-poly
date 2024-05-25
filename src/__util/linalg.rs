@@ -272,6 +272,9 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     let mut piter = 0;
 
     while p > 1 {
+        // TODO: right now we discard the eigenvalues that we have collected
+        //       on failure. We should return them instead so we can shrink
+        //       the polynomial using division.
         // give up if didn't converge
         if niter >= max_iter {
             return Err(Error::max_iter_user());

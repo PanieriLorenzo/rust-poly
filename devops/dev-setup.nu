@@ -1,4 +1,4 @@
-npm install
+npm ci
 
 ### these are not strictly necessary ###
 #
