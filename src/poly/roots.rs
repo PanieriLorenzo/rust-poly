@@ -143,6 +143,11 @@ impl<T: Scalar + RealField + Float> Poly<T> {
     }
 
     fn roots_francis_qr(&self, epsilon: T, max_iter: usize) -> Result<Vec<Complex<T>>, Error> {
+        // TODO: this implementation uses an outdated Francis shift algorithm,
+        //       the "state of the art" (from the 90s lmao), is to use a
+        //       multishift QR algorithm. This is what LAPACK does.
+        //       read the papers by Karen Braman, Ralph Byers and Roy Mathias
+
         debug_assert!(
             self.degree_raw() >= 3,
             "for trivial polynomial, don't use iterative methods"
@@ -150,23 +155,42 @@ impl<T: Scalar + RealField + Float> Poly<T> {
 
         // TODO: tune max_iter_per_deflation to input
 
-        let mut comp = self.companion();
-        println!("{comp}");
+        // a small safe number, this is often done in LAPACK to avoid overflows
+        let small_num = Float::sqrt(T::min_positive_value()) / T::epsilon();
+
+        // TODO: remove this clone
+        let mut this = self.clone();
+
+        let mut needs_unshifting = false;
+        // leading zero coefficients can be problematic, so shifting to
+        // avoid (the householder reflectors cannot be constructed if the
+        // first element is zero)
+        if this.0[0].abs() < small_num {
+            needs_unshifting = true;
+            this = this.translate(Complex::one(), Complex::zero());
+        }
+
+        let mut comp = this.companion();
 
         // rotating the matrix 180 degrees. This is equivalent to using similarity
         // transforms so it does not move the eigenvalues. But NumPy does it
         // and apparently it makes it more precise
-        let n = comp.shape().0;
+        let n = comp.nrows();
         for i in 0..n / 2 {
             comp.swap_rows(i, n - i - 1);
             comp.swap_columns(i, n - i - 1);
         }
 
-        // TODO: this implementation uses an outdated Francis shift algorithm,
-        //       the "state of the art" (from the 90s lmao), is to use a
-        //       multishift QR algorithm. This is what LAPACK does.
-        //       read the papers by Karen Braman, Ralph Byers and Roy Mathias
-        __util::linalg::eigen_francis_shift(comp.as_view_mut(), epsilon, max_iter, max_iter)
+        let mut roots =
+            __util::linalg::eigen_francis_shift(comp.as_view_mut(), epsilon, max_iter, max_iter)?;
+
+        if needs_unshifting {
+            for r in &mut roots {
+                *r -= Complex::one();
+            }
+        }
+
+        Ok(roots)
     }
 }
 
@@ -247,35 +271,19 @@ impl<T: Scalar + Float + RealField> Poly<T> {
         let mut roots = vec![];
         let mut this = self.clone();
 
-        // a small safe number, this is often done in LAPACK to avoid overflows
-        let small_num = Float::sqrt(T::min_positive_value()) / T::epsilon();
-
         for _ in 0..max_tries {
-            let mut needs_unshifting = false;
-            // leading zero coefficients can be problematic, so shifting to
-            // avoid (the householder reflectors cannot be constructed if the
-            // first element is zero)
-            if this.0[0].abs() < small_num {
-                needs_unshifting = true;
-                this = this.translate(Complex::one(), Complex::zero());
-            }
             let maybe_roots = match algorithm {
                 AllRootsAlgorithms::Schur | AllRootsAlgorithms::FrancisQR => {
                     this.roots_francis_qr(epsilon, max_iter)
                 }
             };
-            if let Ok(mut found_roots) = maybe_roots {
-                if needs_unshifting {
-                    for r in &mut found_roots {
-                        *r -= Complex::one();
-                    }
-                }
+            if let Ok(found_roots) = maybe_roots {
                 roots.extend(found_roots);
                 // TODO: sort
                 return Ok(roots);
             }
             let err = maybe_roots.expect_err("infallible");
-            if !matches!(err.source, ErrorKind::MaxIterInner) {
+            if !matches!(err.source, ErrorKind::SlowConvergence) {
                 // only recover if MaxIterInner
                 break;
             }

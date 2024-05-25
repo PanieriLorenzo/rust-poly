@@ -10,7 +10,7 @@ pub(crate) enum ErrorKind {
 
     /// Use this for when an internally defined maxiter is reached
     #[error("did not converge")]
-    MaxIterInner,
+    SlowConvergence,
 
     /// Use this when the outermost defined maxiter is reached, but this wasn't
     /// specified by the user
@@ -47,7 +47,7 @@ impl Error {
 
     pub(crate) fn max_iter_inner() -> Self {
         Self {
-            source: ErrorKind::MaxIterInner,
+            source: ErrorKind::SlowConvergence,
         }
     }
 
