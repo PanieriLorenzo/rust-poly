@@ -142,7 +142,11 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         todo!()
     }
 
-    fn roots_francis_qr(&self, epsilon: T, max_iter: usize) -> Result<Vec<Complex<T>>, Error> {
+    fn roots_francis_qr(
+        &self,
+        epsilon: T,
+        max_iter: usize,
+    ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
         // TODO: this implementation uses an outdated Francis shift algorithm,
         //       the "state of the art" (from the 90s lmao), is to use a
         //       multishift QR algorithm. This is what LAPACK does.
@@ -283,10 +287,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
                 return Ok(roots);
             }
             let err = maybe_roots.expect_err("infallible");
-            if !matches!(err.source, ErrorKind::SlowConvergence) {
-                // only recover if MaxIterInner
-                break;
-            }
+            // TODO: use recovered eigens as initial guesses
 
             // uses one iteration of single-root algorithm for recovery when
             // the multi-root algorithm gets stuck (for pathological cases like

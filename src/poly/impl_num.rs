@@ -47,14 +47,21 @@ impl<T: ScalarOps> Poly<T> {
         let den_k = other.degree_raw();
         let mut this = self;
         let mut res = Poly::zero();
-        while this.degree_raw() >= other.degree_raw() {
-            let num_c = this.as_slice().last().unwrap();
-            let num_k = this.degree_raw();
-            let c = num_c / den_c;
-            let k = num_k - den_k;
-            let new_term = Poly::term(c, k as u32);
-            this = this.clone() - new_term.clone() * other;
-            res = res + new_term;
+        'for_else: {
+            for _ in 0..u32::MAX {
+                if !(this.degree_raw() >= other.degree_raw()) {
+                    break 'for_else;
+                }
+                let num_c = this.as_slice().last().unwrap();
+                let num_k = this.degree_raw();
+                let c = num_c / den_c;
+                let k = num_k - den_k;
+                let new_term = Poly::term(c, k as u32);
+                this = this.clone() - new_term.clone() * other;
+                res = res + new_term;
+            }
+            // else: did not converge
+            return None;
         }
         let rem = this;
 

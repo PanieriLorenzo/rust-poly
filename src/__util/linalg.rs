@@ -169,14 +169,15 @@ fn complex_givens_rot_2d<T: Scalar + RealField>(
 fn balance_matrix<T: Scalar + RealField>(
     mut this: DMatrixViewMut<Complex<T>>,
     max_iter: usize,
-) -> Result<(), Error> {
+) -> Result<(), ()> {
     // TODO: lots of single letter variables, make it more readable
-
-    // TODO: tune this to input size
-    const MAX_ITER_INNER: usize = 10;
 
     let n = this.nrows();
     let radix = T::one() + T::one();
+
+    // prevent infinite loop
+    let max_iter_outer = 100.max(n);
+    const MAX_ITER_INNER: usize = 100;
 
     debug_assert_eq!(n, this.ncols(), "matrix must be square");
 
@@ -184,13 +185,11 @@ fn balance_matrix<T: Scalar + RealField>(
     let mut d = DMatrix::<Complex<T>>::identity(n, n);
     let mut converged = false;
 
-    // keep track of (outer) iterations
-    let mut niter = 0;
-
-    while !converged {
-        if niter >= max_iter {
-            return Err(Error::max_iter_outer());
+    for _ in 0..max_iter_outer {
+        if converged {
+            return Ok(());
         }
+
         converged = true;
 
         for i in 0..n {
@@ -200,26 +199,30 @@ fn balance_matrix<T: Scalar + RealField>(
             let s = c.clone() * c.clone() + r.clone() * r.clone();
             let mut f = T::one();
 
-            let mut niter_inner = 0;
-            while c < r.clone() / radix.clone() {
-                if niter_inner > MAX_ITER_INNER {
-                    return Err(Error::max_iter_inner());
+            'for_else: {
+                for _ in 0..MAX_ITER_INNER {
+                    if !(c < r.clone() / radix.clone()) {
+                        break 'for_else;
+                    }
+                    c = c * radix.clone();
+                    r = r / radix.clone();
+                    f = f * radix.clone();
                 }
-                c = c * radix.clone();
-                r = r / radix.clone();
-                f = f * radix.clone();
-                niter_inner += 1;
+                // else: did not converge
+                return Err(());
             }
 
-            let mut niter_inner = 0;
-            while c >= r.clone() * radix.clone() {
-                if niter_inner > MAX_ITER_INNER {
-                    return Err(Error::max_iter_inner());
+            'for_else: {
+                for _ in 0..MAX_ITER_INNER {
+                    if !(c >= r.clone() * radix.clone()) {
+                        break 'for_else;
+                    }
+                    c = c / radix.clone();
+                    r = r * radix.clone();
+                    f = f / radix.clone();
                 }
-                c = c / radix.clone();
-                r = r * radix.clone();
-                f = f / radix.clone();
-                niter_inner += 1;
+                // else: did not converge
+                return Err(());
             }
 
             if (c.clone() * c.clone() + r.clone() * r.clone())
@@ -235,11 +238,8 @@ fn balance_matrix<T: Scalar + RealField>(
                 }
             }
         }
-
-        // iteration complete
-        niter += 1;
     }
-    Ok(())
+    Err(())
 }
 
 /// Francis shift algorithm
@@ -248,11 +248,14 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     epsilon: T,
     max_iter: usize,
     max_iter_per_deflation: usize,
-) -> Result<Vec<Complex<T>>, Error> {
+) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
     let n = this.nrows();
 
     // TODO: tune this to input
     const MAX_ITER_BALANCE: usize = 100;
+
+    // prevent infinite loop
+    let max_total_iter: usize = max_iter_per_deflation * n;
 
     debug_assert!(n > 2, "use eigen_2x2 for 2x2 matrices");
     debug_assert_eq!(n, this.ncols(), "matrix must be square");
@@ -260,7 +263,7 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     // TODO: optional step, i.e. make a tuning option
     upper_hessenberg(this.as_view_mut());
     let mut h = this;
-    balance_matrix(h.as_view_mut(), MAX_ITER_BALANCE).map_err(|e| e.map_inner())?;
+    balance_matrix(h.as_view_mut(), MAX_ITER_BALANCE).map_err(|_| vec![])?;
 
     // the final index of the active sub-matrix
     let mut p = n - 1;
@@ -271,16 +274,14 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     // keeps track of total (inner) iterations per each deflation step
     let mut piter = 0;
 
-    while p > 1 {
-        // TODO: right now we discard the eigenvalues that we have collected
-        //       on failure. We should return them instead so we can shrink
-        //       the polynomial using division.
-        // give up if didn't converge
-        if niter >= max_iter {
-            return Err(Error::max_iter_user());
+    for _ in 0..max_total_iter {
+        if p <= 1 {
+            break;
         }
+
         if piter >= max_iter_per_deflation {
-            return Err(Error::max_iter_inner());
+            // TODO: return eigenvalues so far
+            return Err(vec![]);
         }
 
         // TODO: what is q?

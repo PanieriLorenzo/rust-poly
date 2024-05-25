@@ -195,6 +195,43 @@ pub fn random_uniform_non_zero_roots(
     PolyStream::new(max_degree, root_stream)
 }
 
+pub fn random_polar_non_zero_roots() {
+    todo!()
+}
+
+pub fn random_gaussian_non_zero_roots() {
+    todo!()
+}
+
+pub fn random_real_non_zero_roots() {
+    todo!()
+}
+
+/// Given another generator, makes conjugate pairs
+pub fn random_conjugate_non_zero_roots() {
+    todo!()
+}
+
+/// Given another root generator, that yields K roots, generate N roots by
+/// duplicating some of the roots and adding optional scattering.
+///
+/// This creates roots with multiplicity, which are harder to factor out.
+pub fn random_multiplicity_roots() {
+    todo!()
+}
+
+/// Generate roots within the unit circle, with conjugate pairs or real roots,
+/// these are commonly found in digital filters.
+pub fn random_digital_filter_roots() {
+    todo!()
+}
+
+/// Generate roots within the negative imaginary half-plane, with conjugate
+/// pairs or real roots. These are commonly found in analog filters.
+pub fn random_analog_filter_roots() {
+    todo!()
+}
+
 /// Run this manually to visually inspect the random generators
 #[test]
 #[ignore]
