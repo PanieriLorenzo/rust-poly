@@ -270,12 +270,9 @@ impl<T: ScalarOps> Poly<T> {
     /// Evaluate the polynomial for each entry of a matrix.
     #[must_use]
     pub fn eval(&self, x: &na::DMatrix<Complex<T>>) -> na::DMatrix<Complex<T>> {
-        let mut c0: na::DMatrix<_> = na::DMatrix::<_>::from_element(
-            x.nrows(),
-            x.ncols(),
-            // FIXME: panics when len is zero, should check for it
-            self.0[self.len_raw() - 1].clone(),
-        );
+        debug_assert!(self.is_normalized());
+        let mut c0: na::DMatrix<_> =
+            na::DMatrix::<_>::from_element(x.nrows(), x.ncols(), self.last());
         for i in 2..=self.len_raw() {
             c0 = c0.clone() * x.clone();
             c0.apply(|c| *c = (*c).clone() + &self.0[self.len_raw() - i]);

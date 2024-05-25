@@ -64,6 +64,7 @@ impl<T: Scalar> Poly<T> {
         ret
     }
 
+    // TODO: move this somewhere else, it's not a "base" algorithm
     pub(crate) fn companion(&self) -> na::DMatrix<Complex<T>> {
         // invariant: poly is normalized
         debug_assert!(self.is_normalized());
