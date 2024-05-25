@@ -417,6 +417,7 @@ mod test {
         assert!((roots[1].im().abs() - 0.866) < 0.01);
     }
 
+    #[test_with::executable(python)]
     #[test]
     fn newton_roots_of_reverse_bessel_against_python() {
         let _res: PyResult<()> = with_scipy(|py, locals| {
