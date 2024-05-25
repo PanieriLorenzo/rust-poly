@@ -305,9 +305,13 @@ impl<T: Scalar + Float + RealField> Poly<T> {
 
 #[cfg(test)]
 mod test {
+    use approx::assert_relative_eq;
     use itertools::Itertools;
     use na::Complex;
     use num::complex::{Complex64, ComplexFloat};
+    use numpy::{PyArray1, PyArrayMethods};
+    use pyo3::prelude::*;
+    use pyo3::types::{IntoPyDict, PyDict};
 
     use crate::__util::test::binary_coeffs;
     use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
@@ -317,7 +321,7 @@ mod test {
         assert!(
             (poly![24.0, -14.0, -13.0, 2.0, 1.0].initial_guess_smallest()
                 - Complex::new(0.68, 0.0))
-            .norm()
+                .norm()
                 < 0.01
         );
     }
@@ -411,5 +415,67 @@ mod test {
         assert!((roots[0].im().abs() - 0.866) < 0.01);
         assert_eq!(roots[1].re(), -1.5);
         assert!((roots[1].im().abs() - 0.866) < 0.01);
+    }
+
+    #[test_with::executable(python)]
+    #[test]
+    fn newton_roots_of_reverse_bessel_against_python() {
+        let _res: PyResult<()> = with_scipy(|py, locals| {
+            // TODO other degrees do not seem to work as of now.
+            for n in 2..4 {
+                locals.set_item("n", n).unwrap();
+                let exp = py
+                    .eval_bound("1 / scipy.signal._filter_design._bessel_zeros(n)", Some(&locals), None)
+                    .unwrap()
+                    .downcast_into::<PyArray1<Complex64>>()
+                    .unwrap();
+                let exp = exp.readonly();
+                let mut exp = exp.as_slice().unwrap().to_vec();
+
+
+                let poly = Poly64::reverse_bessel(n).unwrap();
+                let mut roots = poly
+                    .try_n_roots(n, None, 1E-14, 1000, Some(OneRootAlgorithms::Newton))
+                    .unwrap();
+
+                assert_unordered_roots_equal(&mut roots, &mut exp, 1e-6);
+            }
+            Ok(())
+        });
+    }
+
+    fn with_scipy<F>(f: F) -> PyResult<()>
+        where
+            F: for<'py> FnOnce(Python<'py>, Bound<PyDict>) -> PyResult<()>,
+    {
+        Python::with_gil(|py| {
+            let scipy = py.import_bound("scipy")?;
+            let np = py.import_bound("numpy")?;
+            let locals = [("scipy", scipy), ("np", np)].into_py_dict_bound(py);
+            f(py, locals)
+        })
+    }
+
+    fn assert_unordered_roots_equal(act: &[Complex64], exp: &[Complex64], epsilon: f64) {
+        assert_eq!(act.len(), exp.len());
+
+        // The roots from python and rust are not sorted in the same way. We cannot easily sort by real and imaginary parts
+        // because of numerical inconsistencies. Instead, we will find the closest root for each expected root, remove it from
+        // the roots and check if the distance is small enough.
+        let mut act = act.to_vec();
+        for &exp in exp.iter() {
+            let mut i_min = 0;
+            let mut min_dist = f64::MAX;
+            for (i, root) in act.iter().enumerate() {
+                let dist = (root.re - exp.re).abs() + (root.im - exp.im).abs();
+                if dist < min_dist {
+                    i_min = i;
+                    min_dist = dist;
+                }
+            }
+
+            let root = act.remove(i_min);
+            assert_relative_eq!(root.re, exp.re, epsilon = epsilon);
+        }
     }
 }

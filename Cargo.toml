@@ -31,6 +31,10 @@ criterion = "0.5.1"
 fastrand = "2.1.0"
 rand = "0.8.5"
 weird-data = "0.2.0"
+pyo3 = { version = "0.21.2", features = ["auto-initialize"] }
+test-with = "0.12.6"
+numpy = "0.21"
+approx = { version = "0.5.1", features = ["num-complex"] }
 
 [[bench]]
 name = "bench"
