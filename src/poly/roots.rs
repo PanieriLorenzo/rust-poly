@@ -1,8 +1,11 @@
-use na::{Complex, ComplexField, Normed, RealField, Scalar};
-use num::{traits::float::FloatCore, Float, FromPrimitive, Num, One, Zero};
+use na::{Complex, ComplexField, Normed, RealField};
+use num::{
+    traits::{float::FloatCore, MulAdd},
+    Float, FromPrimitive, Num, One, Zero,
+};
 
 use crate::{
-    Error, ErrorKind, Poly, ScalarOps,
+    Error, ErrorKind, Poly, Scalar, ScalarOps,
     __util::{
         self,
         casting::usize_to_scalar,
