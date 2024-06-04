@@ -1,18 +1,52 @@
 //! Traits for the coefficients of polynomials
 
 use na::ComplexField;
-use num::{Complex, FromPrimitive, Num};
+use num::{
+    complex::{Complex32, Complex64},
+    Complex, FromPrimitive, Num,
+};
 use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
 
 /// The trait bounds necessary to provide the basic functionality of this crate.
 pub trait Scalar:
-    SafeConstants + Clone + PartialEq + std::fmt::Debug + Num + FromPrimitive + 'static
+    SafeConstants
+    + Clone
+    + PartialEq
+    + std::fmt::Debug
+    + Num
+    + FromPrimitive
+    + std::ops::Neg<Output = Self>
+    + 'static
 {
 }
-impl<T: Clone + PartialEq + std::fmt::Debug + Num + FromPrimitive + SafeConstants + 'static> Scalar
-    for T
+impl<
+        T: Clone
+            + PartialEq
+            + std::fmt::Debug
+            + Num
+            + FromPrimitive
+            + SafeConstants
+            + std::ops::Neg<Output = Self>
+            + 'static,
+    > Scalar for T
 {
 }
+
+pub trait ComplexScalar: Scalar {
+    type ComponentScalar;
+}
+
+impl ComplexScalar for Complex64 {
+    type ComponentScalar = f64;
+}
+impl ComplexScalar for Complex32 {
+    type ComponentScalar = f32;
+}
+
+pub trait RealScalar: Scalar {}
+
+impl RealScalar for f32 {}
+impl RealScalar for f64 {}
 
 // TODO: these are required by nalgebra for things that shouldn't require them.
 //       perhaps in the future they can be dropped?

@@ -1,3 +1,4 @@
+use fastrand::Rng;
 use na::{Complex, ComplexField, DVector, Normed, RealField};
 use num::{
     traits::{float::FloatCore, MulAdd},
@@ -5,13 +6,110 @@ use num::{
 };
 
 use crate::{
-    Error, ErrorKind, Poly, Scalar, ScalarOps,
+    Poly, Scalar, ScalarOps,
     __util::{
         self,
         casting::usize_to_scalar,
         complex::{c_min, c_neg, complex_sort_mut_old},
     },
 };
+
+mod eigenvalue;
+mod iterative;
+mod multiroot;
+
+#[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
+pub enum Error<T> {
+    #[error("root finder did not converge within the given constraints")]
+    NoConverge(Vec<Complex<T>>),
+
+    #[error("unexpected error while running root finder")]
+    Other,
+}
+
+pub type Result<T: Scalar> = std::result::Result<Vec<Complex<T>>, Error<T>>;
+
+/// Helper struct for implementing stateful root finders and converting between them
+pub struct FinderState<T: Scalar> {
+    pub poly: Poly<T>,
+
+    /// Store roots that are within the given epsilon and are considered "done"
+    pub clean_roots: Vec<Complex<T>>,
+
+    /// Store "best guess" roots that are not within the epsilon bounds, but
+    /// nevertheless can be useful as initial guesses for further refinement.
+    pub dirty_roots: Vec<Complex<T>>,
+}
+
+/// Helper struct for implementing root finders and converting between them
+pub struct FinderConfig<T: Scalar> {
+    pub epsilon: T,
+    pub max_iter: usize,
+}
+
+impl<T: Scalar> FinderState<T> {
+    fn new(poly: Poly<T>) -> Self {
+        Self {
+            poly,
+            clean_roots: vec![],
+            dirty_roots: vec![],
+        }
+    }
+}
+
+impl<T: Scalar> FinderConfig<T> {
+    fn new() -> Self {
+        Self {
+            epsilon: T::small_safe(),
+            max_iter: 0,
+        }
+    }
+}
+
+/// Complex root finder for complex-valued polynomials
+pub trait RootFinder<T: Scalar>: Sized {
+    fn from_poly(poly: Poly<T>) -> Self;
+
+    /// The maximum error within which a root is considered to be found.
+    fn with_epsilon(mut self, epsilon: T) -> Self {
+        self.config().epsilon = epsilon;
+        self
+    }
+
+    fn with_max_iter(mut self, max_iter: usize) -> Self {
+        self.config().max_iter = max_iter;
+        self
+    }
+
+    /// Initialize the state with some previously obtained guesses for roots.
+    ///
+    /// These will be used first before generating synthetic initial guesses
+    /// and allow for recycling unsuccesful attempts from other root finders
+    /// or if the user has some prior knowledge of the roots.
+    ///
+    /// Note that some finders may ignore these, but they will be carried over
+    /// if multiple finders are used for the same polynomial.
+    fn with_initial_guesses(mut self, guesses: Vec<Complex<T>>) -> Self {
+        self.state().dirty_roots.extend(guesses);
+        self
+    }
+
+    /// Tries to find as many roots as possible with the given configuration,
+    /// returning a std::result::Result containing either the roots or the best guess so far
+    /// in case of no convergence.
+    ///
+    /// Consecutive calls to `try_roots` will attempt to resume root finding
+    /// from where it left off if possible. Use [`RootFinder::reset`] to
+    /// create a new clean session.
+    fn roots(&mut self) -> Result<T>;
+
+    /// Get a mutable reference to the current finder state
+    fn state(&mut self) -> &mut FinderState<T>;
+
+    /// Get a mutable reference to the current finder configuration
+    fn config(&mut self) -> &mut FinderConfig<T>;
+}
 
 /// Polynomial root-finding algorithms
 #[non_exhaustive]
@@ -75,7 +173,7 @@ impl<T: Scalar + RealField + Float> Poly<T> {
     }
 
     /// Ref: https://doi.org/10.1007/BF01933524
-    fn initial_guess_smallest(&self) -> Complex<T> {
+    pub(crate) fn initial_guess_smallest(&self) -> Complex<T> {
         debug_assert!(self.is_normalized());
         debug_assert!(self.len_raw() >= 2);
 
@@ -120,7 +218,7 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         initial_guess: Option<Complex<T>>,
         epsilon: T,
         max_iter: usize,
-    ) -> Result<Complex<T>, Complex<T>> {
+    ) -> std::result::Result<Complex<T>, Complex<T>> {
         let p_diff = self.clone().diff();
         let mut x = initial_guess.unwrap_or(self.initial_guess_smallest());
         for _ in 0..max_iter {
@@ -139,7 +237,7 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         initial_guess: Option<Complex<T>>,
         epsilon: T,
         max_iter: usize,
-    ) -> Result<Complex<T>, Complex<T>> {
+    ) -> std::result::Result<Complex<T>, Complex<T>> {
         let p_diff = self.clone().diff();
         let p_diff2 = p_diff.clone().diff();
 
@@ -161,7 +259,7 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         &mut self,
         epsilon: T,
         max_iter: usize,
-    ) -> Result<Complex<T>, Complex<T>> {
+    ) -> std::result::Result<Complex<T>, Complex<T>> {
         // TODO: tune these to the size of the polynomial with a lookup table
         const M: usize = 5;
         const L: usize = 100;
@@ -192,7 +290,7 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         &self,
         epsilon: T,
         max_iter: usize,
-    ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
+    ) -> std::result::Result<Vec<Complex<T>>, Vec<Complex<T>>> {
         // TODO: this implementation uses an outdated Francis shift algorithm,
         //       the "state of the art" (from the 90s lmao), is to use a
         //       multishift QR algorithm. This is what LAPACK does.
@@ -252,7 +350,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
     /// It utilizes an iterative method, so the precision gets progressively
     /// worse the more roots are found. For small `n` this is negligible.
     ///
-    /// `Err` result contains the roots it was able to find, even if they are
+    /// `Err` std::result::Result contains the roots it was able to find, even if they are
     /// fewer than requested.
     ///
     /// Use [`Poly::try_n_roots_algo`] to specify which algorithm to use, if
@@ -264,7 +362,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
         epsilon: T,
         max_iter: usize,
         algorithm: Option<OneRootAlgorithms>,
-    ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
+    ) -> std::result::Result<Vec<Complex<T>>, Vec<Complex<T>>> {
         debug_assert!(self.is_normalized());
         assert!(
             n as i32 <= self.degree_raw(),
@@ -307,7 +405,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
         max_recovery_iter: Option<usize>,
         algorithm: Option<AllRootsAlgorithms>,
         recovery_algorithm: Option<OneRootAlgorithms>,
-    ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
+    ) -> std::result::Result<Vec<Complex<T>>, Vec<Complex<T>>> {
         debug_assert!(self.is_normalized());
 
         let max_recovery_iter = max_recovery_iter.unwrap_or(max_iter);
@@ -350,7 +448,7 @@ impl<T: Scalar + Float + RealField> Poly<T> {
             // uses one iteration of single-root algorithm for recovery when
             // the multi-root algorithm gets stuck (for pathological cases like
             // Legendre polynomials), this shrinks the problem by 1 degree
-            // and moves around the coefficients so they are not pathologic anymore
+            // and moves around the coefficients so they are not pathological anymore
             let r = match recovery_algorithm {
                 OneRootAlgorithms::Newton => this
                     .clone()
@@ -405,10 +503,9 @@ mod test {
         ];
         let poly = Poly::from_roots(&roots_expected);
         let mut roots = poly.roots_francis_qr(1E-9, 1000).unwrap();
-        complex_sort_mut(&mut roots_expected);
-        complex_sort_mut(&mut roots);
+
         assert!(
-            check_roots(&mut roots, &mut roots_expected, 1E-4),
+            check_roots(roots.clone(), roots_expected.clone(), 1E-4),
             "{:?} != {:?}",
             roots,
             roots_expected

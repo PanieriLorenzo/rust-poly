@@ -19,7 +19,7 @@ fn test_uniform_real_roots() {
                 test_case_roots(&mut roots_stream, &mut scale_stream, deg);
             let mut roots = poly.try_roots(1E-14, 1000, 10, None, None, None).unwrap();
             assert!(
-                check_roots(&mut roots, &mut expected_roots, 0.1),
+                check_roots(roots.clone(), expected_roots.clone(), 0.1),
                 "{:?} != {:?} @ iter = {}",
                 roots,
                 expected_roots,

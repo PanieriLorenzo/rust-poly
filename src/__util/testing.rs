@@ -237,19 +237,25 @@ pub fn test_case_roots(
 }
 
 /// Check that all roots have been found
-pub fn check_roots(roots1: &mut [Complex64], roots2: &mut [Complex64], tol: f64) -> bool {
+pub fn check_roots(mut roots1: Vec<Complex64>, mut roots2: Vec<Complex64>, tol: f64) -> bool {
     if roots1.len() != roots2.len() {
         return false;
     }
 
-    complex_sort_mut(roots1);
-    complex_sort_mut(roots2);
-
-    for (r1, r2) in roots1.into_iter().zip(roots2) {
-        let d = (*r1 - *r2).norm();
-        if d > tol {
+    for r1 in roots1 {
+        let mut best_idx = 0;
+        let mut best_d = f64::MAX;
+        for (i, r2) in roots2.iter().enumerate() {
+            let d = (r1 - r2).norm();
+            if d < best_d {
+                best_idx = i;
+                best_d = d;
+            }
+        }
+        if best_d > tol {
             return false;
         }
+        roots2.remove(best_idx);
     }
     true
 }
