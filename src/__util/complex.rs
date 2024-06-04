@@ -28,10 +28,14 @@ pub(crate) fn c_max<T: Scalar + PartialOrd>(a: Complex<T>, b: Complex<T>) -> Com
     }
 }
 
-// sort a vector of complex numbers  in place by their real component first,
-// then their imaginary component
-pub(crate) fn complex_sort_mut<T: Scalar + PartialOrd>(v: &mut na::DVector<Complex<T>>) {
-    v.as_mut_slice().sort_by(|a, b| {
+#[deprecated = "use complex_sort_mut instead"]
+pub(crate) fn complex_sort_mut_old<T: Scalar + PartialOrd>(v: &mut na::DVector<Complex<T>>) {
+    complex_sort_mut(v.as_mut_slice());
+}
+
+// sort a vector of complex numbers lexicographically, using their real part first
+pub(crate) fn complex_sort_mut<T: Scalar + PartialOrd>(v: &mut [Complex<T>]) {
+    v.sort_by(|a, b| {
         let re_ord = a.re.partial_cmp(&b.re).unwrap_or(Ordering::Equal);
         if re_ord != Ordering::Equal {
             return re_ord;

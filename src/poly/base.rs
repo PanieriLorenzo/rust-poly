@@ -1,7 +1,9 @@
 use na::Complex;
 use num::{One, Zero};
 
-use crate::{Poly, Scalar, __util::complex::c_neg};
+use crate::{Poly, Scalar, __util::complex::c_neg, scalar::SafeConstants};
+
+use super::indexing::Get;
 
 impl<T: Scalar> Poly<T> {
     /// Applies a closure to each coefficient in-place
@@ -93,7 +95,6 @@ impl<T: Scalar> Poly<T> {
         // fill the rightmost column with the coefficients of the associated
         // monic polynomial
         let mut monic = self.clone();
-        println!("{monic:?}");
         monic.make_monic();
         for i in 0..n {
             mat.column_mut(n - 1)[i] = c_neg(monic[i].clone());
@@ -111,8 +112,24 @@ impl<T: Scalar> Poly<T> {
     /// Monic polynomials are scaled such that the last coefficient is 1, and
     /// the roots are preserved
     pub(crate) fn make_monic(&mut self) {
+        debug_assert!(self.is_normalized());
         let last_coeff = self.last();
-        self.0.apply(|x| *x = x.clone() / last_coeff.clone());
+        if last_coeff.is_one() {
+            // already monic
+            return;
+        }
+        self.apply(|x| *x = x.clone() / last_coeff.clone());
+    }
+
+    /// Make sure trailing almost-zero coefficients are removed
+    pub(crate) fn trim(&mut self) {
+        let last_coeff = self.last();
+        if last_coeff.is_small() {
+            let mut res = self.get(0..self.len_raw() - 1).expect("infallible");
+            res.trim();
+            *self = res;
+        }
+        *self = self.clone().normalize();
     }
 }
 

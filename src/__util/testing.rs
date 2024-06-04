@@ -1,35 +1,24 @@
 //! Testing utilities
 
-use std::{fs, iter, path::Path};
+use std::{
+    fs, iter,
+    path::{Iter, Path},
+};
 
 use fastrand::Rng;
 use itertools::{chain, Itertools};
+use na::ComplexField;
 use num::{complex::Complex64, Complex};
+
+#[cfg(test)]
 use plotters::style::SizeDesc;
 
 use crate::{Poly, Poly64, Scalar, __util::float::f64_make_safe};
 
-use super::float::{f64_make_nonzero, F32_BIG_NUM, F64_BIG_NUM};
-
-struct RandStreamBool {
-    state: Rng,
-}
-
-impl RandStreamBool {
-    fn new(seed: u64) -> Self {
-        Self {
-            state: Rng::with_seed(seed),
-        }
-    }
-}
-
-impl Iterator for RandStreamBool {
-    type Item = bool;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        Some(self.state.bool())
-    }
-}
+use super::{
+    complex::{complex_sort_mut, complex_sort_mut_old},
+    float::{f64_make_nonzero, F32_BIG_NUM, F64_BIG_NUM},
+};
 
 struct RandStreamF64 {
     state: Rng,
@@ -52,7 +41,38 @@ impl Iterator for RandStreamF64 {
     }
 }
 
-struct RandStreamC64Cartesian {
+pub struct RandStreamR64 {
+    real_stream: RandStreamF64,
+    min: f64,
+    max: f64,
+}
+
+impl RandStreamR64 {
+    pub fn new(seed: u64, min: f64, max: f64) -> Self {
+        assert!(min <= max, "minimum should be smaller or equal to maximum");
+        let real_stream = RandStreamF64::new(seed);
+        Self {
+            real_stream,
+            min,
+            max,
+        }
+    }
+}
+
+impl Iterator for RandStreamR64 {
+    type Item = Complex64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let re = self.real_stream.next()? * (self.max - self.min) + self.min;
+        let im = 0.0;
+        Some(Complex64 {
+            re: f64_make_safe(re),
+            im,
+        })
+    }
+}
+
+pub struct RandStreamC64Cartesian {
     real_stream: RandStreamF64,
     min_re: f64,
     max_re: f64,
@@ -61,7 +81,7 @@ struct RandStreamC64Cartesian {
 }
 
 impl RandStreamC64Cartesian {
-    fn new(seed: u64, min_re: f64, max_re: f64, min_im: f64, max_im: f64) -> Self {
+    pub fn new(seed: u64, min_re: f64, max_re: f64, min_im: f64, max_im: f64) -> Self {
         assert!(
             min_re <= max_re && min_im <= max_im,
             "minimum should be smaller or equal to maximum"
@@ -87,7 +107,7 @@ impl Iterator for RandStreamC64Cartesian {
     }
 }
 
-struct RandStreamC64Polar {
+pub struct RandStreamC64Polar {
     real_stream: RandStreamF64,
     min_radius: f64,
     max_radius: f64,
@@ -96,7 +116,13 @@ struct RandStreamC64Polar {
 }
 
 impl RandStreamC64Polar {
-    fn new(seed: u64, min_radius: f64, max_radius: f64, min_angle: f64, max_angle: f64) -> Self {
+    pub fn new(
+        seed: u64,
+        min_radius: f64,
+        max_radius: f64,
+        min_angle: f64,
+        max_angle: f64,
+    ) -> Self {
         assert!(
             0.0 <= min_angle && max_angle <= 1.0,
             "angles should be specified in the range [0,1]"
@@ -133,32 +159,32 @@ impl Iterator for RandStreamC64Polar {
     }
 }
 
-fn binary_coeffs_inner(max_len: usize) -> Box<dyn Iterator<Item = Vec<f64>>> {
-    if max_len == 0 {
-        return Box::new(iter::once(vec![]));
+pub struct RandStreamConjugate64<I: Iterator<Item = Complex<f64>>> {
+    upstream: I,
+}
+
+impl<I: Iterator<Item = Complex<f64>>> RandStreamConjugate64<I> {
+    pub fn new(upstream: I) -> Self {
+        Self { upstream }
     }
-    Box::new(binary_coeffs_inner(max_len - 1).flat_map(|v| {
-        let mut v1 = v.clone();
-        let mut v2 = v;
-        v1.push(0.0);
-        v2.push(1.0);
-        [v1, v2].into_iter()
-    }))
 }
 
-pub fn binary_coeffs(min_degree: i32, max_degree: usize) -> impl Iterator<Item = Poly<f64>> {
-    binary_coeffs_inner(max_degree + 1)
-        .map(|v| Poly64::from_real_vec(v))
-        .filter(move |p| p.degree() >= min_degree)
+impl<I: Iterator<Item = Complex<f64>>> Iterator for RandStreamConjugate64<I> {
+    type Item = (Complex64, Complex64);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let c = self.upstream.next()?;
+        Some((c, c.conj()))
+    }
 }
 
-struct PolyStream<T: Scalar> {
+pub struct PolyStream<T: Scalar> {
     max_degree: usize,
     root_stream: Box<dyn Iterator<Item = Complex<T>>>,
 }
 
 impl<T: Scalar> PolyStream<T> {
-    fn new(max_degree: usize, root_stream: impl Iterator<Item = Complex<T>> + 'static) -> Self {
+    pub fn new(max_degree: usize, root_stream: impl Iterator<Item = Complex<T>> + 'static) -> Self {
         Self {
             max_degree,
             root_stream: Box::new(root_stream),
@@ -179,57 +205,53 @@ impl<T: Scalar + PartialOrd> Iterator for PolyStream<T> {
     }
 }
 
-/// Make polynomials from random complex roots, sampled uniformly in the span
-/// `[-span, span]`, without subnormals or zeros.
-///
-/// The constant is also random
-pub fn random_uniform_non_zero_roots(
-    seed: u64,
-    max_degree: usize,
-    min_re: f64,
-    max_re: f64,
-    min_im: f64,
-    max_im: f64,
-) -> impl Iterator<Item = (Vec<Complex64>, Poly<f64>)> {
-    let root_stream = RandStreamC64Cartesian::new(seed, min_re, max_re, min_im, max_im);
-    PolyStream::new(max_degree, root_stream)
+fn binary_coeffs_inner(max_len: usize) -> Box<dyn Iterator<Item = Vec<f64>>> {
+    if max_len == 0 {
+        return Box::new(iter::once(vec![]));
+    }
+    Box::new(binary_coeffs_inner(max_len - 1).flat_map(|v| {
+        let mut v1 = v.clone();
+        let mut v2 = v;
+        v1.push(0.0);
+        v2.push(1.0);
+        [v1, v2].into_iter()
+    }))
 }
 
-pub fn random_polar_non_zero_roots() {
-    todo!()
+pub fn binary_coeffs(min_degree: i32, max_degree: usize) -> impl Iterator<Item = Poly<f64>> {
+    binary_coeffs_inner(max_degree + 1)
+        .map(|v| Poly64::from_real_vec(v))
+        .filter(move |p| p.degree() >= min_degree)
 }
 
-pub fn random_gaussian_non_zero_roots() {
-    todo!()
+/// Generate one test case where the roots are known and can be compared
+pub fn test_case_roots(
+    roots_stream: impl Iterator<Item = Complex64>,
+    mut scale_stream: impl Iterator<Item = Complex64>,
+    degree: usize,
+) -> (Poly64, Vec<Complex64>) {
+    let roots = roots_stream.take(degree).collect_vec();
+    let poly = Poly64::from_roots(&roots)
+        .scaled(scale_stream.next().expect("rng stream should be infinite"));
+    (poly, roots)
 }
 
-pub fn random_real_non_zero_roots() {
-    todo!()
-}
+/// Check that all roots have been found
+pub fn check_roots(roots1: &mut [Complex64], roots2: &mut [Complex64], tol: f64) -> bool {
+    if roots1.len() != roots2.len() {
+        return false;
+    }
 
-/// Given another generator, makes conjugate pairs
-pub fn random_conjugate_non_zero_roots() {
-    todo!()
-}
+    complex_sort_mut(roots1);
+    complex_sort_mut(roots2);
 
-/// Given another root generator, that yields K roots, generate N roots by
-/// duplicating some of the roots and adding optional scattering.
-///
-/// This creates roots with multiplicity, which are harder to factor out.
-pub fn random_multiplicity_roots() {
-    todo!()
-}
-
-/// Generate roots within the unit circle, with conjugate pairs or real roots,
-/// these are commonly found in digital filters.
-pub fn random_digital_filter_roots() {
-    todo!()
-}
-
-/// Generate roots within the negative imaginary half-plane, with conjugate
-/// pairs or real roots. These are commonly found in analog filters.
-pub fn random_analog_filter_roots() {
-    todo!()
+    for (r1, r2) in roots1.into_iter().zip(roots2) {
+        let d = (*r1 - *r2).norm();
+        if d > tol {
+            return false;
+        }
+    }
+    true
 }
 
 /// Run this manually to visually inspect the random generators

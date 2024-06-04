@@ -105,8 +105,6 @@ fn upper_hessenberg<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>)
 
     for i in 0..n - 2 {
         let mut h_holder_vec: DVector<_> = this.view((i + 1, i), (n - i - 1, 1)).column(0).into();
-        println!("{this}");
-        println!("{h_holder_vec}");
         col_2_householder_vec(&mut h_holder_vec);
 
         {
@@ -231,7 +229,6 @@ fn balance_matrix<T: Scalar + RealField>(
                 converged = false;
                 d.row_mut(i)[i] = d.row(i)[i].clone().scale(f.clone());
 
-                // TODO: separate this to a separate procedure with a descriptive name
                 for j in 0..n {
                     this.row_mut(j)[i] = this.row(j)[i].clone().scale(f.clone());
                     this.row_mut(i)[j] = this.row(i)[j].clone().scale(T::one() / f.clone());

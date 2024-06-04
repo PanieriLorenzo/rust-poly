@@ -1,4 +1,4 @@
-use na::{Complex, ComplexField, Normed, RealField};
+use na::{Complex, ComplexField, DVector, Normed, RealField};
 use num::{
     traits::{float::FloatCore, MulAdd},
     Float, FromPrimitive, Num, One, Zero,
@@ -9,7 +9,7 @@ use crate::{
     __util::{
         self,
         casting::usize_to_scalar,
-        complex::{c_min, c_neg, complex_sort_mut},
+        complex::{c_min, c_neg, complex_sort_mut_old},
     },
 };
 
@@ -31,6 +31,49 @@ pub enum AllRootsAlgorithms {
 
 // private
 impl<T: Scalar + RealField + Float> Poly<T> {
+    fn linear(mut self) -> Vec<Complex<T>> {
+        debug_assert!(self.is_normalized());
+        debug_assert_eq!(self.degree_raw(), 1);
+
+        self.trim();
+        if self.degree_raw() < 1 {
+            return vec![];
+        }
+
+        let a = self.0[1];
+        let b = self.0[0];
+
+        vec![-b / a]
+    }
+
+    /// Quadratic formula
+    fn quadratic(mut self) -> Vec<Complex<T>> {
+        debug_assert!(self.is_normalized());
+        debug_assert_eq!(self.degree_raw(), 2);
+
+        // trimming trailing almost zeros to avoid overflow
+        self.trim();
+        if self.degree_raw() == 1 {
+            return self.linear();
+        }
+        if self.degree_raw() == 0 {
+            return vec![];
+        }
+
+        let a = self.0[2];
+        let b = self.0[1];
+        let c = self.0[0];
+        let four = Complex::<T>::from_u8(4).expect("should always fit for small ints");
+        let two = Complex::<T>::from_u8(2).expect("should always fit for small ints");
+
+        // TODO: switch to different formula when b^2 and 4c are very close due
+        //       to loss of precision
+        let plus_minus_term = (b * b - four * a * c).sqrt();
+        let x1 = (plus_minus_term - b) / (two * a);
+        let x2 = (c_neg(b) - plus_minus_term) / (two * a);
+        vec![x1, x2]
+    }
+
     /// Ref: https://doi.org/10.1007/BF01933524
     fn initial_guess_smallest(&self) -> Complex<T> {
         debug_assert!(self.is_normalized());
@@ -154,16 +197,16 @@ impl<T: Scalar + RealField + Float> Poly<T> {
         //       the "state of the art" (from the 90s lmao), is to use a
         //       multishift QR algorithm. This is what LAPACK does.
         //       read the papers by Karen Braman, Ralph Byers and Roy Mathias
-
+        debug_assert!(self.is_normalized());
         debug_assert!(
-            self.degree_raw() >= 3,
-            "for trivial polynomial, don't use iterative methods"
+            self.degree_raw() > 2,
+            "cannot use roots_francis_qr method on polynomials of degree 2 or smaller"
         );
 
         // TODO: tune max_iter_per_deflation to input
 
         // a small safe number, this is often done in LAPACK to avoid overflows
-        let small_num = Float::sqrt(T::min_positive_value()) / T::epsilon();
+        let small_num = T::small_safe();
 
         // TODO: remove this clone
         let mut this = self.clone();
@@ -267,10 +310,6 @@ impl<T: Scalar + Float + RealField> Poly<T> {
     ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
         debug_assert!(self.is_normalized());
 
-        if self.len_raw() < 2 {
-            return Ok(vec![]);
-        }
-
         let max_recovery_iter = max_recovery_iter.unwrap_or(max_iter);
         let algorithm = algorithm.unwrap_or(AllRootsAlgorithms::FrancisQR);
         let recovery_algorithm = recovery_algorithm.unwrap_or(OneRootAlgorithms::Newton);
@@ -279,11 +318,27 @@ impl<T: Scalar + Float + RealField> Poly<T> {
         let mut this = self.clone();
 
         for _ in 0..max_tries {
+            this.trim();
+
+            match self.degree_raw() {
+                ..=0 => return Ok(roots),
+                1 => {
+                    roots.extend(this.linear());
+                    return Ok(roots);
+                }
+                2 => {
+                    roots.extend(this.quadratic());
+                    return Ok(roots);
+                }
+                _ => {}
+            }
+
             let maybe_roots = match algorithm {
                 AllRootsAlgorithms::Schur | AllRootsAlgorithms::FrancisQR => {
                     this.roots_francis_qr(epsilon, max_iter)
                 }
             };
+
             if let Ok(found_roots) = maybe_roots {
                 roots.extend(found_roots);
                 // TODO: sort
@@ -321,7 +376,10 @@ mod test {
     use na::Complex;
     use num::complex::{Complex64, ComplexFloat};
 
-    use crate::__util::testing::binary_coeffs;
+    use crate::__util::{
+        complex::complex_sort_mut,
+        testing::{binary_coeffs, check_roots},
+    };
     use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
 
     #[test]
@@ -336,9 +394,25 @@ mod test {
 
     #[test]
     fn roots_schur() {
-        dbg!(poly![0.0, 0.0, 0.0, 0.0, 1.0]
-            .try_roots(0.00001, 100, 10, None, None, None)
-            .unwrap());
+        let mut roots_expected = vec![
+            Complex64 { re: 0.0, im: 0.0 },
+            Complex64 { re: 1.0, im: 0.0 },
+            Complex64 { re: 2.5, im: 0.0 },
+            // Complex64 { re: 1.0, im: 1.0 },
+            // Complex64 { re: 1.0, im: -2.5 },
+            // Complex64 { re: -1.0, im: 1.0 },
+            // Complex64 { re: -1.0, im: -1.0 },
+        ];
+        let poly = Poly::from_roots(&roots_expected);
+        let mut roots = poly.roots_francis_qr(1E-9, 1000).unwrap();
+        complex_sort_mut(&mut roots_expected);
+        complex_sort_mut(&mut roots);
+        assert!(
+            check_roots(&mut roots, &mut roots_expected, 1E-4),
+            "{:?} != {:?}",
+            roots,
+            roots_expected
+        );
     }
 
     #[test]
@@ -405,7 +479,7 @@ mod test {
     #[test]
     fn schur_roots_of_reverse_bessel() {
         let poly = Poly64::reverse_bessel(2).unwrap();
-        let roots = poly.roots_francis_qr(1E-14, 1000).unwrap();
+        let roots = poly.try_roots(1E-14, 1000, 1, None, None, None).unwrap();
         assert_eq!(roots[0].re(), -1.5);
         assert!((roots[0].im().abs() - 0.866) < 0.01);
         assert_eq!(roots[1].re(), -1.5);

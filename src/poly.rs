@@ -8,7 +8,7 @@ use num::{traits::real::Real, Complex, Float, One, Zero};
 
 use crate::{
     Scalar, ScalarOps,
-    __util::complex::{c_neg, complex_fmt, complex_sort_mut},
+    __util::complex::{c_neg, complex_fmt, complex_sort_mut_old},
 };
 
 mod base;
@@ -217,7 +217,7 @@ impl<T: Scalar + PartialOrd> Poly<T> {
         }
 
         let mut roots: na::DVector<Complex<T>> = na::DVector::from_column_slice(roots);
-        complex_sort_mut(&mut roots);
+        complex_sort_mut_old(&mut roots);
 
         roots
             .map(|e| Self::line(c_neg(e), Complex::<T>::one()))
@@ -269,7 +269,10 @@ impl<T: Scalar + PartialOrd> Poly<T> {
 impl<T: ScalarOps> Poly<T> {
     /// Evaluate the polynomial for each entry of a matrix.
     #[must_use]
-    pub fn eval(&self, x: &na::DMatrix<Complex<T>>) -> na::DMatrix<Complex<T>> {
+    pub fn eval(
+        &self,
+        x: na::DMatrixView<Complex<T>>, /*&na::DMatrix<Complex<T>>*/
+    ) -> na::DMatrix<Complex<T>> {
         debug_assert!(self.is_normalized());
         let mut c0: na::DMatrix<_> =
             na::DMatrix::<_>::from_element(x.nrows(), x.ncols(), self.last());
@@ -291,7 +294,7 @@ impl<T: ScalarOps> Poly<T> {
     /// assert_eq!(p.eval_point(x), Complex::new(6.0, 0.0));
     /// ```
     pub fn eval_point(&self, x: Complex<T>) -> Complex<T> {
-        self.eval(&na::DMatrix::<_>::from_row_slice(1, 1, &[x]))[0].clone()
+        self.eval(na::DMatrix::<_>::from_row_slice(1, 1, &[x]).as_view())[0].clone()
     }
 }
 
