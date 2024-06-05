@@ -355,6 +355,7 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
     ///
     /// Use [`Poly::try_n_roots_algo`] to specify which algorithm to use, if
     /// you already know which one will perform best.
+    #[deprecated = "use NewtonFinder instead"]
     pub fn try_n_roots(
         &self,
         n: usize,
@@ -397,6 +398,7 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
         Ok(roots)
     }
 
+    #[deprecated = "use NewtonFinder instead"]
     pub fn try_roots(
         &self,
         epsilon: T,
