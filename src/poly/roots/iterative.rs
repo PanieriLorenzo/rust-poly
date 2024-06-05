@@ -1,10 +1,15 @@
+use na::RealField;
+use num::Float;
+
 use crate::{Poly, ScalarOps};
 
 use super::RootFinder;
 
 pub mod newton;
 
-pub trait IterativeRootFinder<T: ScalarOps + PartialOrd>: RootFinder<T> {
+pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
+    RootFinder<T>
+{
     /// Find one root, without shrinkage
     fn next_root(&mut self) -> super::Result<T>;
 
@@ -15,6 +20,14 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd>: RootFinder<T> {
             n as i32 <= self.state().poly.degree_raw(),
             "for a polynomial of degree D, there can't be more than D roots"
         );
+
+        // trivial cases
+        match self.state().poly.degree_raw() {
+            0 => return Ok(vec![]),
+            1 => return Ok(self.state().poly.clone().linear()),
+            2 => return Ok(self.state().poly.clone().quadratic()[..n].into()),
+            _ => {}
+        }
 
         for i in 0..n {
             let r = self.next_root()?;
