@@ -40,6 +40,7 @@ impl<T: Scalar + Float + RealField> RootFinder<T> for NewtonFinder<T> {
 
 impl<T: Scalar + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T> {
     fn next_root(&mut self) -> roots::Result<T> {
+        self.state.poly.make_monic();
         let mut guess = self
             .state
             .dirty_roots

@@ -4,7 +4,10 @@ use anyhow::{anyhow, ensure};
 use itertools::Either;
 use na::{ComplexField, DMatrix, Normed};
 use nalgebra::RealField;
-use num::{traits::real::Real, Complex, Float, One, Zero};
+use num::{
+    traits::{real::Real, MulAdd},
+    Complex, Float, One, Zero,
+};
 
 use crate::{
     Scalar, ScalarOps,
@@ -274,6 +277,7 @@ impl<T: ScalarOps> Poly<T> {
         x: na::DMatrixView<Complex<T>>, /*&na::DMatrix<Complex<T>>*/
     ) -> na::DMatrix<Complex<T>> {
         debug_assert!(self.is_normalized());
+        // TODO: this is kinda slow...
         let mut c0: na::DMatrix<_> =
             na::DMatrix::<_>::from_element(x.nrows(), x.ncols(), self.last());
         for i in 2..=self.len_raw() {
@@ -294,7 +298,15 @@ impl<T: ScalarOps> Poly<T> {
     /// assert_eq!(p.eval_point(x), Complex::new(6.0, 0.0));
     /// ```
     pub fn eval_point(&self, x: Complex<T>) -> Complex<T> {
-        self.eval(na::DMatrix::<_>::from_row_slice(1, 1, &[x]).as_view())[0].clone()
+        // use Horner's method: https://en.wikipedia.org/wiki/Horner%27s_method
+        // TODO: for very large degree, this can be parallelized wiht a divide
+        //       and conquer approach (Estrin's method)
+        let mut eval = self.last();
+        for i in (0..self.len_raw() - 1).rev() {
+            eval = eval * x.clone() + self.0[i].clone();
+        }
+        eval
+        //self.eval(na::DMatrix::<_>::from_row_slice(1, 1, &[x]).as_view())[0].clone()
     }
 }
 
