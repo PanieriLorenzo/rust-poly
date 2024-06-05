@@ -4,7 +4,7 @@ use super::RootFinder;
 
 use num::Complex;
 
-mod newton;
+pub(crate) mod newton;
 
 pub trait IterativeRootFinder<T: ScalarOps + PartialOrd>: RootFinder<T> {
     /// Find one root, without shrinkage

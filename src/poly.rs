@@ -16,7 +16,7 @@ mod calculus;
 mod conversions;
 mod impl_num;
 mod indexing;
-mod roots;
+pub mod roots;
 mod special_funcs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -16,6 +16,7 @@ use crate::{
 
 mod eigenvalue;
 mod iterative;
+pub use iterative::{newton::NewtonFinder, IterativeRootFinder};
 mod multiroot;
 
 #[derive(thiserror::Error, Debug)]

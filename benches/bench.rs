@@ -1,7 +1,16 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rust_poly::{poly, Poly, Poly64, __util::casting::usize_to_scalar};
+use std::time::Duration;
 
-criterion_main!(micro_benches, realistic_benches);
+use criterion::{black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
+use rust_poly::{
+    poly, Poly, Poly64,
+    __util::{
+        casting::usize_to_scalar,
+        testing::{PolyStream, RandStreamC64Polar},
+    },
+    roots::{NewtonFinder, RootFinder},
+};
+
+criterion_main!(/*micro_benches, realistic_benches,*/ solver_benches);
 criterion_group!(
     micro_benches,
     bessel,
@@ -65,4 +74,37 @@ pub fn bessel_filter_design(c: &mut Criterion) {
         });
     }
     group.finish();
+}
+
+criterion_group!(solver_benches, newton_complex_uniform);
+
+fn uniform_cases(seed: u64, degree: usize) -> PolyStream<f64> {
+    let roots = RandStreamC64Polar::new(seed, 0.001, 1000.0, 0.0, 1.0);
+    PolyStream::new(degree, roots)
+}
+
+pub fn newton_complex_uniform(c: &mut Criterion) {
+    const SEED: u64 = 1;
+    const EPSILON: f64 = 1E-14;
+    const MAX_ITER: usize = 1000;
+    let mut group = c.benchmark_group("newton_complex_uniform");
+    // some of these benches are very time consuming
+    group.measurement_time(Duration::from_secs_f64(20.0));
+    for degree in [1, 2, 3, 4, 5, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128] {
+        group.bench_function(BenchmarkId::from_parameter(degree), |b| {
+            let mut cases = uniform_cases(SEED + degree as u64, degree);
+            b.iter_batched(
+                || cases.next().unwrap().1,
+                |poly| {
+                    black_box(
+                        NewtonFinder::from_poly(black_box(poly))
+                            .with_epsilon(EPSILON)
+                            .with_max_iter(MAX_ITER)
+                            .roots(),
+                    )
+                },
+                BatchSize::SmallInput,
+            )
+        });
+    }
 }
