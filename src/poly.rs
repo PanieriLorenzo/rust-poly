@@ -300,10 +300,12 @@ impl<T: ScalarOps> Poly<T> {
     /// ```
     pub fn eval_point(&self, x: Complex<T>) -> Complex<T> {
         // use Horner's method: https://en.wikipedia.org/wiki/Horner%27s_method
-        // TODO: for very large degree, this can be parallelized wiht a divide
-        //       and conquer approach (Estrin's method)
+        // in theory, Estrin's method is more parallelizable, but benchmarking
+        // against fast_polynomial crate shows no significant difference, this
+        // is close to optimal in terms of performance. You may get some small
+        // speedups by dividing large polynomials into 4 or 8 evaluations and
+        // computing them in parallel using SIMD, Rayon or GPU.
         debug_assert!(self.is_normalized());
-
         let mut eval = self.last();
         let n = self.len_raw();
         for i in 1..n {
