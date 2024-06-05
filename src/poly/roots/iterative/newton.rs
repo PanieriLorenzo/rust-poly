@@ -1,10 +1,9 @@
-use fastrand::Rng;
 use na::RealField;
-use num::{Complex, Float};
+use num::Float;
 
 use crate::{
     poly::roots::{self, FinderConfig, FinderState, RootFinder},
-    Poly, Scalar, ScalarOps,
+    Scalar, ScalarOps,
 };
 
 use super::IterativeRootFinder;
@@ -19,7 +18,7 @@ impl<T: ScalarOps + Float + RealField> NewtonFinder<T> {}
 impl<T: ScalarOps + Float + RealField> RootFinder<T> for NewtonFinder<T> {
     fn from_poly(poly: crate::Poly<T>) -> Self {
         Self {
-            state: FinderState::new(poly.clone()),
+            state: FinderState::new(poly),
             config: FinderConfig::new(),
         }
     }
@@ -53,7 +52,7 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T
                 return Ok(vec![guess]);
             }
             let pdx = p_diff.eval_point(guess);
-            guess = guess - px / pdx;
+            guess -= px / pdx;
         }
         self.state.dirty_roots.push(guess);
         Err(roots::Error::NoConverge(vec![guess]))

@@ -56,7 +56,7 @@ pub fn f64_make_nonzero(x: f64) -> f64 {
 /// If a float's absolute value is outside of the safe range
 /// `[F64_SMALL_NUM, F64_BIG_NUM]`, bump it to the nearest safe value.
 /// This also bumps zeros, as they are inherently unsafe, and NaNs are
-/// treated as F64_SMALL_NUM.
+/// treated as `F64_SMALL_NUM`.
 pub fn f64_make_safe(x: f64) -> f64 {
     let x = f64_make_normal(x);
     if x.abs() < F64_SMALL_NUM {

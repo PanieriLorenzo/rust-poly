@@ -3,7 +3,7 @@ use std::fmt;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub(crate) enum ErrorKind {
+pub enum ErrorKind {
     /// Use this for when the user-provided maxiter is reached
     #[error("did not converge within the given number of iterations")]
     MaxIterUser,

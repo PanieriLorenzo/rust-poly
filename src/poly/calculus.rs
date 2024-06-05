@@ -5,12 +5,13 @@ use crate::{Poly, Scalar, __util::casting::usize_to_scalar};
 
 impl<T: Scalar> Poly<T> {
     /// Derivative
+    #[must_use]
     pub fn diff(self) -> Self {
         debug_assert!(self.is_normalized());
 
         // derivative of constant is zero
         if self.degree_raw() == 0 {
-            return Poly::from_real_slice(&[T::zero()]);
+            return Self::from_real_slice(&[T::zero()]);
         }
 
         let coeffs: Vec<_> = (0..self.len())

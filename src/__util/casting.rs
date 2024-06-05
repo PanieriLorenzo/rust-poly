@@ -16,6 +16,7 @@ pub(crate) fn usize_to_f64(x: usize) -> f64 {
 
 /// Convert usize to Scalar without any primitive casting
 #[deprecated(note = "use num::FromPrimitive::from_usize instead")]
+#[must_use]
 pub fn usize_to_scalar<T: Scalar>(x: usize) -> T {
     T::from_usize(x).unwrap()
 }

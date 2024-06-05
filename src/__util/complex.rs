@@ -2,9 +2,9 @@
 
 use std::cmp::Ordering;
 
-use num::{traits::float::FloatCore, Complex, Float, One, Zero};
+use num::{Complex, One, Zero};
 
-use crate::{Scalar, ScalarOps};
+use crate::Scalar;
 
 // neg operator for Complex, as it does not implement std::ops::Neg
 pub(crate) fn c_neg<T: Scalar>(x: Complex<T>) -> Complex<T> {

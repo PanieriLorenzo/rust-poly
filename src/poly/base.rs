@@ -8,7 +8,7 @@ use super::indexing::Get;
 impl<T: Scalar> Poly<T> {
     /// Applies a closure to each coefficient in-place
     pub(crate) fn apply(&mut self, f: impl FnMut(&mut Complex<T>)) {
-        self.0.apply(f)
+        self.0.apply(f);
     }
 
     /// The length of the polynomial without checking pre-conditions

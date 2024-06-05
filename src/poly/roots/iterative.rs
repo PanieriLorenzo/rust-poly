@@ -1,10 +1,8 @@
-use crate::{Poly, Scalar, ScalarOps};
+use crate::{Poly, ScalarOps};
 
 use super::RootFinder;
 
-use num::Complex;
-
-pub(crate) mod newton;
+pub mod newton;
 
 pub trait IterativeRootFinder<T: ScalarOps + PartialOrd>: RootFinder<T> {
     /// Find one root, without shrinkage

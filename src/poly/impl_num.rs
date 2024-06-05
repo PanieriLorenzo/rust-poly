@@ -2,11 +2,7 @@
 
 use itertools::Itertools;
 use num::{traits::CheckedRem, CheckedDiv, Complex, One, Zero};
-use std::{
-    collections::VecDeque,
-    io::BufRead,
-    ops::{Add, Div, Mul, Neg, Rem, Sub},
-};
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
 
@@ -46,17 +42,17 @@ impl<T: ScalarOps> Poly<T> {
         let den_c = other.as_slice().last().unwrap();
         let den_k = other.degree_raw();
         let mut this = self;
-        let mut res = Poly::zero();
+        let mut res = Self::zero();
         'for_else: {
             for _ in 0..u32::MAX {
-                if !(this.degree_raw() >= other.degree_raw()) {
+                if this.degree_raw() < other.degree_raw() {
                     break 'for_else;
                 }
                 let num_c = this.as_slice().last().unwrap();
                 let num_k = this.degree_raw();
                 let c = num_c / den_c;
                 let k = num_k - den_k;
-                let new_term = Poly::term(c, k as u32);
+                let new_term = Self::term(c, k as u32);
                 this = this.clone() - new_term.clone() * other;
                 res = res + new_term;
             }

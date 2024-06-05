@@ -81,7 +81,7 @@ impl<T: ScalarOps> Poly<T> {
         memo.push(poly![T::one()]);
         memo.push(poly![T::zero(), T::one()]);
 
-        for i in 2..(n + 1) {
+        for i in 2..=n {
             let p1 = &memo[i - 1];
             let p2 = &memo[i - 2];
             let ns = usize_to_scalar::<T>(i);

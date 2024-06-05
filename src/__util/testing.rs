@@ -1,24 +1,14 @@
 //! Testing utilities
 
-use std::{
-    fs, iter,
-    path::{Iter, Path},
-};
+use std::iter;
 
 use fastrand::Rng;
-use itertools::{chain, Itertools};
-use na::ComplexField;
+use itertools::Itertools;
 use num::{complex::Complex64, Complex};
-
-#[cfg(test)]
-use plotters::style::SizeDesc;
 
 use crate::{Poly, Poly64, Scalar, __util::float::f64_make_safe};
 
-use super::{
-    complex::{complex_sort_mut, complex_sort_mut_old},
-    float::{f64_make_nonzero, F32_BIG_NUM, F64_BIG_NUM},
-};
+use super::float::f64_make_nonzero;
 
 struct RandStreamF64 {
     state: Rng,
@@ -48,6 +38,7 @@ pub struct RandStreamR64 {
 }
 
 impl RandStreamR64 {
+    #[must_use]
     pub fn new(seed: u64, min: f64, max: f64) -> Self {
         assert!(min <= max, "minimum should be smaller or equal to maximum");
         let real_stream = RandStreamF64::new(seed);
@@ -63,7 +54,7 @@ impl Iterator for RandStreamR64 {
     type Item = Complex64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let re = self.real_stream.next()? * (self.max - self.min) + self.min;
+        let re = (self.real_stream.next()?).mul_add(self.max - self.min, self.min);
         let im = 0.0;
         Some(Complex64 {
             re: f64_make_safe(re),
@@ -81,6 +72,7 @@ pub struct RandStreamC64Cartesian {
 }
 
 impl RandStreamC64Cartesian {
+    #[must_use]
     pub fn new(seed: u64, min_re: f64, max_re: f64, min_im: f64, max_im: f64) -> Self {
         assert!(
             min_re <= max_re && min_im <= max_im,
@@ -101,8 +93,8 @@ impl Iterator for RandStreamC64Cartesian {
     type Item = Complex64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let re = self.real_stream.next()? * (self.max_re - self.min_re) + self.min_re;
-        let im = self.real_stream.next()? * (self.max_im - self.min_im) + self.min_im;
+        let re = (self.real_stream.next()?).mul_add(self.max_re - self.min_re, self.min_re);
+        let im = (self.real_stream.next()?).mul_add(self.max_im - self.min_im, self.min_im);
         Some(Complex::new(f64_make_safe(re), f64_make_safe(im)))
     }
 }
@@ -116,6 +108,7 @@ pub struct RandStreamC64Polar {
 }
 
 impl RandStreamC64Polar {
+    #[must_use]
     pub fn new(
         seed: u64,
         min_radius: f64,
@@ -150,10 +143,11 @@ impl Iterator for RandStreamC64Polar {
     type Item = Complex64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let r = self.real_stream.next()? * (self.max_radius - self.min_radius) + self.min_radius;
-        let a = self.real_stream.next()? * (self.max_angle - self.min_angle) + self.min_angle;
+        let r =
+            (self.real_stream.next()?).mul_add(self.max_radius - self.min_radius, self.min_radius);
+        let a = (self.real_stream.next()?).mul_add(self.max_angle - self.min_angle, self.min_angle);
         debug_assert!(r >= 0.0);
-        debug_assert!(0.0 <= a && a <= 1.0);
+        debug_assert!((0.0..=1.0).contains(&a));
         let c = Complex::from_polar(r, a * std::f64::consts::TAU);
         Some(Complex::new(f64_make_safe(c.re), f64_make_safe(c.im)))
     }
@@ -198,7 +192,7 @@ impl<T: Scalar + PartialOrd> Iterator for PolyStream<T> {
     fn next(&mut self) -> Option<Self::Item> {
         let mut roots = vec![];
         for _ in 0..self.max_degree {
-            roots.push(self.root_stream.next()?)
+            roots.push(self.root_stream.next()?);
         }
         let poly = Poly::from_roots(&roots);
         Some((roots, poly))
@@ -220,7 +214,7 @@ fn binary_coeffs_inner(max_len: usize) -> Box<dyn Iterator<Item = Vec<f64>>> {
 
 pub fn binary_coeffs(min_degree: i32, max_degree: usize) -> impl Iterator<Item = Poly<f64>> {
     binary_coeffs_inner(max_degree + 1)
-        .map(|v| Poly64::from_real_vec(v))
+        .map(Poly64::from_real_vec)
         .filter(move |p| p.degree() >= min_degree)
 }
 
@@ -237,7 +231,8 @@ pub fn test_case_roots(
 }
 
 /// Check that all roots have been found
-pub fn check_roots(mut roots1: Vec<Complex64>, mut roots2: Vec<Complex64>, tol: f64) -> bool {
+#[must_use]
+pub fn check_roots(roots1: Vec<Complex64>, mut roots2: Vec<Complex64>, tol: f64) -> bool {
     if roots1.len() != roots2.len() {
         return false;
     }
@@ -264,7 +259,9 @@ pub fn check_roots(mut roots1: Vec<Complex64>, mut roots2: Vec<Complex64>, tol: 
 #[test]
 #[ignore]
 fn plot_random_roots() -> Result<(), Box<dyn std::error::Error>> {
+    use itertools::chain;
     use plotters::prelude::*;
+    use std::fs;
 
     let file_id: String = chain!(
         "temp/".chars(),

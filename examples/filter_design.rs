@@ -12,7 +12,7 @@
 //! A full implementation would require additional steps for scaling and discretizing,
 //! those are skipped here.
 
-use rust_poly::{poly, Poly64};
+use rust_poly::Poly64;
 
 fn main() {
     let num_poles = 48;
@@ -31,6 +31,6 @@ fn main() {
         .unwrap();
     roots
         .chunks(2)
-        .map(|z| Poly64::from_roots(z))
+        .map(Poly64::from_roots)
         .for_each(|stage| println!("{stage}"));
 }

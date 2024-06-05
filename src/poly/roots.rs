@@ -1,5 +1,4 @@
-use fastrand::Rng;
-use na::{Complex, ComplexField, DVector, Normed, RealField};
+use na::{Complex, ComplexField, Normed, RealField};
 use num::{
     traits::{float::FloatCore, MulAdd},
     Float, FromPrimitive, Num, One, Zero,
@@ -10,7 +9,7 @@ use crate::{
     __util::{
         self,
         casting::usize_to_scalar,
-        complex::{c_min, c_neg, complex_sort_mut_old},
+        complex::{c_min, c_neg},
     },
 };
 
@@ -29,7 +28,7 @@ pub enum Error<T> {
     Other,
 }
 
-pub type Result<T: Scalar> = std::result::Result<Vec<Complex<T>>, Error<T>>;
+pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<T>>;
 
 /// Helper struct for implementing stateful root finders and converting between them
 pub struct FinderState<T: Scalar> {
@@ -97,7 +96,7 @@ pub trait RootFinder<T: Scalar>: Sized {
     }
 
     /// Tries to find as many roots as possible with the given configuration,
-    /// returning a std::result::Result containing either the roots or the best guess so far
+    /// returning a `std::result::Result` containing either the roots or the best guess so far
     /// in case of no convergence.
     ///
     /// Consecutive calls to `try_roots` will attempt to resume root finding
@@ -185,8 +184,8 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 
         // avoid divide by zero
         if pdz.norm() < small {
-            pz = pz + small;
-            pdz = pdz + small;
+            pz += small;
+            pdz += small;
         }
 
         let theta = (c_neg(pz) / pdz).arg();
@@ -209,7 +208,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         if guess.im.is_zero() {
             // add a small constant because some methods can't converge to
             // complex roots if the initial guess is real
-            guess = guess + Complex::i().scale(Float::recip(usize_to_scalar::<T>(1_000)));
+            guess += Complex::i().scale(Float::recip(usize_to_scalar::<T>(1_000)));
         }
         guess
     }
@@ -228,7 +227,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
                 return Ok(x);
             }
             let pdx = p_diff.eval_point(x);
-            x = x - px / pdx;
+            x -= px / pdx;
         }
         Err(x)
     }
@@ -251,7 +250,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
             let pdx = p_diff.eval_point(x);
             let pddx = p_diff2.eval_point(x);
             let two = Complex::from_u32(2).expect("infallible");
-            x = x - (px * pdx * two) / (pdx.powu(2) * two - px * pddx);
+            x -= (px * pdx * two) / (pdx.powu(2) * two - px * pddx);
         }
         Err(x)
     }
@@ -351,7 +350,7 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
     /// It utilizes an iterative method, so the precision gets progressively
     /// worse the more roots are found. For small `n` this is negligible.
     ///
-    /// `Err` std::result::Result contains the roots it was able to find, even if they are
+    /// `Err` `std::result::Result` contains the roots it was able to find, even if they are
     /// fewer than requested.
     ///
     /// Use [`Poly::try_n_roots_algo`] to specify which algorithm to use, if
@@ -390,9 +389,9 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
                     .map_err(|_| roots.clone())?,
                 OneRootAlgorithms::JenkinsTraub => unimplemented!(),
             };
-            roots.push(r.clone());
+            roots.push(r);
             if i < (n - 1) {
-                this = this / Poly::from_roots(&[r.clone()]);
+                this = this / Self::from_roots(&[r]);
             }
         }
         Ok(roots)
@@ -461,8 +460,8 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
                     .map_err(|_| roots.clone())?,
                 OneRootAlgorithms::JenkinsTraub => unimplemented!(),
             };
-            roots.push(r.clone());
-            this = this / Poly::from_roots(&[r.clone()]);
+            roots.push(r);
+            this = this / Self::from_roots(&[r]);
         }
 
         Err(roots)

@@ -1,8 +1,6 @@
-use std::time::Duration;
-
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use rust_poly::{
-    poly, Poly, Poly64,
+    Poly64,
     __util::{
         casting::usize_to_scalar,
         testing::{PolyStream, RandStreamC64Polar},

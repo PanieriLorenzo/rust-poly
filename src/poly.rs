@@ -1,11 +1,8 @@
-use std::{fmt::Display, thread::current};
+use std::fmt::Display;
 
-use anyhow::{anyhow, ensure};
-use itertools::Either;
-use na::{ComplexField, DMatrix, Normed};
-use nalgebra::RealField;
+use na::{ComplexField, Normed};
 use num::{
-    traits::{real::Real, MulAdd, MulAddAssign},
+    traits::{real::Real, MulAdd},
     Complex, Float, One, Zero,
 };
 
@@ -116,6 +113,7 @@ impl<T: Scalar> Poly<T> {
         self.len_raw()
     }
 
+    #[must_use]
     pub fn degree(&self) -> i32 {
         debug_assert!(self.is_normalized());
         self.degree_raw()

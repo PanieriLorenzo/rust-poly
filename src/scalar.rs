@@ -149,21 +149,21 @@ safe_constants_float_impl!(f64);
 
 impl<T: SafeConstants> SafeConstants for Complex<T> {
     fn tiny_safe() -> Self {
-        Complex {
+        Self {
             re: T::tiny_safe(),
             im: T::tiny_safe(),
         }
     }
 
     fn small_safe() -> Self {
-        Complex {
+        Self {
             re: T::small_safe(),
             im: T::small_safe(),
         }
     }
 
     fn large_safe() -> Self {
-        Complex {
+        Self {
             re: T::large_safe(),
             im: T::large_safe(),
         }

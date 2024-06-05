@@ -1,19 +1,10 @@
-use std::{
-    cmp,
-    hint::black_box,
-    ops::{Div, MulAssign},
-};
+use std::{cmp, ops::Div};
 
-use na::{
-    dvector,
-    givens::{self, GivensRotation},
-    matrix, ComplexField, DMatrix, DMatrixView, DMatrixViewMut, DVectorView, Dim, Matrix2, OMatrix,
-    RealField,
-};
+use na::{dvector, matrix, ComplexField, DMatrix, DMatrixViewMut, Matrix2, RealField};
 use nalgebra::DVector;
-use num::{complex::Complex64, Complex, One, Zero};
+use num::{Complex, One, Zero};
 
-use crate::{Error, Scalar};
+use crate::Scalar;
 
 pub(crate) fn convolve_1d<T: Scalar>(
     input: &DVector<Complex<T>>,
@@ -52,7 +43,7 @@ fn col_2_householder<T: Scalar + RealField>(mut col: DVector<Complex<T>>) -> DMa
     type C<T> = Complex<T>;
 
     debug_assert!(
-        col.len() > 0,
+        !col.is_empty(),
         "can't construct householder matrix from empty vector"
     );
 
@@ -78,11 +69,11 @@ fn col_2_householder<T: Scalar + RealField>(mut col: DVector<Complex<T>>) -> DMa
 /// Crate a householder vector from a column vector
 fn col_2_householder_vec<T: Scalar + RealField>(col: &mut DVector<Complex<T>>) {
     debug_assert!(
-        col.len() > 0,
+        !col.is_empty(),
         "can't construct householder vector from empty vector"
     );
 
-    let denom = col[0].clone() + col[0].clone().signum() * col.dot(&col).sqrt();
+    let denom = col[0].clone() + col[0].clone().signum() * col.dot(col).sqrt();
 
     debug_assert_ne!(
         denom,
@@ -96,7 +87,7 @@ fn col_2_householder_vec<T: Scalar + RealField>(col: &mut DVector<Complex<T>>) {
     col[0] = Complex::one();
 
     let norm = col.norm();
-    col.apply(|z| *z = z.clone().div(norm.clone()))
+    col.apply(|z| *z = z.clone().div(norm.clone()));
 }
 
 fn upper_hessenberg<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>) {
@@ -202,9 +193,9 @@ fn balance_matrix<T: Scalar + RealField>(
                     if !(c < r.clone() / radix.clone()) {
                         break 'for_else;
                     }
-                    c = c * radix.clone();
-                    r = r / radix.clone();
-                    f = f * radix.clone();
+                    c *= radix.clone();
+                    r /= radix.clone();
+                    f *= radix.clone();
                 }
                 // else: did not converge
                 return Err(());
@@ -215,9 +206,9 @@ fn balance_matrix<T: Scalar + RealField>(
                     if !(c >= r.clone() * radix.clone()) {
                         break 'for_else;
                     }
-                    c = c / radix.clone();
-                    r = r * radix.clone();
-                    f = f / radix.clone();
+                    c /= radix.clone();
+                    r *= radix.clone();
+                    f /= radix.clone();
                 }
                 // else: did not converge
                 return Err(());
@@ -260,7 +251,7 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     // TODO: optional step, i.e. make a tuning option
     upper_hessenberg(this.as_view_mut());
     let mut h = this;
-    balance_matrix(h.as_view_mut(), MAX_ITER_BALANCE).map_err(|_| vec![])?;
+    balance_matrix(h.as_view_mut(), MAX_ITER_BALANCE).map_err(|()| vec![])?;
 
     // the final index of the active sub-matrix
     let mut p = n - 1;
