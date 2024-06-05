@@ -3,6 +3,7 @@
 use na::ComplexField;
 use num::{
     complex::{Complex32, Complex64},
+    traits::{MulAdd, MulAddAssign},
     Complex, FromPrimitive, Num,
 };
 use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
@@ -52,8 +53,29 @@ impl RealScalar for f64 {}
 //       perhaps in the future they can be dropped?
 /// Trait bounds necessary to provide more advanced mathematical features.
 #[allow(clippy::module_name_repetitions)]
-pub trait ScalarOps: Scalar + AddAssign + SubAssign + MulAssign + DivAssign + RemAssign {}
-impl<T: Scalar + AddAssign + SubAssign + MulAssign + DivAssign + RemAssign> ScalarOps for T {}
+pub trait ScalarOps:
+    Scalar
+    + AddAssign
+    + SubAssign
+    + MulAssign
+    + DivAssign
+    + RemAssign
+    + MulAdd<Output = Self>
+    + MulAddAssign
+{
+}
+impl<
+        T: Scalar
+            + AddAssign
+            + SubAssign
+            + MulAssign
+            + DivAssign
+            + RemAssign
+            + MulAdd<Output = Self>
+            + MulAddAssign,
+    > ScalarOps for T
+{
+}
 
 /// A number that has a smallest positive _safe_ value for denominators and a largest
 /// positive _safe_ value for numerators.

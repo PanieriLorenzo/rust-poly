@@ -129,7 +129,7 @@ pub enum AllRootsAlgorithms {
 }
 
 // private
-impl<T: Scalar + RealField + Float> Poly<T> {
+impl<T: ScalarOps + RealField + Float> Poly<T> {
     fn linear(mut self) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
         debug_assert_eq!(self.degree_raw(), 1);
@@ -343,7 +343,7 @@ impl<T: Scalar + RealField + Float> Poly<T> {
     }
 }
 
-impl<T: Scalar + Float + RealField> Poly<T> {
+impl<T: ScalarOps + Float + RealField> Poly<T> {
     /// Find only some of the roots of the polynomial.
     ///
     /// Note that for large `n`, using [`Poly::try_roots`] is probably faster.

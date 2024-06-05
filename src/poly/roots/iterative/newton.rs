@@ -4,7 +4,7 @@ use num::{Complex, Float};
 
 use crate::{
     poly::roots::{self, FinderConfig, FinderState, RootFinder},
-    Poly, Scalar,
+    Poly, Scalar, ScalarOps,
 };
 
 use super::IterativeRootFinder;
@@ -14,9 +14,9 @@ pub struct NewtonFinder<T: Scalar> {
     config: FinderConfig<T>,
 }
 
-impl<T: Scalar + Float + RealField> NewtonFinder<T> {}
+impl<T: ScalarOps + Float + RealField> NewtonFinder<T> {}
 
-impl<T: Scalar + Float + RealField> RootFinder<T> for NewtonFinder<T> {
+impl<T: ScalarOps + Float + RealField> RootFinder<T> for NewtonFinder<T> {
     fn from_poly(poly: crate::Poly<T>) -> Self {
         Self {
             state: FinderState::new(poly.clone()),
@@ -38,7 +38,7 @@ impl<T: Scalar + Float + RealField> RootFinder<T> for NewtonFinder<T> {
     }
 }
 
-impl<T: Scalar + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T> {
+impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T> {
     fn next_root(&mut self) -> roots::Result<T> {
         self.state.poly.make_monic();
         let mut guess = self
