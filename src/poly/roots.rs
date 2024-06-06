@@ -48,6 +48,15 @@ pub struct FinderConfig<T: Scalar> {
     pub max_iter: usize,
 }
 
+/// Statistics about the session (for benchmarking)
+#[derive(Debug)]
+pub struct FinderStatistics<T: Scalar> {
+    pub roots_history: Vec<Vec<Complex<T>>>,
+    pub roots_err_sq_history: Vec<Vec<T>>,
+    pub roots_err_sq: Vec<T>,
+    pub rmse: Option<T>,
+}
+
 impl<T: Scalar> FinderState<T> {
     fn new(poly: Poly<T>) -> Self {
         Self {
@@ -63,6 +72,17 @@ impl<T: Scalar> FinderConfig<T> {
         Self {
             epsilon: T::small_safe(),
             max_iter: 0,
+        }
+    }
+}
+
+impl<T: Scalar> FinderStatistics<T> {
+    fn new() -> Self {
+        Self {
+            roots_history: vec![],
+            roots_err_sq_history: vec![],
+            roots_err_sq: vec![],
+            rmse: None,
         }
     }
 }
@@ -95,6 +115,13 @@ pub trait RootFinder<T: Scalar>: Sized {
         self
     }
 
+    fn collect_stats(mut self) -> Self {
+        if self.statistics().is_none() {
+            *self.statistics() = Some(FinderStatistics::new())
+        }
+        self
+    }
+
     /// Tries to find as many roots as possible with the given configuration,
     /// returning a `std::result::Result` containing either the roots or the best guess so far
     /// in case of no convergence.
@@ -109,6 +136,9 @@ pub trait RootFinder<T: Scalar>: Sized {
 
     /// Get a mutable reference to the current finder configuration
     fn config(&mut self) -> &mut FinderConfig<T>;
+
+    /// Get a mutable reference to the stats
+    fn statistics(&mut self) -> &mut Option<FinderStatistics<T>>;
 }
 
 /// Polynomial root-finding algorithms

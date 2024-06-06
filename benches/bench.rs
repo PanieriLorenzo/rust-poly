@@ -86,7 +86,7 @@ pub fn newton_complex_uniform(c: &mut Criterion) {
     const EPSILON: f64 = 1E-14;
     const MAX_ITER: usize = 1000;
     let mut group = c.benchmark_group("newton_complex_uniform");
-    for degree in [1, 2, 3, 4, 5, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128] {
+    for degree in [1, 2, 3, 7, 15, 31, 63, 127, 255] {
         group.bench_function(BenchmarkId::from_parameter(degree), |b| {
             let mut cases = uniform_cases(SEED + degree as u64, degree);
             b.iter_batched(

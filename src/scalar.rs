@@ -3,7 +3,7 @@
 use na::ComplexField;
 use num::{
     complex::{Complex32, Complex64},
-    traits::{MulAdd, MulAddAssign},
+    traits::{Bounded, Float, MulAdd, MulAddAssign},
     Complex, FromPrimitive, Num,
 };
 use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
@@ -15,6 +15,7 @@ pub trait Scalar:
     + PartialEq
     + std::fmt::Debug
     + Num
+    + Float
     + FromPrimitive
     + std::ops::Neg<Output = Self>
     + 'static
@@ -25,6 +26,7 @@ impl<
             + PartialEq
             + std::fmt::Debug
             + Num
+            + Float
             + FromPrimitive
             + SafeConstants
             + std::ops::Neg<Output = Self>
@@ -33,16 +35,16 @@ impl<
 {
 }
 
-pub trait ComplexScalar: Scalar {
-    type ComponentScalar;
-}
+// pub trait ComplexScalar: Scalar {
+//     type ComponentScalar;
+// }
 
-impl ComplexScalar for Complex64 {
-    type ComponentScalar = f64;
-}
-impl ComplexScalar for Complex32 {
-    type ComponentScalar = f32;
-}
+// impl ComplexScalar for Complex64 {
+//     type ComponentScalar = f64;
+// }
+// impl ComplexScalar for Complex32 {
+//     type ComponentScalar = f32;
+// }
 
 pub trait RealScalar: Scalar {}
 

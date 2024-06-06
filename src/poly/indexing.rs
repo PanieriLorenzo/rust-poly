@@ -16,6 +16,16 @@ pub trait Get<I, T: Scalar>: sealed::Sealed {
 impl<T: Scalar> sealed::Sealed for Poly<T> {}
 
 impl<T: Scalar> Poly<T> {
+    /// Index from the end, useful for porting algorithm that use the descending convention
+    pub(crate) fn coeff_descending(&self, idx: usize) -> &Complex<T> {
+        &self.0[self.len_raw() - idx - 1]
+    }
+
+    pub(crate) fn coeff_descending_mut(&mut self, idx: usize) -> &mut Complex<T> {
+        let n = self.len_raw();
+        &mut self.0[n - idx - 1]
+    }
+
     /// Implementation for all range-based indexing (because Rust is super annoying
     /// around the different range iterators, see [#3550](https://github.com/rust-lang/rfcs/pull/3550))
     fn get_range_inner(&self, idx_start: Bound<&usize>, idx_end: Bound<&usize>) -> Option<Self> {

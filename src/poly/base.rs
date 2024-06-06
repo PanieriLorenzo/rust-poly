@@ -1,4 +1,4 @@
-use na::Complex;
+use na::{Complex, DMatrix, DVector};
 use num::{One, Zero};
 
 use crate::{Poly, Scalar, __util::complex::c_neg, scalar::SafeConstants};
@@ -130,6 +130,80 @@ impl<T: Scalar> Poly<T> {
             *self = res;
         }
         *self = self.clone().normalize();
+    }
+
+    // TODO: deflate_downward would be a better name
+    /// Factor out one root of the polynomial, by scaling coefficients from
+    /// the one with the highest degree down, then discarding the smallest
+    /// coefficient.
+    pub(crate) fn deflate_forward(mut self, r: Complex<T>) -> Self {
+        // TODO: it is possible to use FFT for forward deflation
+        let mut z0 = Complex::<T>::zero();
+        // FIXME: I think this does exactly one wasted iteration at the end
+        for j in 0..self.len_raw() {
+            z0 = z0.clone() * r.clone() + self.coeff_descending(j).clone();
+            *self.coeff_descending_mut(j) = z0.clone();
+        }
+        self.shift_down(1).normalize()
+    }
+
+    // TODO: deflate_upward would be a better name
+    /// Factor out one root of the polynomial, by scaling coefficients from
+    /// the one with the lowest degree upwards, then discarding the largest
+    /// coefficient.
+    pub(crate) fn deflate_backward(mut self, r: Complex<T>) -> Self {
+        let n = self.degree_raw();
+        let mut z0 = Complex::zero();
+        if r != z0 {
+            let mut i = n - 1;
+            let mut t = self.coeff_descending(n as usize).clone();
+            let mut s;
+            while i >= 0 {
+                s = t;
+                t = self.coeff_descending(i as usize).clone();
+                z0 = (z0.clone() - s) / r.clone();
+                *self.coeff_descending_mut(i as usize) = z0.clone();
+                i -= 1;
+            }
+        }
+        self.shift_down(1).normalize()
+    }
+
+    /// Synthetic division that reduces numeric error by fusing the results
+    /// of forward deflation and backward deflation
+    pub(crate) fn deflate_composite(mut self, r: Complex<T>) -> Self {
+        let n = self.degree_raw();
+        let fwd = self.clone().deflate_forward(r.clone());
+        let bwd = self.clone().deflate_backward(r);
+        // TODO: in order to drop the Bounded trait bound, this should be
+        //       done without explicit reference to max value
+        let mut ra = T::max_value();
+        let mut ua;
+        let mut k = 0;
+        for i in 0..n {
+            ua = fwd.coeff_descending(i as usize).norm() + bwd.coeff_descending(i as usize).norm();
+            if !ua.is_zero() {
+                ua = (fwd.coeff_descending(i as usize) - bwd.coeff_descending(i as usize)).norm()
+                    / ua;
+                if ua < ra {
+                    ra = ua;
+                    k = i;
+                }
+            }
+        }
+        let mut i = k - 1;
+        while i >= 0 {
+            *self.coeff_descending_mut(i as usize) = fwd.coeff_descending(i as usize).clone();
+            i -= 1;
+        }
+        *self.coeff_descending_mut(k as usize) = (fwd.coeff_descending(k as usize)
+            + bwd.coeff_descending(k as usize))
+        .scale(T::from_u8(2).expect("should fit").recip());
+        for i in (k + 1)..n {
+            *self.coeff_descending_mut(i as usize) = bwd.coeff_descending(i as usize).clone();
+        }
+
+        self.shift_down(1).normalize()
     }
 }
 
