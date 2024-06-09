@@ -1,9 +1,5 @@
-use itertools::Itertools;
 use na::{Complex, ComplexField, Normed, RealField};
-use num::{
-    traits::{float::FloatCore, MulAdd},
-    Float, FromPrimitive, Num, One, Zero,
-};
+use num::{traits::float::FloatCore, Float, FromPrimitive, One, Zero};
 
 use crate::{
     Poly, Scalar, ScalarOps,
@@ -81,8 +77,9 @@ impl<T: Scalar> FinderHistory<T> {
         }
     }
 
+    #[must_use]
     pub fn total_iter(&self) -> usize {
-        self.roots_history.iter().map(|v| v.len()).sum()
+        self.roots_history.iter().map(std::vec::Vec::len).sum()
     }
 }
 
@@ -116,7 +113,7 @@ pub trait RootFinder<T: Scalar>: Sized {
 
     fn collect_history(mut self) -> Self {
         if self.history().is_none() {
-            *self.history() = Some(FinderHistory::new())
+            *self.history() = Some(FinderHistory::new());
         }
         self
     }
@@ -514,14 +511,11 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
 
 #[cfg(test)]
 mod test {
-    use itertools::Itertools;
+
     use na::Complex;
     use num::complex::{Complex64, ComplexFloat};
 
-    use crate::__util::{
-        complex::complex_sort_mut,
-        testing::{binary_coeffs, check_roots},
-    };
+    use crate::__util::testing::{binary_coeffs, check_roots};
     use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
 
     #[test]
@@ -536,7 +530,7 @@ mod test {
 
     #[test]
     fn roots_schur() {
-        let mut roots_expected = vec![
+        let roots_expected = vec![
             Complex64 { re: 0.0, im: 0.0 },
             Complex64 { re: 1.0, im: 0.0 },
             Complex64 { re: 2.5, im: 0.0 },
@@ -546,13 +540,11 @@ mod test {
             // Complex64 { re: -1.0, im: -1.0 },
         ];
         let poly = Poly::from_roots(&roots_expected);
-        let mut roots = poly.roots_francis_qr(1E-9, 1000).unwrap();
+        let roots = poly.roots_francis_qr(1E-9, 1000).unwrap();
 
         assert!(
             check_roots(roots.clone(), roots_expected.clone(), 1E-4),
-            "{:?} != {:?}",
-            roots,
-            roots_expected
+            "{roots:?} != {roots_expected:?}"
         );
     }
 

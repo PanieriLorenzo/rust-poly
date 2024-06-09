@@ -30,7 +30,7 @@ pub(crate) fn convolve_1d<T: Scalar>(
             // k is guaranteed to be positive by the conditional
             #[allow(clippy::cast_sign_loss)]
             if k >= 0 && k < input_len as isize {
-                sum = sum.clone() + input[k as usize].clone() * kernel[j].clone();
+                sum = sum + input[k as usize] * kernel[j];
             }
         }
         output[i] = sum;
@@ -47,7 +47,7 @@ fn col_2_householder<T: Scalar + RealField>(mut col: DVector<Complex<T>>) -> DMa
         "can't construct householder matrix from empty vector"
     );
 
-    let denom = col[0].clone() + col[0].clone().signum() * col.dot(&col).sqrt();
+    let denom = col[0] + col[0].signum() * col.dot(&col).sqrt();
 
     debug_assert_ne!(
         denom,
@@ -55,7 +55,7 @@ fn col_2_householder<T: Scalar + RealField>(mut col: DVector<Complex<T>>) -> DMa
         "can't construct householder matrix from column whose first entry is zero"
     );
 
-    col.apply(|z| *z = z.clone().div(denom.clone()));
+    col.apply(|z| *z = (*z).div(denom));
 
     // ensure first element is 1
     col[0] = C::one();
@@ -73,7 +73,7 @@ fn col_2_householder_vec<T: Scalar + RealField>(col: &mut DVector<Complex<T>>) {
         "can't construct householder vector from empty vector"
     );
 
-    let denom = col[0].clone() + col[0].clone().signum() * col.dot(col).sqrt();
+    let denom = col[0] + col[0].signum() * col.dot(col).sqrt();
 
     debug_assert_ne!(
         denom,
@@ -81,13 +81,13 @@ fn col_2_householder_vec<T: Scalar + RealField>(col: &mut DVector<Complex<T>>) {
         "can't construct householder vector from column whose first entry is zero"
     );
 
-    col.apply(|z| *z = z.clone().div(denom.clone()));
+    col.apply(|z| *z = (*z).div(denom));
 
     // ensure first element is 1
     col[0] = Complex::one();
 
     let norm = col.norm();
-    col.apply(|z| *z = z.clone().div(norm.clone()));
+    col.apply(|z| *z = (*z).div(norm));
 }
 
 fn upper_hessenberg<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>) {
@@ -143,14 +143,14 @@ fn complex_givens_rot_2d<T: Scalar + RealField>(
         (_, true) => (Complex::one(), Complex::zero()),
         (true, false) => (Complex::zero(), sign(y.conj())),
         (false, false) => {
-            let r_mod = x.clone().hypot(y.clone());
-            let c = Complex::from_real(x.clone().abs() / r_mod.clone());
+            let r_mod = x.hypot(y);
+            let c = Complex::from_real(x.abs() / r_mod);
             let s = sign(x) * y.conj() / r_mod;
             (c, s)
         }
     };
 
-    matrix![cos.clone(), sin; -sin.conj(), cos.conj()]
+    matrix![cos, sin; -sin.conj(), cos.conj()]
 }
 
 // TODO: document what LAPACK routine this corresponds to
@@ -185,17 +185,17 @@ fn balance_matrix<T: Scalar + RealField>(
             let mut c: T = this.column(i).norm();
             let mut r: T = this.row(i).norm();
 
-            let s = c.clone() * c.clone() + r.clone() * r.clone();
+            let s = c * c + r * r;
             let mut f = T::one();
 
             'for_else: {
                 for _ in 0..MAX_ITER_INNER {
-                    if !(c < r.clone() / radix.clone()) {
+                    if !(c < r / radix) {
                         break 'for_else;
                     }
-                    c *= radix.clone();
-                    r /= radix.clone();
-                    f *= radix.clone();
+                    c *= radix;
+                    r /= radix;
+                    f *= radix;
                 }
                 // else: did not converge
                 return Err(());
@@ -203,26 +203,24 @@ fn balance_matrix<T: Scalar + RealField>(
 
             'for_else: {
                 for _ in 0..MAX_ITER_INNER {
-                    if !(c >= r.clone() * radix.clone()) {
+                    if !(c >= r * radix) {
                         break 'for_else;
                     }
-                    c /= radix.clone();
-                    r *= radix.clone();
-                    f /= radix.clone();
+                    c /= radix;
+                    r *= radix;
+                    f /= radix;
                 }
                 // else: did not converge
                 return Err(());
             }
 
-            if (c.clone() * c.clone() + r.clone() * r.clone())
-                < T::from_f64(0.95).expect("infallible") * s
-            {
+            if (c * c + r * r) < T::from_f64(0.95).expect("infallible") * s {
                 converged = false;
-                d.row_mut(i)[i] = d.row(i)[i].clone().scale(f.clone());
+                d.row_mut(i)[i] = d.row(i)[i].scale(f);
 
                 for j in 0..n {
-                    this.row_mut(j)[i] = this.row(j)[i].clone().scale(f.clone());
-                    this.row_mut(i)[j] = this.row(i)[j].clone().scale(T::one() / f.clone());
+                    this.row_mut(j)[i] = this.row(j)[i].scale(f);
+                    this.row_mut(i)[j] = this.row(i)[j].scale(T::one() / f);
                 }
             }
         }
@@ -274,19 +272,16 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
 
         // TODO: what is q?
         let q = p - 1;
-        let s = h[(q, q)].clone() + h[(p, p)].clone();
-        let t = h[(q, q)].clone() * h[(p, p)].clone() - h[(q, p)].clone() * h[(p, q)].clone();
+        let s = h[(q, q)] + h[(p, p)];
+        let t = h[(q, q)] * h[(p, p)] - h[(q, p)] * h[(p, q)];
 
         // TODO: what are these?
-        let mut x = h.row(0)[0].clone() * h.row(0)[0].clone()
-            + h.row(0)[1].clone() * h.row(1)[0].clone()
-            - h.row(0)[0].clone() * s.clone()
-            + t;
-        let mut y = h.row(1)[0].clone() * (h.row(0)[0].clone() + h.row(1)[1].clone() - s);
-        let mut z = h.row(1)[0].clone() * h.row(2)[1].clone();
+        let mut x = h.row(0)[0] * h.row(0)[0] + h.row(0)[1] * h.row(1)[0] - h.row(0)[0] * s + t;
+        let mut y = h.row(1)[0] * (h.row(0)[0] + h.row(1)[1] - s);
+        let mut z = h.row(1)[0] * h.row(2)[1];
 
         for k in 0..p - 1 {
-            let householder = col_2_householder(dvector![x.clone(), y.clone(), z.clone()]);
+            let householder = col_2_householder(dvector![x, y, z]);
 
             // apply householder transformation to block (on the left)
             {
@@ -306,11 +301,11 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
                 h_block.copy_from(&transformed);
             }
 
-            x = h.row(k + 1)[k].clone();
-            y = h.row(k + 2)[k].clone();
+            x = h.row(k + 1)[k];
+            y = h.row(k + 2)[k];
 
             if k < p - 2 {
-                z = h.row(k + 3)[k].clone();
+                z = h.row(k + 3)[k];
             }
         }
 
@@ -331,17 +326,13 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
         }
 
         // check for convergence
-        if h[(p, q)].clone().abs()
-            < epsilon.clone() * (h[(q, q)].clone().abs() + h[(p, p)].clone().abs())
-        {
+        if h[(p, q)].abs() < epsilon * (h[(q, q)].abs() + h[(p, p)].abs()) {
             // deflation step:
             // if h[p,q] < epsilon we flush it to zero and shrink the problem
             h[(p, q)] = Complex::<T>::zero();
             p -= 1;
             piter = 0;
-        } else if h[(p - 1, q - 1)].clone().abs()
-            < epsilon.clone() * (h[(q - 1, q - 1)].clone().abs() + h[(q, q)].clone().abs())
-        {
+        } else if h[(p - 1, q - 1)].abs() < epsilon * (h[(q - 1, q - 1)].abs() + h[(q, q)].abs()) {
             // deflation step for 2x2 blocks
             h[(p - 1, q - 1)] = Complex::<T>::zero();
             p -= 2;
@@ -360,7 +351,7 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
 
 #[cfg(test)]
 mod test {
-    use na::{dmatrix, matrix};
+    use na::dmatrix;
     use num::complex::{Complex64, ComplexFloat};
 
     use super::{balance_matrix, eigen_francis_shift};

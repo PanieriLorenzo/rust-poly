@@ -176,7 +176,7 @@ impl<T: Scalar> Poly<T> {
         if degree as usize >= self.len_raw() {
             return None;
         }
-        Some(Self::term(self[degree as usize].clone(), degree))
+        Some(Self::term(self[degree as usize], degree))
     }
 
     /// Iterate over the terms of a polynomial
@@ -262,7 +262,7 @@ impl<T: Scalar + PartialOrd> Poly<T> {
         // end
 
         (0..self.len_raw())
-            .map(|i| Self::new(&[self.0[i].clone()]) * x.clone().pow_usize(i))
+            .map(|i| Self::new(&[self.0[i]]) * x.clone().pow_usize(i))
             .sum()
     }
 }
@@ -280,8 +280,8 @@ impl<T: ScalarOps> Poly<T> {
         let mut c0: na::DMatrix<_> =
             na::DMatrix::<_>::from_element(x.nrows(), x.ncols(), self.last());
         for i in 2..=self.len_raw() {
-            c0 = c0.clone() * x.clone();
-            c0.apply(|c| *c = (*c).clone() + &self.0[self.len_raw() - i]);
+            c0 = c0.clone() * x;
+            c0.apply(|c| *c += &self.0[self.len_raw() - i]);
         }
         c0
     }
@@ -307,8 +307,8 @@ impl<T: ScalarOps> Poly<T> {
         let mut eval = self.last();
         let n = self.len_raw();
         for i in 1..n {
-            let c = unsafe { self.0.get_unchecked(n - i - 1) }.clone();
-            eval = eval.mul_add(x.clone(), c);
+            let c = *unsafe { self.0.get_unchecked(n - i - 1) };
+            eval = eval.mul_add(x, c);
         }
         eval
     }

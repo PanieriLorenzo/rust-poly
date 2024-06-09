@@ -102,7 +102,7 @@ impl<T: Scalar> Add<Self> for Poly<T> {
             .zip_longest(shortest.iter())
             .for_each(|p| {
                 if let itertools::EitherOrBoth::Both(l, r) = p {
-                    *l = l.clone() + r;
+                    *l = *l + r;
                 }
             });
         Self(longest).normalize()
@@ -193,7 +193,7 @@ impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
 
     fn mul(self, rhs: &Complex<T>) -> Self::Output {
         let mut lhs = self;
-        lhs.0.apply(|c| *c = c.clone() * rhs);
+        lhs.0.apply(|c| *c = *c * rhs);
         lhs.normalize()
     }
 }
@@ -233,7 +233,7 @@ impl<T: Scalar> Sub<Self> for Poly<T> {
             .zip_longest(shortest.iter())
             .for_each(|p| {
                 if let itertools::EitherOrBoth::Both(l, r) = p {
-                    *l = l.clone() - r;
+                    *l = *l - r;
                 }
             });
         Self(longest).normalize()
@@ -321,7 +321,7 @@ impl<T: Scalar> Div<&Complex<T>> for Poly<T> {
 
     fn div(self, rhs: &Complex<T>) -> Self::Output {
         let mut lhs = self;
-        lhs.0.apply(|c| *c = c.clone() / rhs);
+        lhs.0.apply(|c| *c = *c / rhs);
         lhs.normalize()
     }
 }

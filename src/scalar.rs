@@ -2,8 +2,7 @@
 
 use na::ComplexField;
 use num::{
-    complex::{Complex32, Complex64},
-    traits::{Bounded, Float, MulAdd, MulAddAssign},
+    traits::{Float, MulAdd, MulAddAssign},
     Complex, FromPrimitive, Num,
 };
 use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};

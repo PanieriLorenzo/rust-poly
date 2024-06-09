@@ -62,7 +62,7 @@ impl<T: Scalar + FromPrimitive> Poly<T> {
     #[must_use]
     pub fn reverse_bessel(n: usize) -> Option<Self> {
         let p = Self::bessel(n)?;
-        let v: Vec<_> = p.iter().cloned().rev().collect();
+        let v: Vec<_> = p.iter().copied().rev().collect();
         Some(Self::from_complex_vec(v))
     }
 }
@@ -86,8 +86,8 @@ impl<T: ScalarOps> Poly<T> {
             let p2 = &memo[i - 2];
             let ns = usize_to_scalar::<T>(i);
             memo.push(
-                poly![T::zero(), usize_to_scalar::<T>(2 * i - 1) / ns.clone()] * p1
-                    + poly![(T::one() - ns.clone()) / ns] * p2,
+                poly![T::zero(), usize_to_scalar::<T>(2 * i - 1) / ns] * p1
+                    + poly![(T::one() - ns) / ns] * p2,
             );
         }
         memo.last().expect("infallible").clone()

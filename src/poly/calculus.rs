@@ -43,7 +43,7 @@ impl<T: Scalar> Poly<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::Poly64;
+    
 
     #[test]
     fn diff() {

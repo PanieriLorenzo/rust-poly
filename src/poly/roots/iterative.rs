@@ -1,7 +1,7 @@
 use na::RealField;
 use num::Float;
 
-use crate::{Poly, ScalarOps};
+use crate::ScalarOps;
 
 use super::RootFinder;
 
@@ -45,7 +45,7 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
                 history_handle.roots_history.push(vec![]);
             }
             let r = self.next_root()?;
-            self.state().clean_roots.extend(r.iter().cloned());
+            self.state().clean_roots.extend(r.iter().copied());
             if i != (n - 1) {
                 //self.state().poly = self.state().poly.clone() / Poly::from_roots(&r);
                 self.state().poly = self.state().poly.clone().deflate_composite(r[0]);

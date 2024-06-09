@@ -1,4 +1,4 @@
-use na::{Complex, DMatrix, DVector};
+use na::Complex;
 use num::{One, Zero};
 
 use crate::{Poly, Scalar, __util::complex::c_neg, scalar::SafeConstants};
@@ -18,7 +18,7 @@ impl<T: Scalar> Poly<T> {
 
     /// Scale a polynomial in-place
     pub(crate) fn scale(&mut self, factor: Complex<T>) {
-        self.apply(|z| *z = z.clone() * factor.clone());
+        self.apply(|z| *z = *z * factor);
     }
 
     /// Moving version of `scale`
@@ -78,11 +78,7 @@ impl<T: Scalar> Poly<T> {
         );
 
         if self.len_raw() == 2 {
-            return na::DMatrix::from_row_slice(
-                1,
-                1,
-                &[c_neg(self.0[0].clone()) / self.0[1].clone()],
-            );
+            return na::DMatrix::from_row_slice(1, 1, &[c_neg(self.0[0]) / self.0[1]]);
         }
 
         let n = self.len_raw() - 1;
@@ -97,14 +93,14 @@ impl<T: Scalar> Poly<T> {
         let mut monic = self.clone();
         monic.make_monic();
         for i in 0..n {
-            mat.column_mut(n - 1)[i] = c_neg(monic[i].clone());
+            mat.column_mut(n - 1)[i] = c_neg(monic[i]);
         }
         mat
     }
 
     /// The last coefficient
     pub(crate) fn last(&self) -> Complex<T> {
-        self.0[self.len_raw() - 1].clone()
+        self.0[self.len_raw() - 1]
     }
 
     /// Make the polynomial monic in-place.
@@ -118,7 +114,7 @@ impl<T: Scalar> Poly<T> {
             // already monic
             return;
         }
-        self.apply(|x| *x = x.clone() / last_coeff.clone());
+        self.apply(|x| *x = *x / last_coeff);
     }
 
     /// Make sure trailing almost-zero coefficients are removed
@@ -141,8 +137,8 @@ impl<T: Scalar> Poly<T> {
         let mut z0 = Complex::<T>::zero();
         // FIXME: I think this does exactly one wasted iteration at the end
         for j in 0..self.len_raw() {
-            z0 = z0.clone() * r.clone() + self.coeff_descending(j).clone();
-            *self.coeff_descending_mut(j) = z0.clone();
+            z0 = z0 * r + *self.coeff_descending(j);
+            *self.coeff_descending_mut(j) = z0;
         }
         self.shift_down(1).normalize()
     }
@@ -156,13 +152,13 @@ impl<T: Scalar> Poly<T> {
         let mut z0 = Complex::zero();
         if r != z0 {
             let mut i = n - 1;
-            let mut t = self.coeff_descending(n as usize).clone();
+            let mut t = *self.coeff_descending(n as usize);
             let mut s;
             while i >= 0 {
                 s = t;
-                t = self.coeff_descending(i as usize).clone();
-                z0 = (z0.clone() - s) / r.clone();
-                *self.coeff_descending_mut(i as usize) = z0.clone();
+                t = *self.coeff_descending(i as usize);
+                z0 = (z0 - s) / r;
+                *self.coeff_descending_mut(i as usize) = z0;
                 i -= 1;
             }
         }
@@ -173,7 +169,7 @@ impl<T: Scalar> Poly<T> {
     /// of forward deflation and backward deflation
     pub(crate) fn deflate_composite(mut self, r: Complex<T>) -> Self {
         let n = self.degree_raw();
-        let fwd = self.clone().deflate_forward(r.clone());
+        let fwd = self.clone().deflate_forward(r);
         let bwd = self.clone().deflate_backward(r);
         // TODO: in order to drop the Bounded trait bound, this should be
         //       done without explicit reference to max value
@@ -193,14 +189,14 @@ impl<T: Scalar> Poly<T> {
         }
         let mut i = k - 1;
         while i >= 0 {
-            *self.coeff_descending_mut(i as usize) = fwd.coeff_descending(i as usize).clone();
+            *self.coeff_descending_mut(i as usize) = *fwd.coeff_descending(i as usize);
             i -= 1;
         }
         *self.coeff_descending_mut(k as usize) = (fwd.coeff_descending(k as usize)
             + bwd.coeff_descending(k as usize))
         .scale(T::from_u8(2).expect("should fit").recip());
         for i in (k + 1)..n {
-            *self.coeff_descending_mut(i as usize) = bwd.coeff_descending(i as usize).clone();
+            *self.coeff_descending_mut(i as usize) = *bwd.coeff_descending(i as usize);
         }
 
         self.shift_down(1).normalize()

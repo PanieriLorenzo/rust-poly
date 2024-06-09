@@ -1,12 +1,8 @@
 //! This example shows how the accuracy and performance of root finders can be tuned
 
-use std::{fs, iter};
-
-use itertools::chain;
-use plotters::prelude::*;
 use rust_poly::{
     poly,
-    roots::{FinderHistory, NewtonFinder, RootFinder},
+    roots::{NewtonFinder, RootFinder},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
