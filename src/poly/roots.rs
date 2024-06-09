@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use na::{Complex, ComplexField, Normed, RealField};
 use num::{
     traits::{float::FloatCore, MulAdd},
@@ -50,11 +51,8 @@ pub struct FinderConfig<T: Scalar> {
 
 /// Statistics about the session (for benchmarking)
 #[derive(Debug)]
-pub struct FinderStatistics<T: Scalar> {
+pub struct FinderHistory<T: Scalar> {
     pub roots_history: Vec<Vec<Complex<T>>>,
-    pub roots_err_sq_history: Vec<Vec<T>>,
-    pub roots_err_sq: Vec<T>,
-    pub rmse: Option<T>,
 }
 
 impl<T: Scalar> FinderState<T> {
@@ -76,14 +74,15 @@ impl<T: Scalar> FinderConfig<T> {
     }
 }
 
-impl<T: Scalar> FinderStatistics<T> {
+impl<T: Scalar> FinderHistory<T> {
     fn new() -> Self {
         Self {
             roots_history: vec![],
-            roots_err_sq_history: vec![],
-            roots_err_sq: vec![],
-            rmse: None,
         }
+    }
+
+    pub fn total_iter(&self) -> usize {
+        self.roots_history.iter().map(|v| v.len()).sum()
     }
 }
 
@@ -115,9 +114,9 @@ pub trait RootFinder<T: Scalar>: Sized {
         self
     }
 
-    fn collect_stats(mut self) -> Self {
-        if self.statistics().is_none() {
-            *self.statistics() = Some(FinderStatistics::new())
+    fn collect_history(mut self) -> Self {
+        if self.history().is_none() {
+            *self.history() = Some(FinderHistory::new())
         }
         self
     }
@@ -137,8 +136,8 @@ pub trait RootFinder<T: Scalar>: Sized {
     /// Get a mutable reference to the current finder configuration
     fn config(&mut self) -> &mut FinderConfig<T>;
 
-    /// Get a mutable reference to the stats
-    fn statistics(&mut self) -> &mut Option<FinderStatistics<T>>;
+    /// Get a mutable reference to the history
+    fn history(&mut self) -> &mut Option<FinderHistory<T>>;
 }
 
 /// Polynomial root-finding algorithms

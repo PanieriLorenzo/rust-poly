@@ -3,7 +3,7 @@ use num::Float;
 
 use crate::{
     poly::roots::{self, FinderConfig, FinderState, RootFinder},
-    roots::FinderStatistics,
+    roots::FinderHistory,
     Poly, Scalar, ScalarOps,
 };
 
@@ -12,7 +12,7 @@ use super::IterativeRootFinder;
 pub struct NewtonFinder<T: Scalar> {
     state: FinderState<T>,
     config: FinderConfig<T>,
-    statistics: Option<FinderStatistics<T>>,
+    statistics: Option<FinderHistory<T>>,
     poly_original: Poly<T>,
 }
 
@@ -41,7 +41,7 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for NewtonFinder<T> {
         &mut self.config
     }
 
-    fn statistics(&mut self) -> &mut Option<roots::FinderStatistics<T>> {
+    fn history(&mut self) -> &mut Option<roots::FinderHistory<T>> {
         &mut self.statistics
     }
 }
@@ -71,13 +71,8 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T
             // collect stats
             if let Some(stats_handle) = &mut self.statistics {
                 let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
-                let mut roots_err_sq_history =
-                    stats_handle.roots_err_sq_history.pop().unwrap_or(vec![]);
                 roots_history.push(guess);
-                let err = self.poly_original.eval_point(guess).norm_sqr();
-                roots_err_sq_history.push(err);
                 stats_handle.roots_history.push(roots_history);
-                stats_handle.roots_err_sq_history.push(roots_err_sq_history);
             }
         }
         self.state.dirty_roots.push(guess);

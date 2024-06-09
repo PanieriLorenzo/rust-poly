@@ -41,9 +41,8 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
         }
 
         for i in 0..n {
-            if let Some(stats_handle) = self.statistics() {
-                stats_handle.roots_history.push(vec![]);
-                stats_handle.roots_err_sq_history.push(vec![]);
+            if let Some(history_handle) = self.history() {
+                history_handle.roots_history.push(vec![]);
             }
             let r = self.next_root()?;
             self.state().clean_roots.extend(r.iter().cloned());
@@ -51,27 +50,8 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
                 //self.state().poly = self.state().poly.clone() / Poly::from_roots(&r);
                 self.state().poly = self.state().poly.clone().deflate_composite(r[0]);
             }
-            if let Some(stats_handle) = self.statistics() {
-                stats_handle.roots_err_sq.push(
-                    *stats_handle
-                        .roots_err_sq_history
-                        .last()
-                        .expect("at least one iteration")
-                        .last()
-                        .expect("at least one root"),
-                );
-            }
         }
 
-        if let Some(stats_handle) = self.statistics() {
-            let mut accumulator = T::zero();
-            for e in &stats_handle.roots_err_sq {
-                accumulator += *e;
-            }
-            accumulator /= T::from_usize(stats_handle.roots_err_sq.len())
-                .expect("cannot reliably calculate stats for massive polynomial (>> 2^16 coeffs)");
-            stats_handle.rmse = Some(Float::sqrt(accumulator));
-        }
         Ok(self.state().clean_roots.clone())
     }
 }
