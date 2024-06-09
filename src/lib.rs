@@ -103,9 +103,6 @@ pub use poly::*;
 #[doc(hidden)]
 pub mod __util;
 
-mod error;
-pub use error::Error;
-
 pub type Poly32 = Poly<f32>;
 pub type Poly64 = Poly<f64>;
 
