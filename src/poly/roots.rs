@@ -156,6 +156,19 @@ pub enum AllRootsAlgorithms {
     FrancisQR,
 }
 
+impl<T: ScalarOps + RealField + Float> Poly<T> {
+    /// A convenient way of finding roots, with a pre-configured root finder.
+    /// Should work well for most real polynomials of low degree.
+    ///
+    /// Use a root finder if you need more control over performance or accuracy.
+    pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
+        NewtonFinder::from_poly(self.clone())
+            .with_epsilon(epsilon)
+            .with_max_iter(max_iter)
+            .roots()
+    }
+}
+
 // private
 impl<T: ScalarOps + RealField + Float> Poly<T> {
     fn linear(mut self) -> Vec<Complex<T>> {
