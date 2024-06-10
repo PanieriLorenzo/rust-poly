@@ -3,17 +3,9 @@
 use softfloat::{F32, F64};
 
 pub const F64_SMALL_NUM: f64 = f64_const_sqrt(f64::MIN_POSITIVE) / f64::EPSILON;
-pub const F64_BIG_NUM: f64 = 1.0 / F64_SMALL_NUM;
-
-pub const F32_SMALL_NUM: f32 = f32_const_sqrt(f32::MIN_POSITIVE) / f32::EPSILON;
-pub const F32_BIG_NUM: f32 = 1.0 / F32_SMALL_NUM;
-
-pub const fn f32_const_sqrt(x: f32) -> f32 {
-    F32::from_native_f32(x).to_native_f32()
-}
 
 pub const fn f64_const_sqrt(x: f64) -> f64 {
-    F64::from_native_f64(x).to_native_f64()
+    F64::from_native_f64(x).sqrt().to_native_f64()
 }
 
 /// Makes a degenerate float normal again by either clamping it or replacing

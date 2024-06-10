@@ -11,7 +11,7 @@ fn test_uniform_real_roots() {
         let mut scale_stream = RandStreamR64::new(seed_stream.u64(..), 0.1, 10.0);
         for i in 0..1000 {
             let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, deg);
-            let roots = poly.try_roots(1E-14, 1000, 10, None, None, None).unwrap();
+            let roots = poly.roots(1E-14, 1000).unwrap();
             assert!(
                 check_roots(roots.clone(), expected_roots.clone(), 0.1),
                 "{:?} != {:?} @ iter = {}",

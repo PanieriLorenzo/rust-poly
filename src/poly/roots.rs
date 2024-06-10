@@ -1,11 +1,10 @@
-use na::{Complex, ComplexField, Normed, RealField};
-use num::{traits::float::FloatCore, Float, FromPrimitive, One, Zero};
+use na::{Complex, ComplexField, RealField};
+use num::{Float, FromPrimitive, One, Zero};
 
 use crate::{
     Poly, Scalar, ScalarOps,
     __util::{
         self,
-        casting::usize_to_scalar,
         complex::{c_min, c_neg},
     },
 };
@@ -71,7 +70,7 @@ impl<T: Scalar> FinderConfig<T> {
 }
 
 impl<T: Scalar> FinderHistory<T> {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             roots_history: vec![],
         }
@@ -88,11 +87,13 @@ pub trait RootFinder<T: Scalar>: Sized {
     fn from_poly(poly: Poly<T>) -> Self;
 
     /// The maximum error within which a root is considered to be found.
+    #[must_use]
     fn with_epsilon(mut self, epsilon: T) -> Self {
         self.config().epsilon = epsilon;
         self
     }
 
+    #[must_use]
     fn with_max_iter(mut self, max_iter: usize) -> Self {
         self.config().max_iter = max_iter;
         self
@@ -106,11 +107,13 @@ pub trait RootFinder<T: Scalar>: Sized {
     ///
     /// Note that some finders may ignore these, but they will be carried over
     /// if multiple finders are used for the same polynomial.
+    #[must_use]
     fn with_initial_guesses(mut self, guesses: Vec<Complex<T>>) -> Self {
-        self.state().dirty_roots.extend(guesses);
+        self.state_mut().dirty_roots.extend(guesses);
         self
     }
 
+    #[must_use]
     fn collect_history(mut self) -> Self {
         if self.history().is_none() {
             *self.history() = Some(FinderHistory::new());
@@ -125,10 +128,16 @@ pub trait RootFinder<T: Scalar>: Sized {
     /// Consecutive calls to `try_roots` will attempt to resume root finding
     /// from where it left off if possible. Use [`RootFinder::reset`] to
     /// create a new clean session.
+    ///
+    /// # Errors
+    /// - Solver did not converge within `max_iter` iterations
     fn roots(&mut self) -> Result<T>;
 
     /// Get a mutable reference to the current finder state
-    fn state(&mut self) -> &mut FinderState<T>;
+    fn state_mut(&mut self) -> &mut FinderState<T>;
+
+    /// Get a reference to the current finder state
+    fn state(&self) -> &FinderState<T>;
 
     /// Get a mutable reference to the current finder configuration
     fn config(&mut self) -> &mut FinderConfig<T>;
@@ -158,6 +167,9 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     /// Should work well for most real polynomials of low degree.
     ///
     /// Use a root finder if you need more control over performance or accuracy.
+    ///
+    /// # Errors
+    /// - Solver did not converge within `max_iter` iterations
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
         NewtonFinder::from_poly(self.clone())
             .with_epsilon(epsilon)
@@ -211,12 +223,12 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         vec![x1, x2]
     }
 
-    /// Ref: https://doi.org/10.1007/BF01933524
+    /// [ref](https://doi.org/10.1007/BF01933524)
     pub(crate) fn initial_guess_smallest(&self) -> Complex<T> {
         debug_assert!(self.is_normalized());
         debug_assert!(self.len_raw() >= 2);
 
-        let small = Float::recip(usize_to_scalar::<T>(1_000));
+        let small = Float::recip(T::from_u16(1_000).expect("overflow"));
         let p_diff = self.clone().diff();
         let mut pz = self.eval_point(Complex::zero());
         let mut pdz = p_diff.eval_point(Complex::zero());
@@ -238,16 +250,16 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
                     .scale(theta)
                     .exp()
                     .scale((a0 / ak).norm())
-                    .powf(T::one() / usize_to_scalar(k))
+                    .powf(T::one() / T::from_usize(k).expect("overflow"))
             })
             .reduce(c_min)
             .expect("infallible")
-            .scale(Float::recip(usize_to_scalar::<T>(2)));
+            .scale(Float::recip(T::from_u8(2).expect("overflow")));
 
         if guess.im.is_zero() {
             // add a small constant because some methods can't converge to
             // complex roots if the initial guess is real
-            guess += Complex::i().scale(Float::recip(usize_to_scalar::<T>(1_000)));
+            guess += Complex::i().scale(Float::recip(T::from_u16(1_000).expect("overflow")));
         }
         guess
     }
@@ -259,7 +271,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         max_iter: usize,
     ) -> std::result::Result<Complex<T>, Complex<T>> {
         let p_diff = self.clone().diff();
-        let mut x = initial_guess.unwrap_or(self.initial_guess_smallest());
+        let mut x = initial_guess.unwrap_or_else(|| self.initial_guess_smallest());
         for _ in 0..max_iter {
             let px = self.eval_point(x);
             if px.norm() <= epsilon {
@@ -280,7 +292,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let p_diff = self.clone().diff();
         let p_diff2 = p_diff.clone().diff();
 
-        let mut x = initial_guess.unwrap_or(self.initial_guess_smallest());
+        let mut x = initial_guess.unwrap_or_else(|| self.initial_guess_smallest());
         for _ in 0..max_iter {
             let px = self.eval_point(x);
             if px.norm() <= epsilon {
@@ -296,8 +308,8 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 
     fn one_root_jenkins_traub(
         &mut self,
-        epsilon: T,
-        max_iter: usize,
+        _epsilon: T,
+        _max_iter: usize,
     ) -> std::result::Result<Complex<T>, Complex<T>> {
         // TODO: tune these to the size of the polynomial with a lookup table
         const M: usize = 5;
@@ -394,6 +406,10 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
     ///
     /// Use [`Poly::try_n_roots_algo`] to specify which algorithm to use, if
     /// you already know which one will perform best.
+    // TODO: technically it can panic in some extreme cases, would need to
+    //       do some boundary testing to write a proper doc comment
+    #[allow(clippy::missing_panics_doc)]
+    #[allow(clippy::missing_errors_doc)]
     #[deprecated = "use NewtonFinder instead"]
     pub fn try_n_roots(
         &self,
@@ -405,7 +421,8 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
     ) -> std::result::Result<Vec<Complex<T>>, Vec<Complex<T>>> {
         debug_assert!(self.is_normalized());
         assert!(
-            n as i32 <= self.degree_raw(),
+            // TODO: degree_raw should return usize
+            i32::try_from(n).expect("overflow") <= self.degree_raw(),
             "for a polynomial of degree D, there can't be more than D roots"
         );
 
@@ -437,6 +454,7 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
         Ok(roots)
     }
 
+    #[allow(clippy::missing_errors_doc)]
     #[deprecated = "use NewtonFinder instead"]
     pub fn try_roots(
         &self,
@@ -570,65 +588,33 @@ mod test {
         assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
     }
 
-    /// This test is to find the minimum number of iterations at various degrees
-    /// that achieves 90% success rate, using "binary coefficients" polynomials,
-    /// which are difficult for the nalgebra implementation of the Schur
-    /// algorithm, using a somewhat realistic epsilon of `1E-5`. This is a heuristic
-    /// for deciding when schur did not converge and should switch to single-root
-    /// strategy instead.
-    ///
-    /// If the [LAPACK implementation](https://netlib.org/lapack/explore-html/d5/d38/group__gees_ga59d7d13222ddc67c5ae0e9aa1a62cb61.html#ga59d7d13222ddc67c5ae0e9aa1a62cb61)
-    /// was used, this would not be necessary, because the LAPACK implementation
-    /// is more robust. But nalgebra has had this issue in a long time and they
-    /// don't seem to be working on fixing it at the moment. See nalgebra issues
-    /// [nalgebra-#1291](https://github.com/dimforge/nalgebra/issues/1291),
-    /// [nalgebra-#764](https://github.com/dimforge/nalgebra/issues/764),
-    /// [nalgebra-#611](https://github.com/dimforge/nalgebra/issues/611).
-    #[test]
-    #[ignore]
-    fn schur_tuning() {
-        fn scenario(deg: usize, iter: usize) {
-            let mut ok = 0;
-            let mut err = 0;
-            for p in binary_coeffs(deg as i32, deg) {
-                match p.try_roots(1E-5, iter, 1, None, None, None) {
-                    Ok(_) => ok += 1,
-                    Err(_) => err += 1,
-                }
-            }
-            assert!(ok as f32 / (ok + err) as f32 >= 0.9, "{}/{}", ok, ok + err);
-        }
-        scenario(4, 100);
-        // scenario(5, 49);
-        // scenario(6, 59);
-        // scenario(7, 36);
-        // scenario(8, 23);
-        // scenario(9, 23);
-        // scenario(10, 25);
-        //scenario(15, 25);
-    }
-
     /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
     #[test]
     fn schur_roots_of_reverse_bessel() {
         let poly = Poly64::reverse_bessel(2).unwrap();
-        let roots = poly.try_roots(1E-14, 1000, 1, None, None, None).unwrap();
-        assert_eq!(roots[0].re(), -1.5);
-        assert!((roots[0].im().abs() - 0.866) < 0.01);
-        assert_eq!(roots[1].re(), -1.5);
-        assert!((roots[1].im().abs() - 0.866) < 0.01);
+        let roots = poly.roots(1E-14, 1000).unwrap();
+        assert!((roots[0].re() - -1.5).abs() < 0.01);
+        assert!(
+            (roots[0].im().abs() - 0.866).abs() < 0.01,
+            "{}",
+            roots[0].im()
+        );
+        assert!((roots[1].re() - -1.5).abs() < 0.01);
+        assert!(
+            (roots[1].im().abs() - 0.866).abs() < 0.01,
+            "{}",
+            roots[1].im()
+        );
     }
 
     /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
     #[test]
     fn newton_roots_of_reverse_bessel() {
         let poly = Poly64::reverse_bessel(2).unwrap();
-        let roots = poly
-            .try_n_roots(2, None, 1E-14, 1000, Some(OneRootAlgorithms::Newton))
-            .unwrap();
-        assert_eq!(roots[0].re(), -1.5);
-        assert!((roots[0].im().abs() - 0.866) < 0.01);
-        assert_eq!(roots[1].re(), -1.5);
-        assert!((roots[1].im().abs() - 0.866) < 0.01);
+        let roots = poly.roots(1E-14, 1000).unwrap();
+        assert!((roots[0].re() - -1.5).abs() < 0.01);
+        assert!((roots[0].im().abs() - 0.866).abs() < 0.01);
+        assert!((roots[1].re() - -1.5).abs() < 0.01);
+        assert!((roots[1].im().abs() - 0.866).abs() < 0.01);
     }
 }

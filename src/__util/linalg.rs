@@ -127,6 +127,7 @@ fn upper_hessenberg<T: Scalar + RealField>(mut this: DMatrixViewMut<Complex<T>>)
 ///
 /// Ref: D. Bindel, J. Demmel, W. Kahan, O. Marques "On Computing Givens Rotations
 /// Reliably and Efficiently" [DOI](https://doi.org/10.1145/567806.567809)
+#[allow(clippy::similar_names)]
 fn complex_givens_rot_2d<T: Scalar + RealField>(
     x: Complex<T>,
     y: Complex<T>,
@@ -154,19 +155,21 @@ fn complex_givens_rot_2d<T: Scalar + RealField>(
 }
 
 // TODO: document what LAPACK routine this corresponds to
+// TODO: one-letter bindings
 /// Port of [`rulinalg::matrix::decomposition::eigen::balance_matrix`](https://github.com/AtheMathmo/rulinalg/blob/0ea49678d2dfa0e0a0df9cd26f49f6330aef80c4/src/matrix/decomposition/eigen.rs#L12)
+#[allow(clippy::many_single_char_names)]
 fn balance_matrix<T: Scalar + RealField>(
     mut this: DMatrixViewMut<Complex<T>>,
-    max_iter: usize,
+    _max_iter: usize,
 ) -> Result<(), ()> {
     // TODO: lots of single letter variables, make it more readable
+    const MAX_ITER_INNER: usize = 100;
 
     let n = this.nrows();
     let radix = T::one() + T::one();
 
     // prevent infinite loop
     let max_iter_outer = 100.max(n);
-    const MAX_ITER_INNER: usize = 100;
 
     debug_assert_eq!(n, this.ncols(), "matrix must be square");
 
@@ -190,8 +193,10 @@ fn balance_matrix<T: Scalar + RealField>(
 
             'for_else: {
                 for _ in 0..MAX_ITER_INNER {
-                    if !(c < r / radix) {
-                        break 'for_else;
+                    match c.partial_cmp(&(r / radix)) {
+                        Some(cmp::Ordering::Equal | cmp::Ordering::Greater) => break 'for_else,
+                        None => return Err(()),
+                        _ => {}
                     }
                     c *= radix;
                     r /= radix;
@@ -203,8 +208,10 @@ fn balance_matrix<T: Scalar + RealField>(
 
             'for_else: {
                 for _ in 0..MAX_ITER_INNER {
-                    if !(c >= r * radix) {
-                        break 'for_else;
+                    match c.partial_cmp(&(r * radix)) {
+                        Some(cmp::Ordering::Less) => break 'for_else,
+                        None => return Err(()),
+                        _ => {}
                     }
                     c /= radix;
                     r *= radix;
@@ -229,16 +236,18 @@ fn balance_matrix<T: Scalar + RealField>(
 }
 
 /// Francis shift algorithm
+// TODO: single-char variables
+#[allow(clippy::many_single_char_names)]
 pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
     mut this: DMatrixViewMut<Complex<T>>,
     epsilon: T,
-    max_iter: usize,
+    _max_iter: usize,
     max_iter_per_deflation: usize,
 ) -> Result<Vec<Complex<T>>, Vec<Complex<T>>> {
-    let n = this.nrows();
-
     // TODO: tune this to input
     const MAX_ITER_BALANCE: usize = 100;
+
+    let n = this.nrows();
 
     // prevent infinite loop
     let max_total_iter: usize = max_iter_per_deflation * n;
@@ -253,9 +262,6 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
 
     // the final index of the active sub-matrix
     let mut p = n - 1;
-
-    // keeps track of total (outer) iterations
-    let mut niter = 0;
 
     // keeps track of total (inner) iterations per each deflation step
     let mut piter = 0;
@@ -314,7 +320,7 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
         {
             // apply givens rotation to block (on the left)
             let mut h_block = h.view_mut((q, p - 2), (2, n - p + 2));
-            let transformed = &givens_mat * &h_block;
+            let transformed = givens_mat * &h_block;
             h_block.copy_from(&transformed);
         }
 
@@ -341,9 +347,6 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
             // if no deflation happened, increment counter for current deflation
             piter += 1;
         }
-
-        // iteration complete
-        niter += 1;
     }
 
     Ok(h.diagonal().as_slice().to_vec())

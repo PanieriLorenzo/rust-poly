@@ -1,14 +1,10 @@
 use std::fmt::Display;
 
-use na::{ComplexField, Normed};
-use num::{
-    traits::{real::Real, MulAdd},
-    Complex, Float, One, Zero,
-};
+use num::{traits::MulAdd, Complex, Float, One, Zero};
 
 use crate::{
     Scalar, ScalarOps,
-    __util::complex::{c_neg, complex_fmt, complex_sort_mut_old},
+    __util::complex::{c_neg, complex_fmt, complex_sort_mut},
 };
 
 mod base;
@@ -88,8 +84,8 @@ impl<T: Scalar> Poly<T> {
     /// assert_eq!(Poly::line_from_points(p1, p2).eval_point(Complex::one()), Complex::zero());
     /// ```
     pub fn line_from_points(p1: (Complex<T>, Complex<T>), p2: (Complex<T>, Complex<T>)) -> Self {
-        let slope = (p2.1 - &p1.1) / (p2.0 - &p1.0);
-        let offset = p1.1 - &slope * p1.0;
+        let slope = (p2.1 - p1.1) / (p2.0 - p1.0);
+        let offset = p1.1 - slope * p1.0;
         Self::line(offset, slope)
     }
 
@@ -187,6 +183,9 @@ impl<T: Scalar> Poly<T> {
     /// let p = poly![1.0, 2.0, 3.0];
     /// assert_eq!(p, p.terms().sum::<Poly<_>>());
     /// ```
+    ///
+    /// # Panics
+    /// On polynomials with a degree higher than `u32::MAX`
     pub fn terms(&self) -> std::iter::Map<std::ops::Range<usize>, impl FnMut(usize) -> Self + '_> {
         debug_assert!(self.is_normalized());
         (0..self.len_raw()).map(|i| {
@@ -218,7 +217,7 @@ impl<T: Scalar + PartialOrd> Poly<T> {
         }
 
         let mut roots: na::DVector<Complex<T>> = na::DVector::from_column_slice(roots);
-        complex_sort_mut_old(&mut roots);
+        complex_sort_mut(roots.as_mut_slice());
 
         roots
             .map(|e| Self::line(c_neg(e), Complex::<T>::one()))
@@ -319,6 +318,7 @@ impl<T: ScalarOps + PartialOrd> Poly<T> {
     ///
     /// Using complex coordinates means you'll effectively be translating in
     /// 4D space.
+    #[must_use]
     pub fn translate(mut self, x: Complex<T>, y: Complex<T>) -> Self {
         self = self.compose(Self::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
         self.0[0] += y;

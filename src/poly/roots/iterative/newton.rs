@@ -9,11 +9,11 @@ use crate::{
 
 use super::IterativeRootFinder;
 
+#[allow(clippy::module_name_repetitions)]
 pub struct NewtonFinder<T: Scalar> {
     state: FinderState<T>,
     config: FinderConfig<T>,
     statistics: Option<FinderHistory<T>>,
-    poly_original: Poly<T>,
 }
 
 impl<T: ScalarOps + Float + RealField> NewtonFinder<T> {}
@@ -21,20 +21,23 @@ impl<T: ScalarOps + Float + RealField> NewtonFinder<T> {}
 impl<T: ScalarOps + Float + RealField> RootFinder<T> for NewtonFinder<T> {
     fn from_poly(poly: crate::Poly<T>) -> Self {
         Self {
-            state: FinderState::new(poly.clone()),
+            state: FinderState::new(poly),
             config: FinderConfig::new(),
             statistics: None,
-            poly_original: poly,
         }
     }
 
     fn roots(&mut self) -> roots::Result<T> {
         debug_assert!(self.state.poly.is_normalized());
-        self.next_n_roots(self.state.poly.degree_raw() as usize)
+        self.next_n_roots(self.state.poly.degree_raw().try_into().expect("overflow"))
     }
 
-    fn state(&mut self) -> &mut FinderState<T> {
+    fn state_mut(&mut self) -> &mut FinderState<T> {
         &mut self.state
+    }
+
+    fn state(&self) -> &FinderState<T> {
+        &self.state
     }
 
     fn config(&mut self) -> &mut roots::FinderConfig<T> {
@@ -53,7 +56,7 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T
             .state
             .dirty_roots
             .pop()
-            .unwrap_or(self.state.poly.initial_guess_smallest());
+            .unwrap_or_else(|| self.state.poly.initial_guess_smallest());
         let mut old_guess = guess;
         let p_diff = self.state.poly.clone().diff();
         for _ in 0..self.config.max_iter {

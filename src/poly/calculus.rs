@@ -1,10 +1,13 @@
 use itertools::chain;
 use num::{Complex, Zero};
 
-use crate::{Poly, Scalar, __util::casting::usize_to_scalar};
+use crate::{Poly, Scalar};
 
 impl<T: Scalar> Poly<T> {
     /// Derivative
+    ///
+    /// # Panics
+    /// On very large degree polynomials coefficients may overflow in `T`
     #[must_use]
     pub fn diff(self) -> Self {
         debug_assert!(self.is_normalized());
@@ -15,7 +18,7 @@ impl<T: Scalar> Poly<T> {
         }
 
         let coeffs: Vec<_> = (0..self.len())
-            .map(|x| T::from_usize(x).expect("degree to high to convert to T"))
+            .map(|x| T::from_usize(x).expect("overflow"))
             .map(|x| Complex::new(x, T::zero()))
             .zip(self.0.iter())
             .map(|(n, c)| n * c)
@@ -25,13 +28,17 @@ impl<T: Scalar> Poly<T> {
     }
 
     /// Antiderivative (with C=0)
+    ///
+    /// # Panics
+    /// On very large degree polynomials coefficients may overflow in `T`
+    #[must_use]
     pub fn integral(self) -> Self {
         debug_assert!(self.is_normalized());
 
         let coeffs: Vec<_> = chain(
             [Complex::<T>::zero()],
             (1..=self.len())
-                .map(usize_to_scalar::<T>)
+                .map(|x| T::from_usize(x).expect("overflow"))
                 .map(|x| Complex::new(x, T::zero()))
                 .zip(self.0.iter())
                 .map(|(n, c)| c / n),
@@ -43,7 +50,6 @@ impl<T: Scalar> Poly<T> {
 
 #[cfg(test)]
 mod test {
-    
 
     #[test]
     fn diff() {

@@ -158,7 +158,7 @@ pub struct RandStreamConjugate64<I: Iterator<Item = Complex<f64>>> {
 }
 
 impl<I: Iterator<Item = Complex<f64>>> RandStreamConjugate64<I> {
-    pub fn new(upstream: I) -> Self {
+    pub const fn new(upstream: I) -> Self {
         Self { upstream }
     }
 }

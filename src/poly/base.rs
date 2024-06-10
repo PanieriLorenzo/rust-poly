@@ -28,8 +28,10 @@ impl<T: Scalar> Poly<T> {
     }
 
     /// The degree of the polynomial without checking pre-conditions
+    // TODO: should return usize, but requires re-writing everything to disallow zero polynomials
     pub(crate) fn degree_raw(&self) -> i32 {
-        self.len_raw() as i32 - 1
+        let len: i32 = self.len_raw().try_into().expect("overflow");
+        len - 1
     }
 
     pub(crate) fn is_normalized(&self) -> bool {
@@ -144,21 +146,23 @@ impl<T: Scalar> Poly<T> {
     }
 
     // TODO: deflate_upward would be a better name
+    // TODO: single letter names
     /// Factor out one root of the polynomial, by scaling coefficients from
     /// the one with the lowest degree upwards, then discarding the largest
     /// coefficient.
+    #[allow(clippy::many_single_char_names)]
     pub(crate) fn deflate_backward(mut self, r: Complex<T>) -> Self {
         let n = self.degree_raw();
         let mut z0 = Complex::zero();
         if r != z0 {
             let mut i = n - 1;
-            let mut t = *self.coeff_descending(n as usize);
+            let mut t = *self.coeff_descending(n.try_into().expect("overflow"));
             let mut s;
             while i >= 0 {
                 s = t;
-                t = *self.coeff_descending(i as usize);
+                t = *self.coeff_descending(i.try_into().expect("overflow"));
                 z0 = (z0 - s) / r;
-                *self.coeff_descending_mut(i as usize) = z0;
+                *self.coeff_descending_mut(i.try_into().expect("overflow")) = z0;
                 i -= 1;
             }
         }
@@ -177,9 +181,12 @@ impl<T: Scalar> Poly<T> {
         let mut ua;
         let mut k = 0;
         for i in 0..n {
-            ua = fwd.coeff_descending(i as usize).norm() + bwd.coeff_descending(i as usize).norm();
+            ua = fwd.coeff_descending(i.try_into().expect("overflow")).norm()
+                + bwd.coeff_descending(i.try_into().expect("overflow")).norm();
             if !ua.is_zero() {
-                ua = (fwd.coeff_descending(i as usize) - bwd.coeff_descending(i as usize)).norm()
+                ua = (fwd.coeff_descending(i.try_into().expect("overflow"))
+                    - bwd.coeff_descending(i.try_into().expect("overflow")))
+                .norm()
                     / ua;
                 if ua < ra {
                     ra = ua;
@@ -189,32 +196,35 @@ impl<T: Scalar> Poly<T> {
         }
         let mut i = k - 1;
         while i >= 0 {
-            *self.coeff_descending_mut(i as usize) = *fwd.coeff_descending(i as usize);
+            *self.coeff_descending_mut(i.try_into().expect("overflow")) =
+                *fwd.coeff_descending(i.try_into().expect("overflow"));
             i -= 1;
         }
-        *self.coeff_descending_mut(k as usize) = (fwd.coeff_descending(k as usize)
-            + bwd.coeff_descending(k as usize))
+        *self.coeff_descending_mut(k.try_into().expect("overflow")) = (fwd
+            .coeff_descending(k.try_into().expect("overflow"))
+            + bwd.coeff_descending(k.try_into().expect("overflow")))
         .scale(T::from_u8(2).expect("should fit").recip());
         for i in (k + 1)..n {
-            *self.coeff_descending_mut(i as usize) = *bwd.coeff_descending(i as usize);
+            *self.coeff_descending_mut(i.try_into().expect("overflow")) =
+                *bwd.coeff_descending(i.try_into().expect("overflow"));
         }
 
         self.shift_down(1).normalize()
     }
 }
 
-impl<T: Scalar + PartialOrd> Poly<T> {
-    /// Check if the polynomial is actually a monomial
-    pub(crate) fn is_monomial(&self, tol: T) -> bool {
-        debug_assert!(self.is_normalized());
-        let degree = self.degree_raw();
-        if degree < 0 {
-            return false;
-        }
-        let degree = degree as usize;
-        self.iter().take(degree).all(|z| z.norm_sqr() < tol)
-    }
-}
+// impl<T: Scalar + PartialOrd> Poly<T> {
+//     /// Check if the polynomial is actually a monomial
+//     pub(crate) fn is_monomial(&self, tol: T) -> bool {
+//         debug_assert!(self.is_normalized());
+//         let degree = self.degree_raw();
+//         if degree < 0 {
+//             return false;
+//         }
+//         let degree: usize = degree.try_into().expect("overflow");
+//         self.iter().take(degree).all(|z| z.norm_sqr() < tol)
+//     }
+// }
 
 #[cfg(test)]
 mod test {

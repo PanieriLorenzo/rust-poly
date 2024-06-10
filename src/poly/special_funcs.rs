@@ -1,6 +1,6 @@
 use crate::{
     Poly, Scalar, ScalarOps,
-    __util::casting::{usize_to_f64, usize_to_i32, usize_to_scalar, usize_to_u32},
+    __util::casting::{usize_to_f64, usize_to_i32, usize_to_u32},
     __util::luts::factorial_lut,
 };
 use num::{BigUint, FromPrimitive, Zero};
@@ -23,27 +23,37 @@ impl<T: Scalar + FromPrimitive> Poly<T> {
     /// assert_eq!(Poly::cheby(3), poly![0.0, -3.0, 0.0, 4.0]);
     /// assert_eq!(Poly::cheby(4), poly![1.0, 0.0, -8.0, 0.0, 8.0])
     /// ```
+    // TODO: technically it can panic in some extreme cases, would need to
+    //       do some boundary testing to write a proper doc comment
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn cheby1(n: usize) -> Self {
         // TODO: make the first 32-ish explicit for performance
         match n {
             0 => poly![T::one()],
             1 => poly![T::zero(), T::one()],
-            2 => poly![T::zero() - T::one(), T::zero(), usize_to_scalar(2)],
+            2 => poly![
+                T::zero() - T::one(),
+                T::zero(),
+                T::from_u8(2).expect("overflow")
+            ],
             3 => poly![
                 T::zero(),
-                T::zero() - usize_to_scalar(3),
+                T::zero() - T::from_u8(3).expect("overflow"),
                 T::zero(),
-                usize_to_scalar(4)
+                T::from_u8(4).expect("overflow")
             ],
             4 => poly![
                 T::one(),
                 T::zero(),
-                T::zero() - usize_to_scalar(8),
+                T::zero() - T::from_u8(8).expect("overflow"),
                 T::zero(),
-                usize_to_scalar(8)
+                T::from_u8(8).expect("overflow")
             ],
-            _ => poly![T::zero(), usize_to_scalar(2)] * Self::cheby1(n - 1) - Self::cheby1(n - 2),
+            _ => {
+                poly![T::zero(), T::from_u8(2).expect("overflow")] * Self::cheby1(n - 1)
+                    - Self::cheby1(n - 2)
+            }
         }
     }
 
@@ -68,6 +78,9 @@ impl<T: Scalar + FromPrimitive> Poly<T> {
 }
 
 impl<T: ScalarOps> Poly<T> {
+    // TODO: technically it can panic in some extreme cases, would need to
+    //       do some boundary testing to write a proper doc comment
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn legendre(n: usize) -> Self {
         match n {
@@ -84,9 +97,9 @@ impl<T: ScalarOps> Poly<T> {
         for i in 2..=n {
             let p1 = &memo[i - 1];
             let p2 = &memo[i - 2];
-            let ns = usize_to_scalar::<T>(i);
+            let ns = T::from_usize(i).expect("overflow");
             memo.push(
-                poly![T::zero(), usize_to_scalar::<T>(2 * i - 1) / ns] * p1
+                poly![T::zero(), T::from_usize(2 * i - 1).expect("overflow") / ns] * p1
                     + poly![(T::one() - ns) / ns] * p2,
             );
         }
@@ -145,12 +158,14 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // takes way too long on MIRI
     fn bessel_big() {
         // largest computable bessel polynomial
         let _ = Poly64::bessel(134).unwrap();
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // takes way too long on MIRI
     fn reverse_bessel_big() {
         // largest computable reverse bessel
         let _ = Poly64::reverse_bessel(134).unwrap();

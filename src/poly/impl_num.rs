@@ -1,3 +1,5 @@
+#![allow(clippy::op_ref)]
+
 // Implementation of traits related to numeric operations, operators and number theory
 
 use itertools::Itertools;

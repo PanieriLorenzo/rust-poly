@@ -27,7 +27,7 @@ fn main() {
         // is shrunk by finding a single root with a different method, this unstucks
         // the solver for some problematic polynomials. In this case its not
         // necessary so we put 1 try.
-        .try_roots(1E-14, 1000, 1, None, None, None)
+        .roots(1E-14, 1000)
         .unwrap();
     roots
         .chunks(2)

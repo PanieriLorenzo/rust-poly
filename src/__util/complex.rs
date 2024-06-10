@@ -20,19 +20,6 @@ pub(crate) fn c_min<T: Scalar + PartialOrd>(a: Complex<T>, b: Complex<T>) -> Com
     }
 }
 
-pub(crate) fn c_max<T: Scalar + PartialOrd>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
-    if a.norm_sqr() > b.norm_sqr() {
-        a
-    } else {
-        b
-    }
-}
-
-#[deprecated = "use complex_sort_mut instead"]
-pub(crate) fn complex_sort_mut_old<T: Scalar + PartialOrd>(v: &mut na::DVector<Complex<T>>) {
-    complex_sort_mut(v.as_mut_slice());
-}
-
 // sort a vector of complex numbers lexicographically, using their real part first
 pub(crate) fn complex_sort_mut<T: Scalar + PartialOrd>(v: &mut [Complex<T>]) {
     v.sort_by(|a, b| {
