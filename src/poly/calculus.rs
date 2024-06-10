@@ -61,7 +61,7 @@ mod test {
     #[test]
     fn diff1() {
         let one = poly![1.0];
-        assert_eq!(one.diff().degree(), 0);
+        assert_eq!(one.diff().degree(), -1);
     }
 
     #[test]

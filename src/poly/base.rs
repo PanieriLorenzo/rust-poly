@@ -28,17 +28,17 @@ impl<T: Scalar> Poly<T> {
     }
 
     /// The degree of the polynomial without checking pre-conditions
-    // TODO: should return usize, but requires re-writing everything to disallow zero polynomials
-    pub(crate) fn degree_raw(&self) -> i32 {
-        let len: i32 = self.len_raw().try_into().expect("overflow");
-        len - 1
+    #[inline]
+    pub(crate) fn degree_raw(&self) -> usize {
+        self.len_raw() - 1
     }
 
     pub(crate) fn is_normalized(&self) -> bool {
         let n = self.len_raw();
         if n == 0 {
-            // FIXME: maybe zero-polynomials should be illegal?
-            return true;
+            // zero-polynomials not allowed
+            // TODO: ZeroPoly type, requires Poly trait
+            return false;
         }
         // a constant is always normalized, as it may be just a constant zero
         if n == 1 {
@@ -153,17 +153,23 @@ impl<T: Scalar> Poly<T> {
     #[allow(clippy::many_single_char_names)]
     pub(crate) fn deflate_backward(mut self, r: Complex<T>) -> Self {
         let n = self.degree_raw();
+        if n == 0 {
+            return self;
+        }
         let mut z0 = Complex::zero();
         if r != z0 {
             let mut i = n - 1;
             let mut t = *self.coeff_descending(n.try_into().expect("overflow"));
             let mut s;
-            while i >= 0 {
+            loop {
                 s = t;
                 t = *self.coeff_descending(i.try_into().expect("overflow"));
                 z0 = (z0 - s) / r;
                 *self.coeff_descending_mut(i.try_into().expect("overflow")) = z0;
                 i -= 1;
+                if i == 0 {
+                    break;
+                }
             }
         }
         self.shift_down(1).normalize()
@@ -194,10 +200,13 @@ impl<T: Scalar> Poly<T> {
                 }
             }
         }
-        let mut i = k - 1;
-        while i >= 0 {
+        let mut i = k.saturating_sub(1);
+        loop {
             *self.coeff_descending_mut(i.try_into().expect("overflow")) =
                 *fwd.coeff_descending(i.try_into().expect("overflow"));
+            if i == 0 {
+                break;
+            }
             i -= 1;
         }
         *self.coeff_descending_mut(k.try_into().expect("overflow")) = (fwd

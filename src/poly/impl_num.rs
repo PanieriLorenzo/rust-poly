@@ -10,6 +10,20 @@ extern crate nalgebra as na;
 
 use crate::{Poly, Scalar, ScalarOps, __util::linalg::convolve_1d};
 
+impl<T: Scalar> Zero for Poly<T> {
+    fn zero() -> Self {
+        Poly::from_real_slice(&[T::zero()])
+    }
+
+    fn is_zero(&self) -> bool {
+        debug_assert!(self.is_normalized());
+        if self.len_raw() != 1 {
+            return false;
+        }
+        self.0[0].is_zero()
+    }
+}
+
 impl<T: ScalarOps> Poly<T> {
     /// Calculate the quotient and remainder using long division. More efficient than
     /// calculating them separately.
@@ -72,16 +86,6 @@ impl<T: ScalarOps> Poly<T> {
 impl<T: Scalar> One for Poly<T> {
     fn one() -> Self {
         Self(na::DVector::from_vec(vec![Complex::<T>::one()]))
-    }
-}
-
-impl<T: Scalar> Zero for Poly<T> {
-    fn zero() -> Self {
-        Self(na::DVector::from_vec(vec![]))
-    }
-
-    fn is_zero(&self) -> bool {
-        self.is_empty()
     }
 }
 

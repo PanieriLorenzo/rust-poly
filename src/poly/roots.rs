@@ -422,7 +422,7 @@ impl<T: ScalarOps + Float + RealField> Poly<T> {
         debug_assert!(self.is_normalized());
         assert!(
             // TODO: degree_raw should return usize
-            i32::try_from(n).expect("overflow") <= self.degree_raw(),
+            n <= self.degree_raw(),
             "for a polynomial of degree D, there can't be more than D roots"
         );
 

@@ -32,10 +32,13 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
     ///
     /// # Errors
     /// Finder did not converge
+    ///
+    /// # Panics
+    /// If `n` is larger than the degree of the polynomial
     fn next_n_roots(&mut self, n: usize) -> super::Result<T> {
         debug_assert!(self.state().poly.is_normalized());
         assert!(
-            i32::try_from(n).expect("overflow") <= self.state().poly.degree_raw(),
+            n <= self.state().poly.degree_raw(),
             "for a polynomial of degree D, there can't be more than D roots"
         );
 

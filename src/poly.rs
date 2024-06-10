@@ -109,10 +109,28 @@ impl<T: Scalar> Poly<T> {
         self.len_raw()
     }
 
+    /// Return the degree as `usize`.
+    ///
+    /// Note that unlike [`Poly::degree`], this will saturate at 0 for zero
+    /// polynomials. As the degree of zero polynomials is undefined.
     #[must_use]
-    pub fn degree(&self) -> i32 {
+    pub fn degree_usize(&self) -> usize {
         debug_assert!(self.is_normalized());
         self.degree_raw()
+    }
+
+    /// The degree of a polynomial (the maximum exponent)
+    ///
+    /// Note that this will return `-1` for zero polynomials. The degree of
+    /// zero polynomials is undefined, but we use the `-1` convention adopted
+    /// by some authors.
+    #[must_use]
+    pub fn degree(&self) -> i64 {
+        debug_assert!(self.is_normalized());
+        if self.is_zero() {
+            return -1;
+        }
+        self.degree_raw() as i64
     }
 
     #[must_use]
@@ -245,11 +263,6 @@ impl<T: Scalar + PartialOrd> Poly<T> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(x.is_normalized());
-
-        // TODO begin: are these checks actually making things faster?
-        if self.is_zero() || x.is_zero() {
-            return Self::zero();
-        }
 
         if self.is_one() {
             return x;

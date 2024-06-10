@@ -212,10 +212,10 @@ fn binary_coeffs_inner(max_len: usize) -> Box<dyn Iterator<Item = Vec<f64>>> {
     }))
 }
 
-pub fn binary_coeffs(min_degree: i32, max_degree: usize) -> impl Iterator<Item = Poly<f64>> {
+pub fn binary_coeffs(min_degree: usize, max_degree: usize) -> impl Iterator<Item = Poly<f64>> {
     binary_coeffs_inner(max_degree + 1)
         .map(Poly64::from_real_vec)
-        .filter(move |p| p.degree() >= min_degree)
+        .filter(move |p| p.degree_raw() >= min_degree)
 }
 
 /// Generate one test case where the roots are known and can be compared
