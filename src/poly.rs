@@ -140,6 +140,11 @@ impl<T: Scalar> Poly<T> {
 
     /// Raises a polynomial to an integer power.
     ///
+    /// # Caveats
+    /// We adopt the convention that $0^0=1$, even though some authors leave this
+    /// case undefined. We believe this to be more useful as it naturally arises
+    /// in integer exponentiation when defined as repeated multiplication (as we
+    /// implement it).
     /// ```
     /// use rust_poly::{poly, Poly};
     /// use num::Complex;
@@ -151,6 +156,7 @@ impl<T: Scalar> Poly<T> {
         self.pow_usize(pow as usize)
     }
 
+    /// Same as [`Poly::pow`], but takes a `usize` exponent.
     #[must_use]
     pub fn pow_usize(self, pow: usize) -> Self {
         // invariant: poly is normalized
@@ -161,6 +167,10 @@ impl<T: Scalar> Poly<T> {
         }
 
         if pow == 1 {
+            return self;
+        }
+
+        if self.is_zero() {
             return self;
         }
 
