@@ -264,6 +264,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         guess
     }
 
+    #[deprecated = "use NewtonFinder instead"]
     fn one_root_newton(
         &self,
         initial_guess: Option<Complex<T>>,
