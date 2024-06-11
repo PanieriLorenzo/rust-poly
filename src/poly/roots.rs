@@ -11,7 +11,7 @@ use crate::{
 
 mod eigenvalue;
 mod iterative;
-pub use iterative::{newton::NewtonFinder, IterativeRootFinder};
+pub use iterative::{newton::Newton, IterativeRootFinder};
 mod multiroot;
 
 #[derive(thiserror::Error, Debug)]
@@ -171,7 +171,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     /// # Errors
     /// - Solver did not converge within `max_iter` iterations
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
-        NewtonFinder::from_poly(self.clone())
+        Newton::from_poly(self.clone())
             .with_epsilon(epsilon)
             .with_max_iter(max_iter)
             .roots()

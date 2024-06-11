@@ -2,7 +2,7 @@
 
 use rust_poly::{
     poly,
-    roots::{NewtonFinder, RootFinder},
+    roots::{Newton, RootFinder},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // set up the root finder. Note the `collect_history` argument. This enables
     // collection of all intermediate guesses, which normally are disabled as
     // they slow things down
-    let mut solver = NewtonFinder::from_poly(poly)
+    let mut solver = Newton::from_poly(poly)
         .with_epsilon(1E-8)
         .with_max_iter(1000)
         .collect_history();

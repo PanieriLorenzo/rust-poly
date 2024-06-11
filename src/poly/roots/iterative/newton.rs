@@ -10,15 +10,15 @@ use crate::{
 use super::IterativeRootFinder;
 
 #[allow(clippy::module_name_repetitions)]
-pub struct NewtonFinder<T: Scalar> {
+pub struct Newton<T: Scalar> {
     state: FinderState<T>,
     config: FinderConfig<T>,
     statistics: Option<FinderHistory<T>>,
 }
 
-impl<T: ScalarOps + Float + RealField> NewtonFinder<T> {}
+impl<T: ScalarOps + Float + RealField> Newton<T> {}
 
-impl<T: ScalarOps + Float + RealField> RootFinder<T> for NewtonFinder<T> {
+impl<T: ScalarOps + Float + RealField> RootFinder<T> for Newton<T> {
     fn from_poly(poly: crate::Poly<T>) -> Self {
         Self {
             state: FinderState::new(poly),
@@ -49,7 +49,7 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for NewtonFinder<T> {
     }
 }
 
-impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T> {
+impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
     fn next_root(&mut self) -> roots::Result<T> {
         //self.state.poly.make_monic();
         let mut guess = self
@@ -87,14 +87,14 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for NewtonFinder<T
 mod test {
     use crate::{poly::roots::RootFinder, Poly, __util::testing::check_roots};
 
-    use super::NewtonFinder;
+    use super::Newton;
 
     #[test]
     fn newton_degree_3() {
         // easy: only real roots
         let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
         let p = Poly::from_roots(&roots_expected);
-        let roots = NewtonFinder::from_poly(p)
+        let roots = Newton::from_poly(p)
             .with_epsilon(1E-14)
             .with_max_iter(100)
             .roots()
@@ -113,7 +113,7 @@ mod test {
             complex!(0.0, 1.0),
         ];
         let p = Poly::from_roots(&roots_expected);
-        let roots = NewtonFinder::from_poly(p)
+        let roots = Newton::from_poly(p)
             .with_epsilon(1E-14)
             .with_max_iter(100)
             .roots()
@@ -142,7 +142,7 @@ mod test {
             complex!(1.0, -3.0),
         ];
         let p = Poly::from_roots(&roots_expected);
-        let roots = NewtonFinder::from_poly(p)
+        let roots = Newton::from_poly(p)
             .with_epsilon(1E-8)
             .with_max_iter(100)
             .roots()
