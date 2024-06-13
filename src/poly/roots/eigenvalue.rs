@@ -10,6 +10,7 @@ use crate::{
 use super::RootFinder;
 
 mod francis_qr;
+pub use francis_qr::FrancisQR;
 
 /// What shape of companion matrix to use
 ///

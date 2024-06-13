@@ -5,8 +5,10 @@ use crate::ScalarOps;
 
 use super::RootFinder;
 
-pub mod naive;
-pub mod newton;
+mod naive;
+pub use naive::Naive;
+mod newton;
+pub use newton::Newton;
 
 pub enum DeflationStrategy {
     LongDivision,

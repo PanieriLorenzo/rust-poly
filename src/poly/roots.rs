@@ -10,8 +10,9 @@ use crate::{
 };
 
 mod eigenvalue;
+pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
-pub use iterative::{newton::Newton, IterativeRootFinder};
+pub use iterative::{IterativeRootFinder, Naive, Newton};
 mod initial_guess;
 mod multiroot;
 
@@ -171,8 +172,10 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     ///
     /// # Errors
     /// - Solver did not converge within `max_iter` iterations
+    /// - Some other edge-case was encountered which could not be handled (please
+    ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
-        Newton::from_poly(self.clone())
+        FrancisQR::from_poly(self.clone())
             .with_epsilon(epsilon)
             .with_max_iter(max_iter)
             .roots()
