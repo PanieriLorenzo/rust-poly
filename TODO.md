@@ -7,6 +7,9 @@ Project Description
 ### Todo
 
 - [ ] Utilize multishift QR algorithm (the one from `cgees` in LAPACK) from the Karen Braman, Ralph Byers and Roy Mathias papers (late 90s early 0s).
+- [ ] Remove all mentions of `nalgebra` crate from public APIs (except for methods provided for explicit cross-compatibility with `nalgebra`, which should be behind a `nalgebra` feature flag).
+- [ ] All mentions of `num` crate should depend on re-exported `crate::num`, rather than raw `num`, to ensure public API matches private dependencies.
+- [ ] Make the `Scalar` traits less terrible.
 
 ### In Progress
 

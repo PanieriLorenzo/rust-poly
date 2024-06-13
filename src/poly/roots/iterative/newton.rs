@@ -1,22 +1,31 @@
-use na::RealField;
-use num::Float;
+use crate::{
+    __util::float::F64_PHI,
+    num::{Complex, Float, Zero},
+};
+use na::{ComplexField, RealField};
 
 use crate::{
     poly::roots::{self, FinderConfig, FinderState, RootFinder},
     roots::FinderHistory,
-    Poly, Scalar, ScalarOps,
+    Scalar, ScalarOps,
 };
 
 use super::IterativeRootFinder;
 
+/// Modified Newton's method, originally conceived by [Kaj Madsen 1973](https://doi.org/10.1007/BF01933524).
+///
+/// This method is a much more robust than traditional naive Newton iteration.
+/// It can detect when convergence slows down and increase the step size. It can
+/// also detect when it gets stuck in a local minimum or maximum and unstuck
+/// itself.
+///
+/// This implementation was based on [Henrik Vestermark 2020](http://www.hvks.com/Numerical/Downloads/HVE%20Practical%20Implementation%20of%20Polynomial%20root%20finders%20vs%207.pdf).
 #[allow(clippy::module_name_repetitions)]
 pub struct Newton<T: Scalar> {
     state: FinderState<T>,
     config: FinderConfig<T>,
     statistics: Option<FinderHistory<T>>,
 }
-
-impl<T: ScalarOps + Float + RealField> Newton<T> {}
 
 impl<T: ScalarOps + Float + RealField> RootFinder<T> for Newton<T> {
     fn from_poly(poly: crate::Poly<T>) -> Self {
@@ -51,26 +60,115 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for Newton<T> {
 
 impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
     fn next_root(&mut self) -> roots::Result<T> {
-        //self.state.poly.make_monic();
+        // these are tuned by hand
+        const DZ_STUCK_ROTATION_DEGREES: f64 = 90.0 / F64_PHI;
+        const DZ_STUCK_SCALE: f64 = 5.0;
+        const DZ_EXPLODE_ROTATION_DEGREES: f64 = 90.0 / F64_PHI;
+        const DZ_EXPLODE_THRESHOLD: f64 = 5.0;
+
+        let dz_stuck_scale = T::from_f64(DZ_STUCK_SCALE).expect("overflow");
+        let dz_stuck_rotation =
+            T::from_f64(DZ_STUCK_ROTATION_DEGREES.to_radians()).expect("overflow");
+        let dz_stuck_factor = Complex::from_polar(dz_stuck_scale, dz_stuck_rotation);
+        let dz_explode_threshold = T::from_f64(DZ_EXPLODE_THRESHOLD).expect("overflow");
+        let dz_explode_rotation =
+            T::from_f64(DZ_EXPLODE_ROTATION_DEGREES.to_radians()).expect("overflow");
+        let min_multiplicity = T::one();
+
+        let p_diff = self.state.poly.clone().diff();
+        let p_diff2 = p_diff.clone().diff();
+
         let mut guess = self
             .state
             .dirty_roots
             .pop()
             .unwrap_or_else(|| self.state.poly.initial_guess_smallest());
-        let mut old_guess = guess;
-        let p_diff = self.state.poly.clone().diff();
-        for _ in 0..self.config.max_iter {
+        let mut guess_old = guess;
+        let mut guess_delta = guess;
+        let mut guess_delta_old = guess;
+        let mut guess_old_old = guess;
+
+        for i in 0..self.config.max_iter {
             let px = self.state.poly.eval_point(guess);
+
+            // stopping criterion 1: reached requested epsilon
             if px.norm() <= self.config.epsilon {
                 return Ok(vec![guess]);
             }
-            let pdx = p_diff.eval_point(guess);
-            guess -= px / pdx;
-            if guess == old_guess {
-                // the solver got stuck, unstuck it early
-                break;
+
+            // stopping criterion 2: can't improve guess after at least 3 iterations
+            if i >= 3 && self.stop_iteration(guess, guess_old, guess_old_old) {
+                return Ok(vec![guess]);
             }
-            old_guess = guess;
+
+            let pdx = p_diff.eval_point(guess);
+
+            if pdx.is_zero() {
+                // if stuck in local minimum, backoff and rotate instead of converging
+                guess_delta *= dz_stuck_factor;
+                guess -= guess_delta;
+                guess_old_old = guess_old;
+                guess_old = guess;
+                guess_delta_old = guess_delta;
+                if let Some(stats_handle) = &mut self.statistics {
+                    let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
+                    roots_history.push(guess);
+                    stats_handle.roots_history.push(roots_history);
+                }
+                continue;
+            } else {
+                // normal Newton step
+                guess_delta = px / pdx;
+            }
+
+            let guess_delta_norm = guess_delta.norm();
+            let guess_delta_old_norm = guess_delta_old.norm();
+            if guess_delta_norm > dz_explode_threshold * guess_delta_old_norm {
+                // delta is exploding, limit it
+                guess_delta *= Complex::from_polar(
+                    dz_explode_threshold * guess_delta_old_norm / guess_delta_norm,
+                    dz_explode_rotation,
+                );
+                guess -= guess_delta;
+                guess_old_old = guess_old;
+                guess_old = guess;
+                guess_delta_old = guess_delta;
+                if let Some(stats_handle) = &mut self.statistics {
+                    let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
+                    roots_history.push(guess);
+                    stats_handle.roots_history.push(roots_history);
+                }
+                continue;
+            }
+
+            // [Schroeder 1870](https://doi.org/10.1007/BF01444024) proposes this
+            // method for estimating the multiplicity efficiently
+            let pddx = p_diff2.eval_point(guess);
+            let pdx_2 = pdx.powu(2);
+            let multiplicity = (pdx_2 / (pdx_2 - px * pddx)).norm();
+            guess_delta = guess_delta.scale(Float::max(multiplicity, min_multiplicity));
+
+            guess -= guess_delta;
+
+            if (guess - guess_old).norm() < self.config.epsilon {
+                // the solver got stuck
+                guess_delta *= dz_stuck_factor;
+                guess -= guess_delta;
+                guess_old_old = guess_old;
+                guess_old = guess;
+                guess_delta_old = guess_delta;
+                if let Some(stats_handle) = &mut self.statistics {
+                    let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
+                    roots_history.push(guess);
+                    stats_handle.roots_history.push(roots_history);
+                }
+                continue;
+            }
+
+            guess_old_old = guess_old;
+            guess_old = guess;
+            guess_delta_old = guess_delta;
+
             // collect stats
             if let Some(stats_handle) = &mut self.statistics {
                 let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);

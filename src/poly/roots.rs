@@ -12,6 +12,7 @@ use crate::{
 mod eigenvalue;
 mod iterative;
 pub use iterative::{newton::Newton, IterativeRootFinder};
+mod initial_guess;
 mod multiroot;
 
 #[derive(thiserror::Error, Debug)]
@@ -221,47 +222,6 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let x1 = (plus_minus_term - b) / (two * a);
         let x2 = (c_neg(b) - plus_minus_term) / (two * a);
         vec![x1, x2]
-    }
-
-    /// [ref](https://doi.org/10.1007/BF01933524)
-    pub(crate) fn initial_guess_smallest(&self) -> Complex<T> {
-        debug_assert!(self.is_normalized());
-        debug_assert!(self.len_raw() >= 2);
-
-        let small = Float::recip(T::from_u16(1_000).expect("overflow"));
-        let p_diff = self.clone().diff();
-        let mut pz = self.eval_point(Complex::zero());
-        let mut pdz = p_diff.eval_point(Complex::zero());
-
-        // avoid divide by zero
-        if pdz.norm() < small {
-            pz += small;
-            pdz += small;
-        }
-
-        let theta = (c_neg(pz) / pdz).arg();
-        let mut iter_coeffs = self.0.iter();
-        let a0 = iter_coeffs.next().expect("infallible");
-
-        let mut guess = iter_coeffs
-            .zip(1..)
-            .map(|(ak, k)| {
-                Complex::i()
-                    .scale(theta)
-                    .exp()
-                    .scale((a0 / ak).norm())
-                    .powf(T::one() / T::from_usize(k).expect("overflow"))
-            })
-            .reduce(c_min)
-            .expect("infallible")
-            .scale(Float::recip(T::from_u8(2).expect("overflow")));
-
-        if guess.im.is_zero() {
-            // add a small constant because some methods can't converge to
-            // complex roots if the initial guess is real
-            guess += Complex::i().scale(Float::recip(T::from_u16(1_000).expect("overflow")));
-        }
-        guess
     }
 
     #[deprecated = "use NewtonFinder instead"]
