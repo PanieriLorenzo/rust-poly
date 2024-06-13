@@ -6,6 +6,14 @@ use num::{Complex, One, Zero};
 
 use crate::Scalar;
 
+pub(crate) fn set_subdiagonal<T: Clone>(matrix: &mut DMatrixViewMut<T>, k: i128, values: &[T]) {
+    let m = matrix.nrows() as i128;
+    let n = matrix.ncols() as i128;
+    for (i, s) in ((-k).max(0)..(n - k).min(m)).enumerate() {
+        matrix.row_mut(s as usize)[(s + k) as usize] = values[i].clone();
+    }
+}
+
 pub(crate) fn convolve_1d<T: Scalar>(
     input: &DVector<Complex<T>>,
     kernel: &DVector<Complex<T>>,
@@ -354,10 +362,10 @@ pub(crate) fn eigen_francis_shift<T: Scalar + RealField>(
 
 #[cfg(test)]
 mod test {
-    use na::dmatrix;
+    use na::{dmatrix, DMatrix};
     use num::complex::{Complex64, ComplexFloat};
 
-    use super::{balance_matrix, eigen_francis_shift};
+    use super::{balance_matrix, eigen_francis_shift, set_subdiagonal};
 
     #[test]
     fn test_balance_matrix() {
@@ -381,5 +389,12 @@ mod test {
         assert!(eigs.iter().any(|x| (x - eig_1).abs() < 1e-4));
         assert!(eigs.iter().any(|x| (x - eig_2).abs() < 1e-4));
         assert!(eigs.iter().any(|x| (x - eig_3).abs() < 1e-4));
+    }
+
+    #[test]
+    fn test_set_subdiagonal() {
+        let mut m = DMatrix::zeros(3, 4);
+        set_subdiagonal(&mut m.as_view_mut(), 1, &[1.0f64, 2.0, 3.0]);
+        println!("{m}");
     }
 }

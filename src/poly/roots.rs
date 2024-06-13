@@ -22,7 +22,7 @@ pub enum Error<T> {
     NoConverge(Vec<Complex<T>>),
 
     #[error("unexpected error while running root finder")]
-    Other,
+    Other(#[from] anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<T>>;

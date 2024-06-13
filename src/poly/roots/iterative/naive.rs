@@ -1,3 +1,18 @@
+use crate::{
+    __util::float::F64_PHI,
+    num::{Complex, Float, Zero},
+    roots::Newton,
+};
+use na::{ComplexField, RealField};
+
+use crate::{
+    poly::roots::{self, FinderConfig, FinderState, RootFinder},
+    roots::FinderHistory,
+    Scalar, ScalarOps,
+};
+
+use super::IterativeRootFinder;
+
 /// Naive Newton's method.
 ///
 /// It's strongly recommended to use a different root finder, as naive Newton
@@ -8,4 +23,92 @@
 /// Unlike [`roots::Madsen`] this has none of the tweaks that improve convergence
 /// on pathological roots. This will often get stuck on any slightly challenging
 /// root.
-pub struct Naive {}
+#[allow(clippy::module_name_repetitions)]
+pub struct Naive<T: Scalar> {
+    state: FinderState<T>,
+    config: FinderConfig<T>,
+    statistics: Option<FinderHistory<T>>,
+}
+
+impl<T: ScalarOps + Float + RealField> RootFinder<T> for Naive<T> {
+    fn from_poly(poly: crate::Poly<T>) -> Self {
+        Self {
+            state: FinderState::new(poly),
+            config: FinderConfig::new(),
+            statistics: None,
+        }
+    }
+
+    fn roots(&mut self) -> roots::Result<T> {
+        debug_assert!(self.state.poly.is_normalized());
+        self.next_n_roots(self.state.poly.degree_raw().try_into().expect("overflow"))
+    }
+
+    fn state_mut(&mut self) -> &mut FinderState<T> {
+        &mut self.state
+    }
+
+    fn state(&self) -> &FinderState<T> {
+        &self.state
+    }
+
+    fn config(&mut self) -> &mut FinderConfig<T> {
+        &mut self.config
+    }
+
+    fn history(&mut self) -> &mut Option<FinderHistory<T>> {
+        &mut self.statistics
+    }
+}
+
+impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Naive<T> {
+    fn next_root(&mut self) -> roots::Result<T> {
+        let p_diff = self.state.poly.clone().diff();
+
+        // TODO: move this to the next_n_roots method
+        // TODO: it should retry if more initial guesses are available
+        let mut guess = self
+            .state
+            .dirty_roots
+            .pop()
+            .unwrap_or_else(|| self.state.poly.initial_guess_smallest());
+        let mut guess_old = guess;
+        let mut guess_old_old = guess;
+
+        for i in 0..self.config.max_iter {
+            let px = self.state.poly.eval_point(guess);
+
+            // stopping criterion 1: reached requested epsilon
+            if px.norm() <= self.config.epsilon {
+                return Ok(vec![guess]);
+            }
+
+            // stopping criterion 2: can't improve guess after at least 3 iterations
+            if i >= 3 && self.stop_iteration(guess, guess_old, guess_old_old) {
+                return Ok(vec![guess]);
+            }
+
+            let pdx = p_diff.eval_point(guess);
+
+            if pdx.is_zero() {
+                // got stuck at local minimum
+                break;
+            }
+
+            let guess_delta = px / pdx;
+
+            guess_old_old = guess_old;
+            guess_old = guess;
+            guess -= guess_delta;
+
+            // collect stats
+            if let Some(stats_handle) = &mut self.statistics {
+                let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
+                roots_history.push(guess);
+                stats_handle.roots_history.push(roots_history);
+            }
+        }
+        self.state.dirty_roots.push(guess);
+        Err(roots::Error::NoConverge(vec![guess]))
+    }
+}

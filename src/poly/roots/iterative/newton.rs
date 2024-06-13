@@ -102,14 +102,14 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
             }
 
             let pdx = p_diff.eval_point(guess);
+            guess_old_old = guess_old;
+            guess_old = guess;
+            guess_delta_old = guess_delta;
 
             if pdx.is_zero() {
                 // if stuck in local minimum, backoff and rotate instead of converging
                 guess_delta *= dz_stuck_factor;
                 guess -= guess_delta;
-                guess_old_old = guess_old;
-                guess_old = guess;
-                guess_delta_old = guess_delta;
                 if let Some(stats_handle) = &mut self.statistics {
                     let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
                     roots_history.push(guess);
@@ -130,9 +130,6 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
                     dz_explode_rotation,
                 );
                 guess -= guess_delta;
-                guess_old_old = guess_old;
-                guess_old = guess;
-                guess_delta_old = guess_delta;
                 if let Some(stats_handle) = &mut self.statistics {
                     let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
                     roots_history.push(guess);
@@ -154,9 +151,6 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
                 // the solver got stuck
                 guess_delta *= dz_stuck_factor;
                 guess -= guess_delta;
-                guess_old_old = guess_old;
-                guess_old = guess;
-                guess_delta_old = guess_delta;
                 if let Some(stats_handle) = &mut self.statistics {
                     let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
                     roots_history.push(guess);
@@ -164,10 +158,6 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
                 }
                 continue;
             }
-
-            guess_old_old = guess_old;
-            guess_old = guess;
-            guess_delta_old = guess_delta;
 
             // collect stats
             if let Some(stats_handle) = &mut self.statistics {
