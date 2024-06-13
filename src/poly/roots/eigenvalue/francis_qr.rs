@@ -28,6 +28,16 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
     }
 
     fn roots(&mut self) -> crate::roots::Result<T> {
+        debug_assert!(self.state().poly.is_normalized());
+
+        // handle trivial cases
+        let epsilon = self.config().epsilon;
+        let mut roots = self.state_mut().poly.trivial_roots(epsilon);
+        if self.state().poly.degree_raw() == 0 {
+            self.state_mut().clean_roots.extend(roots.iter());
+            return Ok(roots);
+        }
+
         self.init_matrix()?;
         let epsilon = self.config().epsilon;
         let max_iter = self.config().max_iter;
@@ -44,10 +54,13 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
             Ok(v) => {
                 self.state_mut().clean_roots.extend(v.iter());
                 self.state_mut().poly = Poly::one();
-                Ok(v)
+                roots.extend(v);
+                Ok(roots)
             }
             Err(v) => {
                 self.state_mut().dirty_roots.extend(v.iter());
+                // note that the roots in `roots` are clean, so we don't return
+                // them in the error result
                 Err(NoConverge(v))
             }
         }

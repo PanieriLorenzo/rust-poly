@@ -178,6 +178,7 @@ impl<T: Scalar> Poly<T> {
     /// Synthetic division that reduces numeric error by fusing the results
     /// of forward deflation and backward deflation
     pub(crate) fn deflate_composite(mut self, r: Complex<T>) -> Self {
+        // TODO: should take a mutable reference instead
         let n = self.degree_raw();
         let fwd = self.clone().deflate_forward(r);
         let bwd = self.clone().deflate_backward(r);

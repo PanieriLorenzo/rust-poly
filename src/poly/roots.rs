@@ -184,7 +184,29 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 
 // private
 impl<T: ScalarOps + RealField + Float> Poly<T> {
-    fn linear(mut self) -> Vec<Complex<T>> {
+    fn trivial_roots(&mut self, epsilon: T) -> Vec<Complex<T>> {
+        debug_assert!(self.is_normalized());
+
+        let mut roots = vec![];
+        for _ in 0..self.degree_raw() {
+            if self.eval_point(Complex::zero()).norm() < epsilon {
+                roots.push(Complex::zero());
+                *self = self.clone().deflate_composite(Complex::zero());
+            } else {
+                break;
+            }
+        }
+
+        match self.degree_raw() {
+            1 => roots.extend(self.linear()),
+            2 => roots.extend(self.quadratic()),
+            _ => {}
+        }
+
+        roots
+    }
+
+    fn linear(&mut self) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
         debug_assert_eq!(self.degree_raw(), 1);
 
@@ -196,11 +218,14 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let a = self.0[1];
         let b = self.0[0];
 
+        // we found all the roots
+        *self = Poly::one();
+
         vec![-b / a]
     }
 
     /// Quadratic formula
-    fn quadratic(mut self) -> Vec<Complex<T>> {
+    fn quadratic(&mut self) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
         debug_assert_eq!(self.degree_raw(), 2);
 
@@ -216,14 +241,18 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let a = self.0[2];
         let b = self.0[1];
         let c = self.0[0];
-        let four = Complex::<T>::from_u8(4).expect("should always fit for small ints");
-        let two = Complex::<T>::from_u8(2).expect("should always fit for small ints");
+        let four = Complex::<T>::from_u8(4).expect("overflow");
+        let two = Complex::<T>::from_u8(2).expect("overflow");
 
         // TODO: switch to different formula when b^2 and 4c are very close due
         //       to loss of precision
         let plus_minus_term = (b * b - four * a * c).sqrt();
         let x1 = (plus_minus_term - b) / (two * a);
         let x2 = (c_neg(b) - plus_minus_term) / (two * a);
+
+        // we found all the roots
+        *self = Poly::one();
+
         vec![x1, x2]
     }
 
