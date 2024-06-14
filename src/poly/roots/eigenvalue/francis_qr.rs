@@ -1,5 +1,5 @@
 use crate::{
-    num::{Float, One},
+    num::{Complex, Float, One, Zero},
     roots::{Error::NoConverge, FinderConfig, FinderHistory, FinderState, RootFinder},
     Poly, Scalar, ScalarOps,
     __util::linalg::eigen_francis_shift,
@@ -38,6 +38,20 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
             return Ok(());
         }
 
+        let small_num = T::small_safe();
+        let mut needs_unshifting = false;
+        // leading zero coefficients can be problematic, so shifting to
+        // avoid (the householder reflectors cannot be constructed if the
+        // first element is zero)
+        if self.state().poly.0[0].norm() < small_num {
+            needs_unshifting = true;
+            self.state_mut().poly = self
+                .state()
+                .poly
+                .clone()
+                .translate(Complex::one(), Complex::zero());
+        }
+
         self.init_matrix()?;
         let epsilon = self.config().epsilon;
         let max_iter = self.config().max_iter;
@@ -51,13 +65,28 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
             usize::MAX,
             max_iter,
         ) {
-            Ok(v) => {
+            Ok(mut v) => {
+                if needs_unshifting {
+                    for r in &mut v {
+                        *r -= Complex::one();
+                    }
+                }
                 self.state_mut().clean_roots.extend(v.iter());
                 self.state_mut().poly = Poly::one();
                 roots.extend(v);
                 Ok(())
             }
-            Err(v) => {
+            Err(mut v) => {
+                if needs_unshifting {
+                    for r in &mut v {
+                        *r -= Complex::one();
+                    }
+                    self.state_mut().poly = self
+                        .state()
+                        .poly
+                        .clone()
+                        .translate(-Complex::one(), Complex::zero());
+                }
                 self.state_mut().dirty_roots.extend(v.iter());
                 // note that the roots in `roots` are clean, so we don't return
                 // them in the error result

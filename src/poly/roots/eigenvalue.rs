@@ -27,10 +27,13 @@ pub use francis_qr::FrancisQR;
 ///
 /// The trasposed form is simply $C^T$.
 ///
+/// The rotated form is a 180 degree rotation (not mirroring) of $C$.
+///
 /// Schmeisser is a companion matrix proposed by [Gerhard Schmeisser 1993](https://doi.org/10.1016/0024-3795(93)90268-S).
 pub enum CompoanionMatrixType {
     Frobenius,
     FrobeniusTransposed,
+    FrobeniusRotated,
     Schmeisser,
 }
 
@@ -83,6 +86,28 @@ pub trait EigenvalueRootFinder<T: ScalarOps + RealField>: RootFinder<T> {
                     .matrix
                     .as_mut()
                     .map(|m: &mut DMatrix<_>| m.transpose_mut());
+            }
+            CompoanionMatrixType::FrobeniusRotated => {
+                self.state_mut().poly.make_monic();
+                self.eigen_state_mut().matrix = Some(self.state().poly.companion());
+                let n = self
+                    .eigen_state()
+                    .matrix
+                    .as_ref()
+                    .expect("infallible")
+                    .nrows();
+                for i in 0..n / 2 {
+                    self.eigen_state_mut()
+                        .matrix
+                        .as_mut()
+                        .expect("infallible")
+                        .swap_rows(i, n - i - 1);
+                    self.eigen_state_mut()
+                        .matrix
+                        .as_mut()
+                        .expect("infallible")
+                        .swap_columns(i, n - i - 1);
+                }
             }
             CompoanionMatrixType::Schmeisser => {
                 self.eigen_state_mut().matrix = Some(schmeisser(&self.state().poly)?);
