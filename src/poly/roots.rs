@@ -274,26 +274,6 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         vec![x1, x2]
     }
 
-    #[deprecated = "use NewtonFinder instead"]
-    fn one_root_newton(
-        &self,
-        initial_guess: Option<Complex<T>>,
-        epsilon: T,
-        max_iter: usize,
-    ) -> std::result::Result<Complex<T>, Complex<T>> {
-        let p_diff = self.clone().diff();
-        let mut x = initial_guess.unwrap_or_else(|| self.initial_guess_smallest());
-        for _ in 0..max_iter {
-            let px = self.eval_point(x);
-            if px.norm() <= epsilon {
-                return Ok(x);
-            }
-            let pdx = p_diff.eval_point(x);
-            x -= px / pdx;
-        }
-        Err(x)
-    }
-
     fn one_root_halley(
         &self,
         initial_guess: Option<Complex<T>>,
@@ -404,140 +384,6 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     }
 }
 
-impl<T: ScalarOps + Float + RealField> Poly<T> {
-    /// Find only some of the roots of the polynomial.
-    ///
-    /// Note that for large `n`, using [`Poly::try_roots`] is probably faster.
-    ///
-    /// It utilizes an iterative method, so the precision gets progressively
-    /// worse the more roots are found. For small `n` this is negligible.
-    ///
-    /// `Err` `std::result::Result` contains the roots it was able to find, even if they are
-    /// fewer than requested.
-    ///
-    /// Use [`Poly::try_n_roots_algo`] to specify which algorithm to use, if
-    /// you already know which one will perform best.
-    // TODO: technically it can panic in some extreme cases, would need to
-    //       do some boundary testing to write a proper doc comment
-    #[allow(clippy::missing_panics_doc)]
-    #[allow(clippy::missing_errors_doc)]
-    #[deprecated = "use NewtonFinder instead"]
-    pub fn try_n_roots(
-        &self,
-        n: usize,
-        initial_guess: Option<Complex<T>>,
-        epsilon: T,
-        max_iter: usize,
-        algorithm: Option<OneRootAlgorithms>,
-    ) -> std::result::Result<Vec<Complex<T>>, Vec<Complex<T>>> {
-        debug_assert!(self.is_normalized());
-        assert!(
-            // TODO: degree_raw should return usize
-            n <= self.degree_raw(),
-            "for a polynomial of degree D, there can't be more than D roots"
-        );
-
-        // TODO: if you use monic polynomials, there is a simpler algorithm
-        //       for polynomial division that improves accuracy, because no
-        //       divisions are performed on the coefficients
-
-        let algorithm = algorithm.unwrap_or(OneRootAlgorithms::Newton);
-
-        let mut roots = vec![];
-        let mut this = self.clone();
-        for i in 0..n {
-            let r = match algorithm {
-                OneRootAlgorithms::Newton => this
-                    .clone()
-                    .one_root_newton(initial_guess, epsilon, max_iter)
-                    .map_err(|_| roots.clone())?,
-                OneRootAlgorithms::Halley => this
-                    .clone()
-                    .one_root_halley(initial_guess, epsilon, max_iter)
-                    .map_err(|_| roots.clone())?,
-                OneRootAlgorithms::JenkinsTraub => unimplemented!(),
-            };
-            roots.push(r);
-            if i < (n - 1) {
-                this = this / Self::from_roots(&[r]);
-            }
-        }
-        Ok(roots)
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    #[deprecated = "use NewtonFinder instead"]
-    pub fn try_roots(
-        &self,
-        epsilon: T,
-        max_iter: usize,
-        max_tries: usize,
-        max_recovery_iter: Option<usize>,
-        algorithm: Option<AllRootsAlgorithms>,
-        recovery_algorithm: Option<OneRootAlgorithms>,
-    ) -> std::result::Result<Vec<Complex<T>>, Vec<Complex<T>>> {
-        debug_assert!(self.is_normalized());
-
-        let max_recovery_iter = max_recovery_iter.unwrap_or(max_iter);
-        let algorithm = algorithm.unwrap_or(AllRootsAlgorithms::FrancisQR);
-        let recovery_algorithm = recovery_algorithm.unwrap_or(OneRootAlgorithms::Newton);
-
-        let mut roots = vec![];
-        let mut this = self.clone();
-
-        for _ in 0..max_tries {
-            this.trim();
-
-            match self.degree_raw() {
-                ..=0 => return Ok(roots),
-                1 => {
-                    roots.extend(this.linear());
-                    return Ok(roots);
-                }
-                2 => {
-                    roots.extend(this.quadratic());
-                    return Ok(roots);
-                }
-                _ => {}
-            }
-
-            let maybe_roots = match algorithm {
-                AllRootsAlgorithms::Schur | AllRootsAlgorithms::FrancisQR => {
-                    this.roots_francis_qr(epsilon, max_iter)
-                }
-            };
-
-            if let Ok(found_roots) = maybe_roots {
-                roots.extend(found_roots);
-                // TODO: sort
-                return Ok(roots);
-            }
-            let err = maybe_roots.expect_err("infallible");
-            // TODO: use recovered eigens as initial guesses
-
-            // uses one iteration of single-root algorithm for recovery when
-            // the multi-root algorithm gets stuck (for pathological cases like
-            // Legendre polynomials), this shrinks the problem by 1 degree
-            // and moves around the coefficients so they are not pathological anymore
-            let r = match recovery_algorithm {
-                OneRootAlgorithms::Newton => this
-                    .clone()
-                    .one_root_newton(None, epsilon, max_recovery_iter)
-                    .map_err(|_| roots.clone())?,
-                OneRootAlgorithms::Halley => this
-                    .clone()
-                    .one_root_halley(None, epsilon, max_recovery_iter)
-                    .map_err(|_| roots.clone())?,
-                OneRootAlgorithms::JenkinsTraub => unimplemented!(),
-            };
-            roots.push(r);
-            this = this / Self::from_roots(&[r]);
-        }
-
-        Err(roots)
-    }
-}
-
 #[cfg(test)]
 mod test {
 
@@ -575,28 +421,6 @@ mod test {
             check_roots(roots.clone(), roots_expected.clone(), 1E-4),
             "{roots:?} != {roots_expected:?}"
         );
-    }
-
-    #[test]
-    fn roots_newton() {
-        let p = poly![1.0, 0.0, 1.0, 0.0, 1.0];
-
-        // takes exactly 10 iterations
-        let roots = p
-            .try_n_roots(4, None, 1E-14, 10, Some(OneRootAlgorithms::Newton))
-            .unwrap();
-        assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
-    }
-
-    #[test]
-    fn roots_halley() {
-        let p = poly![1.0, 0.0, 1.0, 0.0, 1.0];
-
-        // takes exactly 5 iterations
-        let roots = p
-            .try_n_roots(4, None, 1E-14, 5, Some(OneRootAlgorithms::Halley))
-            .unwrap();
-        assert!((Poly::from_roots(&roots) - p).almost_zero(&1E-14));
     }
 
     /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
