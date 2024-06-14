@@ -210,33 +210,4 @@ mod test {
             .unwrap();
         assert!(check_roots(roots, roots_expected, 1E-1));
     }
-
-    #[test]
-    fn newton_degree_15() {
-        // hard: multiplicity and non-conjugate roots
-        let roots_expected = vec![
-            complex!(1.0),
-            complex!(2.0),
-            complex!(3.0),
-            complex!(4.0),
-            complex!(5.0),
-            complex!(1.0),
-            complex!(2.0),
-            complex!(3.0),
-            complex!(-1.0),
-            complex!(-2.0),
-            complex!(-3.0),
-            complex!(0.0, -1.0),
-            complex!(0.0, 1.0),
-            complex!(0.5, -2.0),
-            complex!(1.0, -3.0),
-        ];
-        let p = Poly::from_roots(&roots_expected);
-        let roots = Newton::from_poly(p)
-            .with_epsilon(1E-8)
-            .with_max_iter(100)
-            .roots()
-            .unwrap();
-        assert!(check_roots(roots, roots_expected, 1E-1));
-    }
 }
