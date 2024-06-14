@@ -195,6 +195,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         FrancisQR::from_poly(self.clone())
             .with_epsilon(epsilon)
             .with_max_iter(max_iter)
+            .with_companion_matrix_type(eigenvalue::CompoanionMatrixType::Schmeisser)
             .roots()
     }
 }
