@@ -39,9 +39,11 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for Naive<T> {
         }
     }
 
-    fn roots(&mut self) -> roots::Result<T> {
+    fn run(&mut self) -> std::result::Result<(), roots::Error<()>> {
         debug_assert!(self.state.poly.is_normalized());
         self.next_n_roots(self.state.poly.degree_raw().try_into().expect("overflow"))
+            .map(|_| ())
+            .map_err(|e| e.map_no_converge(|_| ()))
     }
 
     fn state_mut(&mut self) -> &mut FinderState<T> {

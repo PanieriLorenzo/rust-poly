@@ -20,13 +20,22 @@ mod multiroot;
 #[non_exhaustive]
 pub enum Error<T> {
     #[error("root finder did not converge within the given constraints")]
-    NoConverge(Vec<Complex<T>>),
+    NoConverge(T),
 
     #[error("unexpected error while running root finder")]
     Other(#[from] anyhow::Error),
 }
 
-pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<T>>;
+impl<T> Error<T> {
+    pub(crate) fn map_no_converge<U>(self, mut f: impl FnMut(T) -> U) -> Error<U> {
+        match self {
+            Error::NoConverge(t) => Error::NoConverge(f(t)),
+            Error::Other(o) => Error::Other(o),
+        }
+    }
+}
+
+pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
 /// Helper struct for implementing stateful root finders and converting between them
 pub struct FinderState<T: Scalar> {
@@ -123,6 +132,9 @@ pub trait RootFinder<T: Scalar>: Sized {
         self
     }
 
+    /// Find roots and store them in the state.
+    fn run(&mut self) -> std::result::Result<(), Error<()>>;
+
     /// Tries to find as many roots as possible with the given configuration,
     /// returning a `std::result::Result` containing either the roots or the best guess so far
     /// in case of no convergence.
@@ -132,8 +144,13 @@ pub trait RootFinder<T: Scalar>: Sized {
     /// create a new clean session.
     ///
     /// # Errors
-    /// - Solver did not converge within `max_iter` iterations
-    fn roots(&mut self) -> Result<T>;
+    /// - [`Error::NoConverge`] - solver did not converge within `max_iter` iterations
+    /// - [`Error::Other`] - solver encountered an unhandled edge-case
+    fn roots(&mut self) -> Result<T> {
+        self.run()
+            .map(|()| self.state().clean_roots.clone())
+            .map_err(|e| e.map_no_converge(|()| self.state().dirty_roots.clone()))
+    }
 
     /// Get a mutable reference to the current finder state
     fn state_mut(&mut self) -> &mut FinderState<T>;

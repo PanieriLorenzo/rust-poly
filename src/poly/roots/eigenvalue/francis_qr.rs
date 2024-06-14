@@ -27,7 +27,7 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
         }
     }
 
-    fn roots(&mut self) -> crate::roots::Result<T> {
+    fn run(&mut self) -> std::result::Result<(), crate::roots::Error<()>> {
         debug_assert!(self.state().poly.is_normalized());
 
         // handle trivial cases
@@ -35,7 +35,7 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
         let mut roots = self.state_mut().poly.trivial_roots(epsilon);
         if self.state().poly.degree_raw() == 0 {
             self.state_mut().clean_roots.extend(roots.iter());
-            return Ok(roots);
+            return Ok(());
         }
 
         self.init_matrix()?;
@@ -55,13 +55,13 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
                 self.state_mut().clean_roots.extend(v.iter());
                 self.state_mut().poly = Poly::one();
                 roots.extend(v);
-                Ok(roots)
+                Ok(())
             }
             Err(v) => {
                 self.state_mut().dirty_roots.extend(v.iter());
                 // note that the roots in `roots` are clean, so we don't return
                 // them in the error result
-                Err(NoConverge(v))
+                Err(NoConverge(()))
             }
         }
     }
