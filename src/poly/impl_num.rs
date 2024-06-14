@@ -53,6 +53,10 @@ impl<T: ScalarOps> Poly<T> {
             return None;
         }
 
+        if other.is_one() {
+            return Some((self, Poly::zero()));
+        }
+
         let expected_degree = self.degree_raw() - other.degree_raw();
 
         let den_c = other.as_slice().last().unwrap();
@@ -60,6 +64,7 @@ impl<T: ScalarOps> Poly<T> {
         let mut this = self;
         let mut res = Self::zero();
         'for_else: {
+            // TODO: this should fail faster, what's the upper bound?
             for _ in 0..u32::MAX {
                 if this.degree_raw() < other.degree_raw() {
                     break 'for_else;
