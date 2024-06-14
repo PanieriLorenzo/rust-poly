@@ -45,23 +45,6 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
             "for a polynomial of degree D, there can't be more than D roots"
         );
 
-        // eliminate zero roots
-        for _ in 0..n {
-            if self.state().poly.eval_point(Complex::zero()).norm() < self.config().epsilon {
-                self.state_mut().poly = self.state().poly.clone().deflate_composite(Complex::zero())
-            } else {
-                break;
-            }
-        }
-
-        // trivial cases
-        match self.state_mut().poly.degree_raw() {
-            0 => return Ok(vec![]),
-            1 => return Ok(self.state_mut().poly.clone().linear()),
-            2 => return Ok(self.state_mut().poly.clone().quadratic()[..n].into()),
-            _ => {}
-        }
-
         for i in 0..n {
             if let Some(history_handle) = self.history() {
                 history_handle.roots_history.push(vec![]);

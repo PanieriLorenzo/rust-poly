@@ -65,6 +65,13 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for Naive<T> {
 
 impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Naive<T> {
     fn next_root(&mut self) -> roots::Result<T> {
+        // handle trivial cases
+        let epsilon = self.config().epsilon;
+        let roots = self.state_mut().poly.trivial_roots(epsilon);
+        if !roots.is_empty() {
+            return Ok(roots);
+        }
+
         let p_diff = self.state.poly.clone().diff();
 
         // TODO: move this to the next_n_roots method

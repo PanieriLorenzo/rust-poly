@@ -77,6 +77,13 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
             T::from_f64(DZ_EXPLODE_ROTATION_DEGREES.to_radians()).expect("overflow");
         let min_multiplicity = T::one();
 
+        // handle trivial cases
+        let epsilon = self.config().epsilon;
+        let roots = self.state_mut().poly.trivial_roots(epsilon);
+        if !roots.is_empty() {
+            return Ok(roots);
+        }
+
         let p_diff = self.state.poly.clone().diff();
         let p_diff2 = p_diff.clone().diff();
 

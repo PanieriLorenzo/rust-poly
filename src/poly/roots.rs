@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use na::{Complex, ComplexField, RealField};
 use num::{Float, FromPrimitive, One, Zero};
 
@@ -39,6 +40,8 @@ pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>
 
 /// Helper struct for implementing stateful root finders and converting between them
 pub struct FinderState<T: Scalar> {
+    /// The working polynomial, this will be modified throughout the execution,
+    /// but will always contain the roots that have not been found yet.
     pub poly: Poly<T>,
 
     /// Store roots that are within the given epsilon and are considered "done"
@@ -47,9 +50,13 @@ pub struct FinderState<T: Scalar> {
     /// Store "best guess" roots that are not within the epsilon bounds, but
     /// nevertheless can be useful as initial guesses for further refinement.
     pub dirty_roots: Vec<Complex<T>>,
+
+    /// The original unmodified polynomial
+    pub original_poly: Poly<T>,
 }
 
 /// Helper struct for implementing root finders and converting between them
+#[derive(Debug, Clone)]
 pub struct FinderConfig<T: Scalar> {
     pub epsilon: T,
     pub max_iter: usize,
@@ -64,9 +71,10 @@ pub struct FinderHistory<T: Scalar> {
 impl<T: Scalar> FinderState<T> {
     fn new(poly: Poly<T>) -> Self {
         Self {
-            poly,
+            poly: poly.clone(),
             clean_roots: vec![],
             dirty_roots: vec![],
+            original_poly: poly,
         }
     }
 }
@@ -94,8 +102,49 @@ impl<T: Scalar> FinderHistory<T> {
 }
 
 /// Complex root finder for complex-valued polynomials
-pub trait RootFinder<T: Scalar>: Sized {
+pub trait RootFinder<T: ScalarOps>: Sized {
     fn from_poly(poly: Poly<T>) -> Self;
+
+    /// Create a new root finder by copying the `FinderState` of another
+    ///
+    /// Note that any additional state and configuration stored inside the finder
+    /// struct is not copied over, such as the `epsilon`, `max_iter` or eigen state
+    /// for eigenvalue methods.
+    ///
+    /// This is useful for combining multiple methods in case one cannot find
+    /// all roots.
+    ///
+    /// `discard_progress` will re-start from scratch, but use the state of
+    /// the original finder to construct initial guesses. This is useful for
+    /// refinement of roots by stacking root finders.
+    ///
+    /// An example of where this is useful in practice is doing an initial
+    /// root finding round using an eigenvalue method, which is fast but leads
+    /// to higher inaccuracy, then refining the results using the Newton method.
+    fn from_root_finder(mut root_finder: impl RootFinder<T>, discard_progress: bool) -> Self {
+        let mut this = Self::from_poly(if discard_progress {
+            root_finder.state().original_poly.clone()
+        } else {
+            root_finder.state().poly.clone()
+        });
+
+        *this.config() = root_finder.config().clone();
+
+        this.state_mut()
+            .dirty_roots
+            .extend(root_finder.state().dirty_roots.iter());
+        if discard_progress {
+            this.state_mut()
+                .dirty_roots
+                .extend(root_finder.state().clean_roots.iter())
+        } else {
+            this.state_mut()
+                .clean_roots
+                .extend(root_finder.state().clean_roots.iter())
+        }
+
+        this
+    }
 
     /// The maximum error within which a root is considered to be found.
     #[must_use]
@@ -139,9 +188,8 @@ pub trait RootFinder<T: Scalar>: Sized {
     /// returning a `std::result::Result` containing either the roots or the best guess so far
     /// in case of no convergence.
     ///
-    /// Consecutive calls to `try_roots` will attempt to resume root finding
-    /// from where it left off if possible. Use [`RootFinder::reset`] to
-    /// create a new clean session.
+    /// Root finders are stateful, and will "remember" the roots which were found
+    /// even on unsuccesfull runs.
     ///
     /// # Errors
     /// - [`Error::NoConverge`] - solver did not converge within `max_iter` iterations
@@ -150,6 +198,25 @@ pub trait RootFinder<T: Scalar>: Sized {
         self.run()
             .map(|()| self.state().clean_roots.clone())
             .map_err(|e| e.map_no_converge(|()| self.state().dirty_roots.clone()))
+    }
+
+    /// Check if the roots that were found so far are within tolerance
+    ///
+    /// Returns a tuple `(clean, dirty)` where `clean` contains the accepted
+    /// roots and `dirty` contains the rejected roots.
+    ///
+    /// This method modifies the internal state such that on resume, the
+    /// accepted roots are kept and the rejceted roots are used as initial
+    /// guesses.
+    fn validate(&mut self, tol: T) -> (Vec<Complex<T>>, Vec<Complex<T>>) {
+        let mut dirty = self.state().dirty_roots.clone();
+        let clean = self.state().clean_roots.clone();
+        let (clean, new_dirty): (Vec<_>, Vec<_>) = clean.into_iter().partition(|z| z.norm() < tol);
+        dirty.extend(new_dirty);
+        let clean_poly = Poly::from_roots(&clean);
+        let remaining_poly = &self.state().original_poly / clean_poly;
+        self.state_mut().poly = remaining_poly;
+        (clean, dirty)
     }
 
     /// Get a mutable reference to the current finder state
@@ -192,11 +259,38 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     /// - Some other edge-case was encountered which could not be handled (please
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
-        FrancisQR::from_poly(self.clone())
+        debug_assert!(self.is_normalized());
+        let mut finder = FrancisQR::from_poly(self.clone())
             .with_epsilon(epsilon)
             .with_max_iter(max_iter)
-            .with_companion_matrix_type(eigenvalue::CompoanionMatrixType::Schmeisser)
-            .roots()
+            .with_companion_matrix_type(eigenvalue::CompoanionMatrixType::Schmeisser);
+
+        let _ = finder.run();
+
+        let mut roots = vec![];
+
+        for _ in 0..self.degree_raw() {
+            let (clean, dirty) = finder.validate(epsilon * T::from_u8(2).expect("overflow"));
+            roots.extend(clean);
+            if dirty.is_empty() {
+                return Ok(roots);
+            }
+
+            // remove one root to reduce multiplicity
+            let mut newton_finder = Newton::from_root_finder(finder, false)
+                .with_epsilon(epsilon)
+                .with_max_iter(max_iter);
+            roots.extend(newton_finder.next_root()?);
+
+            // reset dirty roots, we don't want to carry over very old guesses
+            newton_finder.state_mut().dirty_roots.clear();
+
+            finder = FrancisQR::from_root_finder(newton_finder, false)
+                .with_epsilon(epsilon)
+                .with_max_iter(max_iter);
+            let _ = finder.run();
+        }
+        Err(Error::NoConverge(roots))
     }
 }
 
@@ -296,26 +390,7 @@ mod test {
 
     /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
     #[test]
-    fn schur_roots_of_reverse_bessel() {
-        let poly = Poly64::reverse_bessel(2).unwrap();
-        let roots = poly.roots(1E-14, 1000).unwrap();
-        assert!((roots[0].re() - -1.5).abs() < 0.01);
-        assert!(
-            (roots[0].im().abs() - 0.866).abs() < 0.01,
-            "{}",
-            roots[0].im()
-        );
-        assert!((roots[1].re() - -1.5).abs() < 0.01);
-        assert!(
-            (roots[1].im().abs() - 0.866).abs() < 0.01,
-            "{}",
-            roots[1].im()
-        );
-    }
-
-    /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
-    #[test]
-    fn newton_roots_of_reverse_bessel() {
+    fn roots_of_reverse_bessel() {
         let poly = Poly64::reverse_bessel(2).unwrap();
         let roots = poly.roots(1E-14, 1000).unwrap();
         assert!((roots[0].re() - -1.5).abs() < 0.01);
