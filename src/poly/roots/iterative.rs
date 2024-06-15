@@ -46,14 +46,20 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
         );
 
         for i in 0..n {
+            if self.state().poly.degree_raw() == 0 {
+                // we found all the roots early
+                break;
+            }
             if let Some(history_handle) = self.history() {
                 history_handle.roots_history.push(vec![]);
             }
-            let r = self.next_root()?;
-            self.state_mut().clean_roots.extend(r.iter().copied());
+            let rs = self.next_root()?;
+            self.state_mut().clean_roots.extend(rs.iter().copied());
             if i != (n - 1) {
-                //self.state().poly = self.state().poly.clone() / Poly::from_roots(&r);
-                self.state_mut().poly = self.state_mut().poly.clone().deflate_composite(r[0]);
+                // if polynomial was second degree, next_root returns two roots
+                for r in rs {
+                    self.state_mut().poly = self.state_mut().poly.clone().deflate_composite(r);
+                }
             }
         }
 

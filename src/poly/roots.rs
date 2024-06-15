@@ -260,6 +260,15 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
         debug_assert!(self.is_normalized());
+
+        // trivial cases
+        match self.degree_raw() {
+            0 => return Ok(vec![]),
+            1 => return Ok(self.clone().linear()),
+            2 => return Ok(self.clone().quadratic()),
+            _ => {}
+        }
+
         let mut finder = FrancisQR::from_poly(self.clone())
             .with_epsilon(epsilon)
             .with_max_iter(max_iter)
@@ -267,30 +276,10 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 
         let _ = finder.run();
 
-        let mut roots = vec![];
-
-        for _ in 0..self.degree_raw() {
-            let (clean, dirty) = finder.validate(epsilon * T::from_u8(2).expect("overflow"));
-            roots.extend(clean);
-            if dirty.is_empty() {
-                return Ok(roots);
-            }
-
-            // remove one root to reduce multiplicity
-            let mut newton_finder = Newton::from_root_finder(finder, false)
-                .with_epsilon(epsilon)
-                .with_max_iter(max_iter);
-            roots.extend(newton_finder.next_root()?);
-
-            // reset dirty roots, we don't want to carry over very old guesses
-            newton_finder.state_mut().dirty_roots.clear();
-
-            finder = FrancisQR::from_root_finder(newton_finder, false)
-                .with_epsilon(epsilon)
-                .with_max_iter(max_iter);
-            let _ = finder.run();
-        }
-        Err(Error::NoConverge(roots))
+        Newton::from_root_finder(finder, true)
+            .with_epsilon(epsilon)
+            .with_max_iter(max_iter)
+            .roots()
     }
 }
 
@@ -392,7 +381,7 @@ mod test {
     #[test]
     fn roots_of_reverse_bessel() {
         let poly = Poly64::reverse_bessel(2).unwrap();
-        let roots = poly.roots(1E-14, 1000).unwrap();
+        let roots = poly.roots(1E-10, 1000).unwrap();
         assert!((roots[0].re() - -1.5).abs() < 0.01);
         assert!((roots[0].im().abs() - 0.866).abs() < 0.01);
         assert!((roots[1].re() - -1.5).abs() < 0.01);

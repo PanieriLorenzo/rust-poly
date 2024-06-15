@@ -24,7 +24,7 @@ use super::IterativeRootFinder;
 pub struct Newton<T: Scalar> {
     state: FinderState<T>,
     config: FinderConfig<T>,
-    statistics: Option<FinderHistory<T>>,
+    history: Option<FinderHistory<T>>,
 }
 
 impl<T: ScalarOps + Float + RealField> RootFinder<T> for Newton<T> {
@@ -32,7 +32,7 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for Newton<T> {
         Self {
             state: FinderState::new(poly),
             config: FinderConfig::new(),
-            statistics: None,
+            history: None,
         }
     }
 
@@ -56,7 +56,7 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for Newton<T> {
     }
 
     fn history(&mut self) -> &mut Option<roots::FinderHistory<T>> {
-        &mut self.statistics
+        &mut self.history
     }
 }
 
@@ -82,6 +82,11 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
         let roots = self.state_mut().poly.trivial_roots(epsilon);
         if !roots.is_empty() {
             return Ok(roots);
+        }
+
+        // early return for degree zero
+        if self.state.poly.degree_raw() == 0 {
+            return Ok(vec![]);
         }
 
         let p_diff = self.state.poly.clone().diff();
@@ -119,10 +124,10 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
                 // if stuck in local minimum, backoff and rotate instead of converging
                 guess_delta *= dz_stuck_factor;
                 guess -= guess_delta;
-                if let Some(stats_handle) = &mut self.statistics {
-                    let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
+                if let Some(history_handle) = &mut self.history {
+                    let mut roots_history = history_handle.roots_history.pop().unwrap_or(vec![]);
                     roots_history.push(guess);
-                    stats_handle.roots_history.push(roots_history);
+                    history_handle.roots_history.push(roots_history);
                 }
                 continue;
             } else {
@@ -139,7 +144,7 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
                     dz_explode_rotation,
                 );
                 guess -= guess_delta;
-                if let Some(stats_handle) = &mut self.statistics {
+                if let Some(stats_handle) = &mut self.history {
                     let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
                     roots_history.push(guess);
                     stats_handle.roots_history.push(roots_history);
@@ -160,7 +165,7 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
                 // the solver got stuck
                 guess_delta *= dz_stuck_factor;
                 guess -= guess_delta;
-                if let Some(stats_handle) = &mut self.statistics {
+                if let Some(stats_handle) = &mut self.history {
                     let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
                     roots_history.push(guess);
                     stats_handle.roots_history.push(roots_history);
@@ -169,7 +174,7 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
             }
 
             // collect stats
-            if let Some(stats_handle) = &mut self.statistics {
+            if let Some(stats_handle) = &mut self.history {
                 let mut roots_history = stats_handle.roots_history.pop().unwrap_or(vec![]);
                 roots_history.push(guess);
                 stats_handle.roots_history.push(roots_history);
