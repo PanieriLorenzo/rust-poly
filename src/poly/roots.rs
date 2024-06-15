@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use itertools::Itertools;
 use na::{Complex, ComplexField, RealField};
 use num::{Float, FromPrimitive, One, Zero};
@@ -16,6 +18,46 @@ mod iterative;
 pub use iterative::{IterativeRootFinder, Naive, Newton};
 mod initial_guess;
 mod multiroot;
+
+// trick to make trait methods private
+mod private {
+    pub enum Private {}
+
+    /// Marker used to make trait methods private, it cannot be implemented
+    /// by any user outside of the module the trait is defined in
+    pub trait IsPrivate {}
+    impl IsPrivate for Private {}
+}
+
+// trick to make trait methods internal
+pub(crate) mod internal {
+    pub enum Internal {}
+    /// Marker used to make trait methods internal, it cannot be implemented
+    /// by any user outside of the crate the trait is defined in
+    pub trait IsInternal {}
+    impl IsInternal for Internal {}
+}
+
+/// Use this to implement custom root finders.
+///
+/// These methods should not be relied on directly.
+pub trait FinderBase<T: Scalar>: Default + Clone {
+    fn set_poly(&mut self, poly: Poly<T>);
+    fn get_poly(&self) -> &Poly<T>;
+    fn get_poly_mut(&mut self) -> &mut Poly<T>;
+    fn set_epsilon(&mut self, epsilon: T);
+    fn get_epsilon(&self) -> T;
+    fn set_collect_history(&mut self, collect_history: bool);
+    fn get_collect_history(&self) -> bool;
+    fn get_raw_history_mut(&mut self) -> Option<&mut Vec<Vec<Complex<T>>>>;
+    fn init_raw_history(&mut self);
+}
+
+// TODO: rename
+pub struct RootFinderNew<T: Scalar, F: FinderBase<T>> {
+    base: F,
+    _phantom: PhantomData<T>,
+}
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
