@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use itertools::Itertools;
 use na::{Complex, ComplexField, RealField};
-use num::{Float, FromPrimitive, One, Zero};
+use num::{traits::real::Real, Float, FromPrimitive, One, Zero};
 
 use crate::{
     Poly, Scalar, ScalarOps,
@@ -16,6 +16,8 @@ mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
 pub use iterative::{IterativeRootFinder, Naive, Newton};
+
+use self::private::{IsPrivate, Private};
 mod initial_guess;
 mod multiroot;
 
@@ -38,26 +40,227 @@ pub(crate) mod internal {
     impl IsInternal for Internal {}
 }
 
+mod sealed {
+    pub trait Sealed<T> {}
+}
+
+pub struct RootHistory<T>(pub Vec<Complex<T>>);
+
 /// Use this to implement custom root finders.
 ///
 /// These methods should not be relied on directly.
-pub trait FinderBase<T: Scalar>: Default + Clone {
-    fn set_poly(&mut self, poly: Poly<T>);
-    fn get_poly(&self) -> &Poly<T>;
-    fn get_poly_mut(&mut self) -> &mut Poly<T>;
-    fn set_epsilon(&mut self, epsilon: T);
-    fn get_epsilon(&self) -> T;
-    fn set_collect_history(&mut self, collect_history: bool);
-    fn get_collect_history(&self) -> bool;
-    fn get_raw_history_mut(&mut self) -> Option<&mut Vec<Vec<Complex<T>>>>;
-    fn init_raw_history(&mut self);
+///
+/// No guarantees are made about how many roots are found at a time. Even
+/// iterative approaches may return zero or multiple roots, because of how
+/// trivial cases are handled.
+pub trait RootFinderBase<T: Scalar> {
+    /// **Internal method, do not call directly.**
+    ///
+    /// Make a new empty instance, with a valid but minimal starting configuration.
+    fn __new() -> Self;
+
+    /// **Internal method, do not call directly.**
+    ///
+    /// Reset all internal state as if [`RootFinderBase::__new`] were called,
+    /// but avoids deallocating resources.
+    fn __reset(&mut self) -> Self;
+
+    /// **Internal method, do not call directly.**
+    ///
+    /// Performs one iteration of root finding. Should not do any additional
+    /// processing, as all is taken care of by the subtrait.
+    ///
+    /// The current guesses buffer will be populated with at least [`RootFinderBase::__window_size`]
+    /// guesses to start with, but may contain more. You can use any amount of
+    /// them or ignore them entirely.
+    fn __next_step(&mut self) -> std::result::Result<(), Error<()>>;
+
+    /// **Internal method, do not call directly.**
+    ///
+    /// For driver to check if early stopping criterion is reached. It means no
+    /// further improvement is (or likely to be) possible.
+    ///
+    /// This does not check for convergence, that is done by the driver
+    ///
+    /// Stopping should be considered a success (root was found), because it
+    /// indicates that given numerical precision available, this is as close
+    /// to a root as possible.
+    ///
+    /// To communicate early failure, return [`Error`] from [`RootFinderBase::__next_step`]
+    /// instead.
+    fn __check_stopping_criterion(&self) -> bool {
+        // TODO:
+        false
+    }
+
+    /// **Internal method, do not call directly.**
+    ///
+    /// The number of initial guesses used at each stage. The driver will always
+    /// provide at least this number of guesses.
+    fn __num_guesses(&self) -> usize;
+
+    /// **Internal method, do not call directly.**
+    fn __get_poly(&self) -> &Poly<T>;
+
+    /// **Internal method, do not call directly.**
+    fn __get_poly_mut(&mut self) -> &mut Poly<T>;
+
+    //fn get_raw_history_mut<P: IsPrivate>(&mut self) -> &mut Option<Vec<Vec<Complex<T>>>>;
+    // fn get_roots<P: IsPrivate>(&self) -> &[Complex<T>];
+    // fn get_roots_mut<P: IsPrivate>(&mut self) -> &mut Vec<Complex<T>>;
+
+    /// **Internal method, do not call directly.**
+    fn __get_current_guesses(&self) -> &[Complex<T>];
+
+    /// **Internal method, do not call directly.**
+    fn __get_current_guesses_mut(&mut self) -> &mut Vec<Complex<T>>;
 }
 
-// TODO: rename
-pub struct RootFinderNew<T: Scalar, F: FinderBase<T>> {
-    base: F,
-    _phantom: PhantomData<T>,
+pub struct RootFinderDriver<T, B> {
+    base: B,
+    epsilon: Option<T>,
+    max_iter: Option<usize>,
+    history: Option<Vec<RootHistory<T>>>,
 }
+
+// private
+impl<T: Scalar, B: RootFinderBase<T>> RootFinderDriver<T, B> {
+    fn new(base: B) -> Self {
+        Self {
+            base,
+            epsilon: None,
+            max_iter: None,
+            history: None,
+        }
+    }
+
+    fn take_poly(&mut self) -> Poly<T> {
+        std::mem::replace(self.base.__get_poly_mut(), Poly::one())
+    }
+}
+
+// public
+impl<T: ScalarOps + RealField, B: RootFinderBase<T>> RootFinderDriver<T, B> {
+    pub fn with_poly(&mut self, poly: Poly<T>) -> &mut Self {
+        *self.base.__get_poly_mut() = poly;
+        self
+    }
+
+    pub fn with_epsilon(&mut self, epsilon: T) -> &mut Self {
+        self.epsilon = Some(epsilon);
+        self
+    }
+
+    pub fn with_max_iter(&mut self, max_iter: usize) -> &mut Self {
+        self.max_iter = Some(max_iter);
+        self
+    }
+
+    pub fn with_history(&mut self) -> &mut Self {
+        self.history = Some(vec![RootHistory(vec![])]);
+        self
+    }
+
+    /// Find all roots
+    pub fn run(&mut self) -> std::result::Result<(), Error<T>> {
+        todo!()
+    }
+
+    /// Run until shrinkage is performed, and return some of the roots.
+    ///
+    /// Note that this may return 0 roots, if the polynomial has degree 0.
+    pub fn next_roots(&mut self) -> Result<T> {
+        // clean slate
+        let mut poly = self.take_poly();
+        debug_assert!(poly.is_normalized());
+        self.base.__reset();
+        assert_eq!(
+            self.base.__get_current_guesses().len(),
+            0,
+            "the __reset implementation did not clear current guesses "
+        );
+
+        // trivial roots
+        match poly.degree_raw() {
+            0 => {
+                *self.base.__get_poly_mut() = Poly::one();
+                return Ok(vec![]);
+            }
+            1 => {
+                let roots = poly.linear();
+                *self.base.__get_poly_mut() = Poly::one();
+                return Ok(roots);
+            }
+            2 => {
+                let roots = poly.quadratic();
+                *self.base.__get_poly_mut() = Poly::one();
+                return Ok(roots);
+            }
+            _ => {}
+        };
+
+        // remove zero roots (they are problematic for some algorithms)
+        if poly.eval_point(Complex::zero()).norm() <= self.epsilon.unwrap_or(T::zero()) {
+            self.base.__reset();
+            *self.base.__get_poly_mut() = poly.deflate_composite(Complex::zero());
+            return Ok(vec![Complex::zero()]);
+        }
+
+        // TODO: use different guesses for each iteration
+        for _ in 0..self.base.__num_guesses() {
+            self.base
+                .__get_current_guesses_mut()
+                .push(poly.initial_guess_smallest());
+        }
+
+        *self.base.__get_poly_mut() = poly;
+
+        // main loop
+        let mut iteration_counter = 0;
+        loop {
+            if let Some(max_iter) = self.max_iter {
+                if iteration_counter >= max_iter {
+                    // did not converge
+                    todo!("handle no converge")
+                }
+            }
+            iteration_counter = iteration_counter.saturating_add(1);
+
+            let _ = self
+                .base
+                .__next_step()
+                .map_err(|e| e.map_no_converge(|()| self.base.__get_current_guesses().into()))?;
+
+            // check for convergence
+            let mut found_roots = vec![];
+            let stop_requested = self.base.__check_stopping_criterion();
+            for guess in self.base.__get_current_guesses() {
+                if stop_requested
+                    || self.base.__get_poly().eval_point(guess.clone()).norm()
+                        <= self.epsilon.unwrap_or(T::zero())
+                {
+                    found_roots.push(guess);
+                }
+            }
+
+            // shrink if found roots
+            todo!();
+        }
+    }
+}
+
+// TODO: rename this to replace existing trait
+// pub trait RootFinderNew<T: ScalarOps + RealField>:
+//     RootFinderBase<T> + sealed::Sealed<T> + Sized
+// {
+//     fn build_driver(self) -> RootFinderDriver<T, Self> {
+//         RootFinderDriver::new(self)
+//     }
+// }
+
+// // blankets
+// impl<T: ScalarOps + RealField, F: RootFinderBase<T>> sealed::Sealed<T> for F {}
+// impl<T: ScalarOps + RealField, F: RootFinderBase<T>> RootFinderNew<T> for F {}
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
