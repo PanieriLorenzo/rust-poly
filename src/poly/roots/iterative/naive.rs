@@ -1,9 +1,5 @@
-use crate::{
-    __util::float::F64_PHI,
-    num::{Complex, Float, Zero},
-    roots::Newton,
-};
-use na::{ComplexField, RealField};
+use crate::num::{Float, Zero};
+use na::RealField;
 
 use crate::{
     poly::roots::{self, FinderConfig, FinderState, RootFinder},

@@ -1,4 +1,4 @@
-use crate::num::{Complex, Float, Zero};
+use crate::num::{Complex, Float};
 use na::RealField;
 
 use crate::ScalarOps;

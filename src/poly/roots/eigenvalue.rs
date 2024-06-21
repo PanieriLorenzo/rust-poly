@@ -82,10 +82,9 @@ pub trait EigenvalueRootFinder<T: ScalarOps + RealField>: RootFinder<T> {
             CompoanionMatrixType::FrobeniusTransposed => {
                 self.state_mut().poly.make_monic();
                 self.eigen_state_mut().matrix = Some(self.state().poly.companion());
-                self.eigen_state_mut()
-                    .matrix
-                    .as_mut()
-                    .map(|m: &mut DMatrix<_>| m.transpose_mut());
+                if let Some(m) = self.eigen_state_mut().matrix.as_mut() {
+                    m.transpose_mut()
+                }
             }
             CompoanionMatrixType::FrobeniusRotated => {
                 self.state_mut().poly.make_monic();
@@ -157,7 +156,7 @@ fn schmeisser<T: ScalarOps + Float + RealField>(
             f_ip1 = f_ip2;
         }
 
-        qs.push(-q.eval_point(Complex::zero()))
+        qs.push(-q.eval_point(Complex::zero()));
     }
 
     ensure!(

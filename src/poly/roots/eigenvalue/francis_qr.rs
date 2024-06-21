@@ -18,7 +18,7 @@ pub struct FrancisQR<T: Scalar> {
 
 impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
     fn from_poly(poly: crate::Poly<T>) -> Self {
-        FrancisQR {
+        Self {
             state: FinderState::new(poly),
             config: FinderConfig::new(),
             history: None,

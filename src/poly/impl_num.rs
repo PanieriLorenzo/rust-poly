@@ -12,7 +12,7 @@ use crate::{Poly, Scalar, ScalarOps, __util::linalg::convolve_1d};
 
 impl<T: Scalar> Zero for Poly<T> {
     fn zero() -> Self {
-        Poly::from_real_slice(&[T::zero()])
+        Self::from_real_slice(&[T::zero()])
     }
 
     fn is_zero(&self) -> bool {
@@ -54,7 +54,7 @@ impl<T: ScalarOps> Poly<T> {
         }
 
         if other.is_one() {
-            return Some((self, Poly::zero()));
+            return Some((self, Self::zero()));
         }
 
         let expected_degree = self.degree_raw() - other.degree_raw();

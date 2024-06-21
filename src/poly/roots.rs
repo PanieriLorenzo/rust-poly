@@ -1,23 +1,13 @@
-use std::marker::PhantomData;
-
-use itertools::Itertools;
 use na::{Complex, ComplexField, RealField};
 use num::{traits::real::Real, Float, FromPrimitive, One, Zero};
 
-use crate::{
-    Poly, Scalar, ScalarOps,
-    __util::{
-        self,
-        complex::{c_min, c_neg},
-    },
-};
+use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
 
 mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
 pub use iterative::{IterativeRootFinder, Naive, Newton};
 
-use self::private::{IsPrivate, Private};
 mod initial_guess;
 mod multiroot;
 
@@ -226,7 +216,7 @@ impl<T: ScalarOps + RealField, B: RootFinderBase<T>> RootFinderDriver<T, B> {
             }
             iteration_counter = iteration_counter.saturating_add(1);
 
-            let _ = self
+            let () = self
                 .base
                 .__next_step()
                 .map_err(|e| e.map_no_converge(|()| self.base.__get_current_guesses().into()))?;
@@ -236,7 +226,7 @@ impl<T: ScalarOps + RealField, B: RootFinderBase<T>> RootFinderDriver<T, B> {
             let stop_requested = self.base.__check_stopping_criterion();
             for guess in self.base.__get_current_guesses() {
                 if stop_requested
-                    || self.base.__get_poly().eval_point(guess.clone()).norm()
+                    || self.base.__get_poly().eval_point(*guess).norm()
                         <= self.epsilon.unwrap_or(T::zero())
                 {
                     found_roots.push(guess);
@@ -275,8 +265,8 @@ pub enum Error<T> {
 impl<T> Error<T> {
     pub(crate) fn map_no_converge<U>(self, mut f: impl FnMut(T) -> U) -> Error<U> {
         match self {
-            Error::NoConverge(t) => Error::NoConverge(f(t)),
-            Error::Other(o) => Error::Other(o),
+            Self::NoConverge(t) => Error::NoConverge(f(t)),
+            Self::Other(o) => Error::Other(o),
         }
     }
 }
@@ -381,11 +371,11 @@ pub trait RootFinder<T: ScalarOps>: Sized {
         if discard_progress {
             this.state_mut()
                 .dirty_roots
-                .extend(root_finder.state().clean_roots.iter())
+                .extend(root_finder.state().clean_roots.iter());
         } else {
             this.state_mut()
                 .clean_roots
-                .extend(root_finder.state().clean_roots.iter())
+                .extend(root_finder.state().clean_roots.iter());
         }
 
         this
@@ -565,7 +555,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let b = self.0[0];
 
         // we found all the roots
-        *self = Poly::one();
+        *self = Self::one();
 
         vec![-b / a]
     }
@@ -597,7 +587,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let x2 = (c_neg(b) - plus_minus_term) / (two * a);
 
         // we found all the roots
-        *self = Poly::one();
+        *self = Self::one();
 
         vec![x1, x2]
     }
@@ -607,10 +597,9 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 mod test {
 
     use na::Complex;
-    use num::complex::{Complex64, ComplexFloat};
+    use num::complex::ComplexFloat;
 
-    use crate::__util::testing::{binary_coeffs, check_roots};
-    use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
+    use crate::Poly64;
 
     #[test]
     fn initial_guess_smallest() {
