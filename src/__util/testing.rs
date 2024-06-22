@@ -6,7 +6,7 @@ use fastrand::Rng;
 use itertools::Itertools;
 use num::{complex::Complex64, Complex};
 
-use crate::{Poly, Poly64, Scalar, __util::float::f64_make_safe};
+use crate::{Poly, Poly64, Scalar, __util::float::f64_make_safe, roots};
 
 use super::float::f64_make_nonzero;
 
@@ -225,6 +225,23 @@ pub fn test_case_roots(
     degree: usize,
 ) -> (Poly64, Vec<Complex64>) {
     let roots = roots_stream.take(degree).collect_vec();
+    let poly = Poly64::from_roots(&roots)
+        .scaled(scale_stream.next().expect("rng stream should be infinite"));
+    (poly, roots)
+}
+
+/// Generate one test case where the roots are known and can be compared, this
+/// makes conjugate roots.
+pub fn test_case_conj_roots(
+    roots_stream: impl Iterator<Item = Complex64>,
+    mut scale_stream: impl Iterator<Item = Complex64>,
+    degree: usize,
+) -> (Poly64, Vec<Complex64>) {
+    let roots_stream = RandStreamConjugate64::new(roots_stream);
+    let roots = roots_stream
+        .take((degree + 1) / 2)
+        .flat_map(|(r1, r2)| [r1, r2])
+        .collect_vec();
     let poly = Poly64::from_roots(&roots)
         .scaled(scale_stream.next().expect("rng stream should be infinite"));
     (poly, roots)

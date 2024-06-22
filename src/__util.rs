@@ -11,3 +11,4 @@ pub mod luts;
 pub mod testing;
 
 pub(crate) mod float;
+pub(crate) mod iterator;

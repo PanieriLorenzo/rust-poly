@@ -1,4 +1,7 @@
-use crate::num::{Complex, Float, Zero};
+use crate::{
+    num::{Complex, Float, Zero},
+    Poly,
+};
 use na::RealField;
 
 use crate::ScalarOps;
@@ -6,7 +9,8 @@ use crate::ScalarOps;
 use super::RootFinder;
 
 mod naive;
-pub use naive::Naive;
+pub use naive::naive;
+pub use naive::NaiveOld;
 mod newton;
 pub use newton::Newton;
 
@@ -80,4 +84,23 @@ pub trait IterativeRootFinder<T: ScalarOps + PartialOrd + Float + RealField>:
         (z_norm < em4 && delta_z <= em7 || z_norm >= em4 && delta_z / z_norm <= em3)
             && delta_z >= delta_z_old
     }
+}
+
+/// Garwick & Ward stopping criterion (see [Nikolajsen 2014](https://doi.org/10.1098/rsos.140206))
+// TODO: with specialization use Nikolajsen 2014 if T is f64 or f32, but right
+//       now this is fine for all real-like, including fractions and infinite
+//       precision
+fn stopping_criterion_garwick<T: ScalarOps>(
+    z: Complex<T>,
+    z_old: Complex<T>,
+    z_old_old: Complex<T>,
+) -> bool {
+    let delta_z = (z - z_old).norm();
+    let delta_z_old = (z_old - z_old_old).norm();
+    let z_norm = z_old.norm();
+    let em3 = T::from_f64(1E-3).expect("overflow");
+    let em4 = T::from_f64(1E-4).expect("overflow");
+    let em7 = T::from_f64(1E-7).expect("overflow");
+    (z_norm < em4 && delta_z <= em7 || z_norm >= em4 && delta_z / z_norm <= em3)
+        && delta_z >= delta_z_old
 }

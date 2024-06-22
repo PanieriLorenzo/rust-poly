@@ -15,7 +15,7 @@ use crate::{
 mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
-pub use iterative::{IterativeRootFinder, Naive, Newton};
+pub use iterative::{naive, IterativeRootFinder, NaiveOld, Newton};
 
 mod initial_guess;
 mod multiroot;
@@ -40,6 +40,30 @@ impl<T> Error<T> {
 }
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
+
+/// A think wrapper for facilitating access to root finder history
+///
+/// Innermost vector is the history for a single root, outermost vector is the
+/// histories of multiple roots.
+#[derive(Debug, Clone)]
+pub struct History<T>(pub Vec<Vec<Complex<T>>>);
+
+impl<T> History<T> {
+    pub fn new() -> Self {
+        Self(vec![vec![]])
+    }
+
+    pub fn new_root(&mut self) {
+        self.0.push(vec![]);
+    }
+
+    pub fn update_root(&mut self, root: Complex<T>) {
+        if self.0.is_empty() {
+            self.new_root();
+        }
+        self.0.last_mut().expect("infallible").push(root);
+    }
+}
 
 /// Helper struct for implementing stateful root finders and converting between them
 pub struct FinderState<T: Scalar> {
@@ -307,6 +331,8 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
             _ => {}
         }
 
+        // post-condition: polynomials of degree 1 or 2 have been reduced
+        debug_assert!(self.degree_raw() != 1 && self.degree_raw() != 2);
         roots
     }
 
