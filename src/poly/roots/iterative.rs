@@ -10,7 +10,6 @@ use super::RootFinder;
 
 mod naive;
 pub use naive::naive;
-pub use naive::NaiveOld;
 mod newton;
 pub use newton::Newton;
 

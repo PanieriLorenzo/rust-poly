@@ -15,7 +15,7 @@ use crate::{
 mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
-pub use iterative::{naive, IterativeRootFinder, NaiveOld, Newton};
+pub use iterative::{naive, IterativeRootFinder, Newton};
 
 mod initial_guess;
 mod multiroot;
