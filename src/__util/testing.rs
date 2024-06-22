@@ -247,6 +247,22 @@ pub fn test_case_conj_roots(
     (poly, roots)
 }
 
+pub fn test_case_multiple_roots(
+    roots_stream: impl Iterator<Item = Complex64>,
+    mut scale_stream: impl Iterator<Item = Complex64>,
+    degree: usize,
+    multiplicity: usize,
+) -> (Poly64, Vec<Complex64>) {
+    let mut roots = roots_stream.take(degree - multiplicity).collect_vec();
+    let first_root = roots[0];
+    for _ in 0..multiplicity {
+        roots.push(first_root)
+    }
+    let poly = Poly64::from_roots(&roots)
+        .scaled(scale_stream.next().expect("rng stream should be infinite"));
+    (poly, roots)
+}
+
 /// Check that all roots have been found
 #[must_use]
 pub fn check_roots(roots1: Vec<Complex64>, mut roots2: Vec<Complex64>, tol: f64) -> bool {
