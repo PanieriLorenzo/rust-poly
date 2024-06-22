@@ -1,16 +1,7 @@
-use std::marker::PhantomData;
-
-use itertools::Itertools;
 use na::{Complex, ComplexField, RealField};
 use num::{traits::real::Real, Float, FromPrimitive, One, Zero};
 
-use crate::{
-    Poly, Scalar, ScalarOps,
-    __util::{
-        self,
-        complex::{c_min, c_neg},
-    },
-};
+use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
 
 mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
@@ -33,8 +24,8 @@ pub enum Error<T> {
 impl<T> Error<T> {
     pub(crate) fn map_no_converge<U>(self, mut f: impl FnMut(T) -> U) -> Error<U> {
         match self {
-            Error::NoConverge(t) => Error::NoConverge(f(t)),
-            Error::Other(o) => Error::Other(o),
+            Self::NoConverge(t) => Error::NoConverge(f(t)),
+            Self::Other(o) => Error::Other(o),
         }
     }
 }
@@ -48,7 +39,14 @@ pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>
 #[derive(Debug, Clone)]
 pub struct History<T>(pub Vec<Vec<Complex<T>>>);
 
+impl<T> Default for History<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> History<T> {
+    #[must_use]
     pub fn new() -> Self {
         Self(vec![vec![]])
     }
@@ -163,11 +161,11 @@ pub trait RootFinder<T: ScalarOps>: Sized {
         if discard_progress {
             this.state_mut()
                 .dirty_roots
-                .extend(root_finder.state().clean_roots.iter())
+                .extend(root_finder.state().clean_roots.iter());
         } else {
             this.state_mut()
                 .clean_roots
-                .extend(root_finder.state().clean_roots.iter())
+                .extend(root_finder.state().clean_roots.iter());
         }
 
         this
@@ -349,7 +347,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let b = self.0[0];
 
         // we found all the roots
-        *self = Poly::one();
+        *self = Self::one();
 
         vec![-b / a]
     }
@@ -381,7 +379,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         let x2 = (c_neg(b) - plus_minus_term) / (two * a);
 
         // we found all the roots
-        *self = Poly::one();
+        *self = Self::one();
 
         vec![x1, x2]
     }
@@ -391,10 +389,9 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 mod test {
 
     use na::Complex;
-    use num::complex::{Complex64, ComplexFloat};
+    use num::complex::ComplexFloat;
 
-    use crate::__util::testing::{binary_coeffs, check_roots};
-    use crate::{poly::roots::OneRootAlgorithms, Poly, Poly64};
+    use crate::Poly64;
 
     #[test]
     fn initial_guess_smallest() {

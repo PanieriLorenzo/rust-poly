@@ -1,11 +1,11 @@
 //! floating point utilities
 
-use softfloat::{F32, F64};
+use softfloat::F64;
 
 #[deprecated]
 pub const F64_SMALL_NUM: f64 = f64_const_sqrt(f64::MIN_POSITIVE) / f64::EPSILON;
 
-pub const F64_PHI: f64 = 1.618033988749895;
+pub const F64_PHI: f64 = 1.618_033_988_749_895;
 
 pub const fn f64_const_sqrt(x: f64) -> f64 {
     F64::from_native_f64(x).sqrt().to_native_f64()

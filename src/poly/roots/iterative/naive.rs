@@ -1,18 +1,13 @@
 use crate::{
-    __util::{self, float::F64_PHI},
-    num::{Complex, Float, Zero},
-    roots::{History, Newton},
+    __util::{self},
+    num::Zero,
 };
-use na::{ComplexField, RealField};
+use na::RealField;
 
 use crate::{
-    poly::roots::{self, FinderConfig, FinderState, RootFinder},
-    roots::FinderHistory,
-    Poly, Scalar, ScalarOps,
+    poly::roots::{self},
+    Poly, ScalarOps,
 };
-
-/// A builder for the [`naive`] root finder. See [`naive`] for more info.
-pub struct NaiveA;
 
 /// Find all roots of a polynomial using a naive Newton-Raphson approach.
 ///
@@ -88,14 +83,14 @@ fn next_root<T: ScalarOps + RealField>(
 
         guess_old_old = guess_old;
         guess_old = guess;
-        guess = guess - guess_delta;
+        guess -= guess_delta;
     }
     unreachable!()
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{__util::testing::check_roots, roots::History};
+    use crate::__util::testing::check_roots;
 
     use crate::num::One;
 

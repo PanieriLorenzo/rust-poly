@@ -6,7 +6,7 @@ use fastrand::Rng;
 use itertools::Itertools;
 use num::{complex::Complex64, Complex};
 
-use crate::{Poly, Poly64, Scalar, __util::float::f64_make_safe, roots};
+use crate::{Poly, Poly64, Scalar, __util::float::f64_make_safe};
 
 use super::float::f64_make_nonzero;
 
@@ -256,7 +256,7 @@ pub fn test_case_multiple_roots(
     let mut roots = roots_stream.take(degree - multiplicity).collect_vec();
     let first_root = roots[0];
     for _ in 0..multiplicity {
-        roots.push(first_root)
+        roots.push(first_root);
     }
     let poly = Poly64::from_roots(&roots)
         .scaled(scale_stream.next().expect("rng stream should be infinite"));
