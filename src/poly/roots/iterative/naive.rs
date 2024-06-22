@@ -97,12 +97,63 @@ fn next_root<T: ScalarOps + RealField>(
 mod test {
     use crate::{__util::testing::check_roots, roots::History};
 
+    use crate::num::One;
+
+    use crate::Poly64;
+
+    use super::naive;
+
     #[test]
-    fn test_naive() {
+    pub fn degree_0() {
+        let mut p = Poly64::one();
+        let roots = naive(&mut p, Some(1E-14), Some(100)).unwrap();
+        assert!(roots.is_empty());
+        assert!(p.is_one());
+    }
+
+    #[test]
+    fn test_degree_1() {
+        let roots_expected = vec![complex!(1.0)];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = super::naive(&mut p, Some(1E-14), Some(100)).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
+    }
+
+    #[test]
+    fn test_degree_2() {
+        let roots_expected = vec![complex!(1.0), complex!(2.0)];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = super::naive(&mut p, Some(1E-14), Some(100)).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
+    }
+
+    #[test]
+    fn test_degree_3() {
         let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let roots = super::naive(&mut p, Some(1E-14), Some(100)).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
-        panic!();
+    }
+
+    #[test]
+    fn test_degree_3_complex() {
+        let roots_expected = vec![complex!(1.0), complex!(0.0, 1.0), complex!(0.0, -1.0)];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = super::naive(&mut p, Some(1E-14), Some(100)).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
+    }
+
+    #[test]
+    fn test_degree_5_2_zeros() {
+        let roots_expected = vec![
+            complex!(0.0),
+            complex!(0.0),
+            complex!(1.0),
+            complex!(2.0),
+            complex!(3.0),
+        ];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = super::naive(&mut p, Some(1E-14), Some(100)).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
     }
 }
