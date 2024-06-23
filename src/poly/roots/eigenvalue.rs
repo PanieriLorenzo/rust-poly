@@ -30,7 +30,7 @@ pub use francis_qr::FrancisQR;
 /// The rotated form is a 180 degree rotation (not mirroring) of $C$.
 ///
 /// Schmeisser is a companion matrix proposed by [Gerhard Schmeisser 1993](https://doi.org/10.1016/0024-3795(93)90268-S).
-pub enum CompoanionMatrixType {
+pub enum CompanionMatrixType {
     Frobenius,
     FrobeniusTransposed,
     FrobeniusRotated,
@@ -48,19 +48,19 @@ impl<T: Scalar> EigenState<T> {
 }
 
 pub struct EigenConfig {
-    companion_matrix_type: CompoanionMatrixType,
+    companion_matrix_type: CompanionMatrixType,
 }
 
 impl EigenConfig {
     fn new() -> Self {
         Self {
-            companion_matrix_type: CompoanionMatrixType::Frobenius,
+            companion_matrix_type: CompanionMatrixType::Frobenius,
         }
     }
 }
 
 pub trait EigenvalueRootFinder<T: ScalarOps + RealField>: RootFinder<T> {
-    fn with_companion_matrix_type(mut self, matrix_type: CompoanionMatrixType) -> Self {
+    fn with_companion_matrix_type(mut self, matrix_type: CompanionMatrixType) -> Self {
         self.eigen_config_mut().companion_matrix_type = matrix_type;
         self
     }
@@ -75,18 +75,18 @@ pub trait EigenvalueRootFinder<T: ScalarOps + RealField>: RootFinder<T> {
 
     fn init_matrix(&mut self) -> anyhow::Result<()> {
         match self.eigen_config().companion_matrix_type {
-            CompoanionMatrixType::Frobenius => {
+            CompanionMatrixType::Frobenius => {
                 self.state_mut().poly.make_monic();
                 self.eigen_state_mut().matrix = Some(self.state().poly.companion());
             }
-            CompoanionMatrixType::FrobeniusTransposed => {
+            CompanionMatrixType::FrobeniusTransposed => {
                 self.state_mut().poly.make_monic();
                 self.eigen_state_mut().matrix = Some(self.state().poly.companion());
                 if let Some(m) = self.eigen_state_mut().matrix.as_mut() {
                     m.transpose_mut()
                 }
             }
-            CompoanionMatrixType::FrobeniusRotated => {
+            CompanionMatrixType::FrobeniusRotated => {
                 self.state_mut().poly.make_monic();
                 self.eigen_state_mut().matrix = Some(self.state().poly.companion());
                 let n = self
@@ -108,7 +108,7 @@ pub trait EigenvalueRootFinder<T: ScalarOps + RealField>: RootFinder<T> {
                         .swap_columns(i, n - i - 1);
                 }
             }
-            CompoanionMatrixType::Schmeisser => {
+            CompanionMatrixType::Schmeisser => {
                 self.eigen_state_mut().matrix = Some(schmeisser(&self.state().poly)?);
             }
         }
