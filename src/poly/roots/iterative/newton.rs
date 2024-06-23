@@ -224,7 +224,7 @@ fn handle_multiplicity<T: ScalarOps>(
     let mut best_px_norm = px.norm();
 
     // multiplicity cannot be higher than the degree
-    for m in 0..poly.degree_raw() {
+    for m in 1..poly.degree_raw() {
         let step_size = T::from_usize(m).expect("overflow");
         let guess_new = guess_old - guess_delta.scale(step_size);
         let px_new = poly.eval_point(guess_new);
