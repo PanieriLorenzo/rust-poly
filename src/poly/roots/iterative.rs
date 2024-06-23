@@ -8,7 +8,7 @@ use super::RootFinder;
 mod naive;
 pub use naive::naive;
 mod newton;
-pub use newton::Newton;
+pub use newton::{newton, Newton};
 
 pub enum DeflationStrategy {
     LongDivision,

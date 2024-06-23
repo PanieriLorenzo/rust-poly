@@ -6,7 +6,7 @@ use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
 mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
-pub use iterative::{naive, IterativeRootFinder, Newton};
+pub use iterative::{naive, newton, IterativeRootFinder, Newton};
 
 mod initial_guess;
 mod multiroot;
@@ -310,12 +310,14 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 
 // private
 impl<T: ScalarOps + RealField + Float> Poly<T> {
-    fn trivial_roots(&mut self, epsilon: T) -> Vec<Complex<T>> {
+    fn trivial_roots(&mut self, epsilon: T) -> (Vec<Complex<T>>, u128) {
+        let mut eval_counter = 0;
         debug_assert!(self.is_normalized());
 
         let mut roots = vec![];
         for _ in 0..self.degree_raw() {
             if self.eval_point(Complex::zero()).norm() < epsilon {
+                eval_counter += 1;
                 roots.push(Complex::zero());
                 *self = self.clone().deflate_composite(Complex::zero());
             } else {
@@ -331,7 +333,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 
         // post-condition: polynomials of degree 1 or 2 have been reduced
         debug_assert!(self.degree_raw() != 1 && self.degree_raw() != 2);
-        roots
+        (roots, eval_counter)
     }
 
     fn linear(&mut self) -> Vec<Complex<T>> {

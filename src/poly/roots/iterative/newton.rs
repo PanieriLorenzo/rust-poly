@@ -1,6 +1,8 @@
 use crate::{
-    __util::float::F64_PHI,
+    __util::{self, float::F64_PHI},
     num::{Complex, Float, Zero},
+    scalar::SafeConstants,
+    Poly,
 };
 use na::{ComplexField, RealField};
 
@@ -19,7 +21,254 @@ use super::IterativeRootFinder;
 /// also detect when it gets stuck in a local minimum or maximum and unstuck
 /// itself.
 ///
-/// This implementation was based on [Henrik Vestermark 2020](http://www.hvks.com/Numerical/Downloads/HVE%20Practical%20Implementation%20of%20Polynomial%20root%20finders%20vs%207.pdf).
+/// This implementation was based on [Henrik Vestermark 2020](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
+pub fn newton<T: ScalarOps + RealField>(
+    poly: &mut Poly<T>,
+    epsilon: Option<T>,
+    max_iter: Option<usize>,
+    initial_guesses: &[Complex<T>],
+) -> roots::Result<T> {
+    let mut eval_counter = 0;
+    let epsilon = epsilon.unwrap_or(T::tiny_safe());
+    let mut roots = vec![];
+    let mut initial_guesses = initial_guesses.iter().cloned();
+
+    // until we've found all roots
+    loop {
+        let trivial_roots = poly.trivial_roots(epsilon);
+        eval_counter += trivial_roots.1;
+        roots.extend(trivial_roots.0.iter());
+
+        debug_assert!(poly.is_normalized());
+        if poly.degree_raw() == 0 {
+            log::debug!("evaluations: {eval_counter}");
+            return Ok(roots);
+        }
+
+        let next_guess = initial_guesses.next();
+        let (next_roots, num_evals) = next_root(poly, epsilon, max_iter, next_guess)?;
+        let root = next_roots[0];
+        eval_counter += num_evals;
+        roots.push(root);
+        // TODO: deflate_composite should borrow instead
+        *poly = poly.clone().deflate_composite(root);
+    }
+}
+
+fn next_root<T: ScalarOps + RealField>(
+    poly: &Poly<T>,
+    epsilon: T,
+    max_iter: Option<usize>,
+    initial_guess: Option<Complex<T>>,
+) -> std::result::Result<(Vec<Complex<T>>, u128), roots::Error<Vec<Complex<T>>>> {
+    let mut eval_counter = 0;
+    let mut guess = initial_guess.unwrap_or_else(|| poly.initial_guess_smallest());
+    let mut guess_old = guess;
+    let mut guess_old_old = guess;
+    let mut guess_delta = Complex::large_safe();
+    let p_diff = poly.clone().diff();
+
+    // until convergence
+    for i in __util::iterator::saturating_counter() {
+        let px = poly.eval_point(guess);
+        eval_counter += 1;
+
+        // stopping criterion 1: converged
+        if px.norm() <= epsilon {
+            return Ok((vec![guess], eval_counter));
+        }
+
+        // stopping criterion 2: no improvement predicted due to numeric precision
+        if i > 3 && super::stopping_criterion_garwick(guess, guess_old, guess_old_old) {
+            return Ok((vec![guess], eval_counter));
+        }
+
+        // max iter exceeded
+        if max_iter.is_some_and(|max| i >= max) {
+            return Err(roots::Error::NoConverge(vec![guess]));
+        }
+
+        let pdx = p_diff.eval_point(guess);
+        eval_counter += 1;
+
+        guess_delta = compute_delta(px, pdx, guess_delta);
+
+        // naive newton step, we're gonna improve this.
+        let mut guess_new = guess - guess_delta;
+        let px_new = poly.eval_point(guess_new);
+        let pdx_new = p_diff.eval_point(guess_new);
+
+        if !check_will_converge(guess_new, guess, px_new, pdx_new, pdx) {
+            // if the current guess isn't captured, we adjust our guess more
+            // aggressively until it is captured, i.e. it is close enough that
+            // it "falls" towards the correct guess instead of jumping somewhere
+            // else.
+            if px_new.norm() > px.norm() {
+                let res = handle_overshoot(&poly, px_new, guess_new, guess, guess_delta);
+                guess_new = res.0;
+                eval_counter += res.1;
+            } else {
+                let res = handle_multiplicity(&poly, px_new, guess_new, guess, guess_delta);
+                guess_new = res.0;
+                eval_counter += res.1;
+            }
+        }
+
+        guess_old_old = guess_old;
+        guess_old = guess;
+        guess = guess_new;
+    }
+    unreachable!()
+}
+
+fn compute_delta<T: Scalar>(px: Complex<T>, pdx: Complex<T>, delta_old: Complex<T>) -> Complex<T> {
+    const EXPLODE_THRESHOLD: f64 = 5.0;
+
+    if pdx.is_zero() {
+        // these are arbitrary, originally chosen by Madsen.
+        const ROTATION_RADIANS: f64 = 0.9250245;
+        const SCALE: f64 = 5.0;
+        // TODO: when const trait methods are supported, this should be
+        //       made fully const.
+        let backoff = Complex::from_polar(
+            T::from_f64(SCALE).expect("overflow"),
+            T::from_f64(ROTATION_RADIANS).expect("overflow"),
+        );
+        return delta_old * backoff;
+    }
+
+    let delta = px / pdx;
+
+    if delta.norm() > delta_old.norm() * T::from_f64(EXPLODE_THRESHOLD).expect("overflow") {
+        // these are arbitrary, originally chosen by Madsen.
+        const ROTATION_RADIANS: f64 = 0.9250245;
+        const SCALE: f64 = 5.0;
+        // TODO: when const trait methods are supported, this should be
+        //       made fully const.
+
+        let backoff = Complex::from_polar(
+            T::from_f64(SCALE).expect("overflow"),
+            T::from_f64(ROTATION_RADIANS).expect("overflow"),
+        )
+        .scale(delta_old.norm() / delta.norm());
+
+        return delta * backoff;
+    }
+
+    delta
+}
+
+/// Improve upon a newton step by exponentially reducing the step size in case
+/// of overshoot.
+///
+/// Takes:
+/// - `poly`: current polynomial
+/// - `px`: the polynomial evaluated at `guess`
+/// - `guess`: the current naive guess we want to improve, this should be
+///    equal to `guess_old` - `guess_delta`.
+/// - `guess_old`: the finalized guess from the previous iteration
+/// - `guess_delta`: the current naive newton step we want to improve.
+fn handle_overshoot<T: ScalarOps>(
+    poly: &Poly<T>,
+    px: Complex<T>,
+    guess: Complex<T>,
+    guess_old: Complex<T>,
+    guess_delta: Complex<T>,
+) -> (Complex<T>, u128) {
+    debug_assert_eq!(guess_old - guess_delta, guess);
+    let mut eval_counter = 0;
+
+    // this is arbitrary, originally chosen by Madsen.
+    const ROTATION_RADIANS: f64 = 0.9250245;
+    // TODO: when const trait methods are supported, this should be
+    //       made fully const.
+    let rotation = Complex::from_polar(T::one(), T::from_f64(ROTATION_RADIANS).expect("overflow"));
+
+    // how many times backoff is attempted
+    const BACKOFF_STEPS: u32 = 2;
+
+    let mut best_guess = guess;
+    let mut best_px_norm = px.norm();
+    for i in 0..BACKOFF_STEPS {
+        let backoff = T::from_u32(2u32.pow(i)).expect("overflow").recip();
+        let guess_new = guess_old - guess_delta.scale(backoff);
+        let px_new = poly.eval_point(guess_new);
+        eval_counter += 1;
+        let px_norm_new = px_new.norm();
+
+        if px_norm_new >= best_px_norm {
+            // we're not improving, quit early
+            return (best_guess, eval_counter);
+        }
+        best_guess = guess_new;
+        best_px_norm = px_norm_new;
+    }
+
+    // we succesfully decreased step size, we are probably on a saddle point,
+    // so we rotate the gradient to point away from the uphill of the saddle.
+    (best_guess * rotation, eval_counter)
+}
+
+/// Improve upon a naive newton guess by linearly increasing step size, this
+/// will automatically find the optimal step size for the current multiplicity,
+/// without having to explicitly compute the multiplicity.
+fn handle_multiplicity<T: ScalarOps>(
+    poly: &Poly<T>,
+    px: Complex<T>,
+    guess: Complex<T>,
+    guess_old: Complex<T>,
+    guess_delta: Complex<T>,
+) -> (Complex<T>, u128) {
+    let mut eval_counter = 0;
+    let mut best_guess = guess;
+    let mut best_px_norm = px.norm();
+
+    // multiplicity cannot be higher than the degree
+    for m in 0..poly.degree_raw() {
+        let step_size = T::from_usize(m).expect("overflow");
+        let guess_new = guess_old - guess_delta.scale(step_size);
+        let px_new = poly.eval_point(guess_new);
+        eval_counter += 1;
+        let px_norm_new = px_new.norm();
+
+        if px_norm_new >= best_px_norm {
+            // we're not improving, quit early
+            return (best_guess, eval_counter);
+        }
+        best_guess = guess_new;
+        best_px_norm = px_norm_new;
+    }
+    (best_guess, eval_counter)
+}
+
+/// Heuristic that tries to determine if the current guess is close enough to the
+/// real root to be "captured", i.e. if the current guess is guaranteed to
+/// converge to this root, rather than jumping off to a different root.
+///
+/// This condition is based on [Ostrowski 1966](https://doi.org/10.2307/2005025),
+/// but uses an approximation by [Henrik Vestermark 2020](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
+fn check_will_converge<T: Scalar>(
+    guess: Complex<T>,
+    guess_old: Complex<T>,
+    px: Complex<T>,
+    pdx: Complex<T>,
+    pdx_old: Complex<T>,
+) -> bool {
+    !(px * pdx).is_small()
+        && ((px / pdx).norm()
+            * T::from_u8(2).expect("overflow")
+            * ((pdx_old - pdx) / (guess_old - guess)).norm()
+            <= pdx.norm())
+}
+
+/// Modified Newton's method, originally conceived by [Kaj Madsen 1973](https://doi.org/10.1007/BF01933524).
+///
+/// This method is a much more robust than traditional naive Newton iteration.
+/// It can detect when convergence slows down and increase the step size. It can
+/// also detect when it gets stuck in a local minimum or maximum and unstuck
+/// itself.
+///
+/// This implementation was based on [Henrik Vestermark 2020](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
 #[allow(clippy::module_name_repetitions)]
 pub struct Newton<T: Scalar> {
     state: FinderState<T>,
@@ -79,7 +328,7 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
 
         // handle trivial cases
         let epsilon = self.config().epsilon;
-        let roots = self.state_mut().poly.trivial_roots(epsilon);
+        let roots = self.state_mut().poly.trivial_roots(epsilon).0;
         if !roots.is_empty() {
             return Ok(roots);
         }

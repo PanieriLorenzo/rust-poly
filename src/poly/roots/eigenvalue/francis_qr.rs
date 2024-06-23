@@ -32,7 +32,7 @@ impl<T: ScalarOps + Float + RealField> RootFinder<T> for FrancisQR<T> {
 
         // handle trivial cases
         let epsilon = self.config().epsilon;
-        let mut roots = self.state_mut().poly.trivial_roots(epsilon);
+        let (mut roots, _) = self.state_mut().poly.trivial_roots(epsilon);
         if self.state().poly.degree_raw() == 0 {
             self.state_mut().clean_roots.extend(roots.iter());
             return Ok(());
