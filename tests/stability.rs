@@ -2,6 +2,19 @@
 //! limits of different root finders are and to catch stability regressions.
 //!
 //! This should be updated if the stability is improved.
+//!
+//! The goal here is thus not to benchmark the rate of convergence, but see if
+//! they can converge at all for a general polynomial.
+//!
+//! All methods provide an error considerably higher than epsilon, because repeated
+//! division used in shrinking introduces considerable rounding error, so we
+//! allow a validation error of up to 0.1, above which we consider it a failure.
+//!
+//! All other parameters are chosen case-by-case to maximize the degree that can
+//! be handled, so the main parameter of interest here is the maximum degree
+//! that can be handled, but also of interest is the number of iterations
+//! necessary to achieve that, and to some extent what epsilon is necessary to
+//! achieve at least 0.1 validation error.
 
 use rust_poly::{
     __util::testing::{
@@ -11,8 +24,6 @@ use rust_poly::{
     roots::{naive, newton},
 };
 
-/// - max degree: 6
-/// - worst-case error: 0.0385
 #[test]
 fn naive_real() {
     let _ = simple_logger::init_with_level(log::Level::Debug);
@@ -20,16 +31,14 @@ fn naive_real() {
     let mut scale_stream = RandStreamR64::new(2, 1.0, 10.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 6);
-        let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive(&mut poly.clone(), Some(1E-14), Some(50), &[]).unwrap();
         assert!(
-            check_roots(roots.clone(), expected_roots.clone(), 0.0385),
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 6
-/// - worst-case error: 0.0385
 #[test]
 fn newton_real() {
     let _ = simple_logger::init_with_level(log::Level::Debug);
@@ -37,16 +46,14 @@ fn newton_real() {
     let mut scale_stream = RandStreamR64::new(2, 1.0, 10.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 6);
-        let roots = newton(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton(&mut poly.clone(), Some(1E-14), Some(25), &[]).unwrap();
         assert!(
-            check_roots(roots.clone(), expected_roots.clone(), 0.0385),
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 6
-/// - worst-case error: 0.097
 #[test]
 fn naive_real_multiplicity_1() {
     let _ = simple_logger::init_with_level(log::Level::Debug);
@@ -57,16 +64,12 @@ fn naive_real_multiplicity_1() {
             test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 6, 1);
         let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
         assert!(
-            check_roots(roots, expected_roots, 0.97E-1),
-            "@ {}: {}",
-            i,
-            poly
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
+            "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 6
-/// - worst-case error: 0.097
 #[test]
 fn newton_real_multiplicity_1() {
     let _ = simple_logger::init_with_level(log::Level::Debug);
@@ -75,18 +78,14 @@ fn newton_real_multiplicity_1() {
     for i in 0..1000 {
         let (poly, expected_roots) =
             test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 6, 1);
-        let roots = newton(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton(&mut poly.clone(), Some(1E-13), Some(50), &[]).unwrap();
         assert!(
-            check_roots(roots, expected_roots, 0.097),
-            "@ {}: {}",
-            i,
-            poly
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
+            "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 4
-/// - worst-case error: 0.0015
 #[test]
 fn naive_real_multiplicity_3() {
     let _ = simple_logger::init_with_level(log::Level::Debug);
@@ -94,19 +93,15 @@ fn naive_real_multiplicity_3() {
     let mut scale_stream = RandStreamR64::new(8, 1.0, 10.0);
     for i in 0..1000 {
         let (poly, expected_roots) =
-            test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 4, 3);
-        let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+            test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 6, 3);
+        let roots = naive(&mut poly.clone(), Some(1E-15), Some(200), &[]).unwrap();
         assert!(
-            check_roots(roots, expected_roots, 0.0015),
-            "@ {}: {}",
-            i,
-            poly
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
+            "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 5
-/// - worst-case error: 0.035
 #[test]
 fn newton_real_multiplicity_3() {
     let _ = simple_logger::init_with_level(log::Level::Debug);
@@ -114,87 +109,74 @@ fn newton_real_multiplicity_3() {
     let mut scale_stream = RandStreamR64::new(8, 1.0, 10.0);
     for i in 0..1000 {
         let (poly, expected_roots) =
-            test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 5, 3);
-        let roots = newton(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+            test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 6, 3);
+        let roots = newton(&mut poly.clone(), Some(1E-15), Some(100), &[]).unwrap();
         assert!(
-            check_roots(roots, expected_roots, 0.035),
-            "@ {}: {}",
-            i,
-            poly
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
+            "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 10
-/// - worst-case error: 0.0046
 #[test]
 fn naive_complex() {
     let mut roots_stream = RandStreamC64Cartesian::new(3, -2.0, 2.0, -2.0, 2.0);
     let mut scale_stream = RandStreamC64Polar::new(4, 1.0, 10.0, 0.0, 1.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 10);
-        let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive(&mut poly.clone(), Some(1E-12), Some(100), &[]).unwrap();
         assert!(
-            check_roots(roots, expected_roots, 0.46E-2),
-            "@ {}: {}",
-            i,
-            poly
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
+            "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 10
-/// - worst-case error: 0.0046
 #[test]
 fn newton_complex() {
     let mut roots_stream = RandStreamC64Cartesian::new(3, -2.0, 2.0, -2.0, 2.0);
     let mut scale_stream = RandStreamC64Polar::new(4, 1.0, 10.0, 0.0, 1.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 10);
-        let roots = newton(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton(&mut poly.clone(), Some(1E-12), Some(50), &[]).unwrap();
         assert!(
-            check_roots(roots, expected_roots, 0.46E-2),
-            "@ {}: {}",
-            i,
-            poly
+            check_roots(roots.clone(), expected_roots.clone(), 0.1),
+            "@ {i}: {roots:?} != {expected_roots:?}",
         );
     }
 }
 
-/// - max degree: 2
-/// - worst-case error: 1E-12
-#[test]
-fn naive_conjugate() {
-    // roots are within the unit circle, this is common in signal processing
-    let mut roots_stream = RandStreamC64Polar::new(5, 0.0, 1.0, 0.0, 1.0);
-    let mut scale_stream = RandStreamC64Polar::new(6, 1.0, 10.0, 0.0, 1.0);
-    for i in 0..1000 {
-        let (poly, expected_roots) = test_case_conj_roots(&mut roots_stream, &mut scale_stream, 2);
-        let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
-        assert!(
-            check_roots(roots, expected_roots, 1E-13),
-            "@ {}: {}",
-            i,
-            poly
-        );
-    }
-}
+// NOTE: this does not work for degree 3 or higher, so it isn't interesting
+//       (degree 2 always uses quadratic formula)
+// #[test]
+// fn naive_conjugate() {
+//     // roots are within the unit circle, this is common in signal processing
+//     let mut roots_stream = RandStreamC64Polar::new(5, 0.0, 1.0, 0.0, 1.0);
+//     let mut scale_stream = RandStreamC64Polar::new(6, 1.0, 10.0, 0.0, 1.0);
+//     for i in 0..1000 {
+//         let (poly, expected_roots) = test_case_conj_roots(&mut roots_stream, &mut scale_stream, 2);
+//         let roots = naive(&mut poly.clone(), Some(1E-2), Some(10), &[]).unwrap();
+//         assert!(
+//             check_roots(roots.clone(), expected_roots.clone(), 0.1),
+//             "@ {i}: {roots:?} != {expected_roots:?}",
+//         );
+//     }
+// }
 
-/// - max degree: 2
-/// - worst-case error: 1E-12
-#[test]
-fn newton_conjugate() {
-    // roots are within the unit circle, this is common in signal processing
-    let mut roots_stream = RandStreamC64Polar::new(5, 0.0, 1.0, 0.0, 1.0);
-    let mut scale_stream = RandStreamC64Polar::new(6, 1.0, 10.0, 0.0, 1.0);
-    for i in 0..1000 {
-        let (poly, expected_roots) = test_case_conj_roots(&mut roots_stream, &mut scale_stream, 2);
-        let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
-        assert!(
-            check_roots(roots, expected_roots, 1E-13),
-            "@ {}: {}",
-            i,
-            poly
-        );
-    }
-}
+// NOTE: this does not work for degree 3 or higher, so it isn't interesting
+// #[test]
+// fn newton_conjugate() {
+//     // roots are within the unit circle, this is common in signal processing
+//     let mut roots_stream = RandStreamC64Polar::new(5, 0.0, 1.0, 0.0, 1.0);
+//     let mut scale_stream = RandStreamC64Polar::new(6, 1.0, 10.0, 0.0, 1.0);
+//     for i in 0..1000 {
+//         let (poly, expected_roots) = test_case_conj_roots(&mut roots_stream, &mut scale_stream, 2);
+//         let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+//         assert!(
+//             check_roots(roots, expected_roots, 1E-13),
+//             "@ {}: {}",
+//             i,
+//             poly
+//         );
+//     }
+// }
