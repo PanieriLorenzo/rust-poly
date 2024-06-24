@@ -34,7 +34,7 @@ pub fn naive<T: ScalarOps + RealField>(
 
         debug_assert!(poly.is_normalized());
         if poly.degree_raw() == 0 {
-            log::debug!("evaluations: {eval_counter}");
+            log::debug!("{{evaluations: {eval_counter}}}");
             return Ok(roots);
         }
 

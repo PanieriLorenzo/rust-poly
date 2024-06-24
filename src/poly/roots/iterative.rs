@@ -9,6 +9,8 @@ mod naive;
 pub use naive::naive;
 mod newton;
 pub use newton::{newton, Newton};
+mod halley;
+pub use halley::halley;
 
 pub enum DeflationStrategy {
     LongDivision,

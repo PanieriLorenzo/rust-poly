@@ -1,5 +1,5 @@
 
-# rust-poly
+# Rust Poly
 [<img alt="Crates.io" src="https://img.shields.io/crates/v/rust-poly">](https://crates.io/crates/rust-poly)
 
 Numeric manipulation of real and complex polynomials.
@@ -23,6 +23,7 @@ Future Goals:
 - [ ] Extremely fast polynomial evaluation
 (using parallelism and SIMD)
 - [ ] Fast fixed-size polynomials
+- [ ] More robust eigenvalue-based root finder using LAPACK bindings
 - [ ] Generating important polynomial sequences
     - [x] Chebyshev type 1 polynomials
     - [ ] Chebyshev type 2 polynomials
@@ -51,7 +52,6 @@ Future Goals:
 
 Non-Goals:
 - [ ] Symbolic polynomial manipulation (use a symbolic algebra crate)
-- [ ] LAPACK or BLAS integration (compiling shared libraries in a portable way is a pain and I don't want to do it. You're welcome to contribute)
 
 ## Contributing & Development
 
@@ -68,3 +68,10 @@ Parts of the source code are based on the [NumPy](https://github.com/numpy/numpy
 The `__utils/linalg.rs` module is based on the [Rulinalg](https://github.com/AtheMathmo/rulinalg) crate, used in accordance to the original license, see [licenses/rulinalg/LICENSE.md](licenses/rulinalg/LICENSE.md).
 
 The `poly/eval.rs` module is based on the [fast_polynomial](https://crates.io/crates/fast_polynomial) crate, used in accordance to the original license, see [licenses/fast_polynomial/LICENSE](licenses/fast_polynomial/LICENSE).
+
+## References
+- [Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728): Vestermark, Henrik. (2023). _Practical Implementation of Polynomial Root Finders._ DOI: 10.13140/RG.2.2.30423.34728.
+- [McNamee 2007 I](https://shop.elsevier.com/books/numerical-methods-for-roots-of-polynomials-part-i/mcnamee/978-0-444-52729-5): McNamee, J.M. _Numerical Methods for Roots of Polynomials - Part I._ ISBN: 978-0-444-52729-5.
+- [McNamee 2007 II](https://shop.elsevier.com/books/numerical-methods-for-roots-of-polynomials-part-ii/mcnamee/978-0-444-52730-1): McNamee, J.M. _Numerical Methods for Roots of Polynomials - Part II._ ISBN: 978-0-444-52730-1.
+- Lagouanelle 1966: Lagouanelle, J.L. (1966) _Sur Une Metode de Calcul de l’Ordre de Multiplicite des Zeros d’Un Polynome._ Comptes Rendus de l'Académie des Sciences, 262, 626-627.
+- [Madsen 1973](https://doi.org/10.1007/BF01933524): Madsen, K. (1973) _A root-finding algorithm based on Newton's method._ BIT 13, 71–75. DOI: 10.1007/BF01933524.

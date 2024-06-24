@@ -36,7 +36,7 @@ pub fn francis_qr<T: ScalarOps + RealField>(
 
     debug_assert!(poly.is_normalized());
     if poly.degree_raw() == 0 {
-        log::debug!("evaluations: {eval_counter}");
+        log::debug!("{{evaluations: {eval_counter}}}");
         return Ok(roots);
     }
 
@@ -83,7 +83,7 @@ pub fn francis_qr<T: ScalarOps + RealField>(
             }
             *poly = Poly::one();
             roots.extend(v);
-            log::debug!("evaluations: {eval_counter}");
+            log::debug!("{{evaluations: {eval_counter}}}");
             return Ok(roots);
         }
         Err(mut v) => {

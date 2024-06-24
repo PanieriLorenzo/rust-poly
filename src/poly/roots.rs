@@ -6,7 +6,7 @@ use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
 mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
-pub use iterative::{naive, newton, IterativeRootFinder, Newton};
+pub use iterative::{halley, naive, newton, IterativeRootFinder, Newton};
 
 mod initial_guess;
 mod multiroot;
