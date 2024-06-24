@@ -68,6 +68,14 @@ fn next_root<T: ScalarOps + RealField>(
     let mut guess_old = guess;
     let mut guess_old_old = guess;
     let mut guess_delta = Complex::one();
+
+    // number of iterations without improvements after which we assume we're in
+    // a cycle set it to a prime number to avoid meta-cycles forming
+    const CYCLE_COUNT_THRESHOLD: usize = 17;
+    let mut cycle_counter = 0;
+    let mut best_guess = guess;
+    let mut best_px_norm = guess.norm();
+
     let p_diff = poly.clone().diff();
 
     // until convergence
@@ -77,17 +85,42 @@ fn next_root<T: ScalarOps + RealField>(
 
         // stopping criterion 1: converged
         if px.norm() <= epsilon {
-            return Ok((vec![guess], eval_counter));
+            return Ok((vec![best_guess], eval_counter));
         }
 
         // stopping criterion 2: no improvement predicted due to numeric precision
         if i > 3 && super::stopping_criterion_garwick(guess, guess_old, guess_old_old) {
-            return Ok((vec![guess], eval_counter));
+            return Ok((vec![best_guess], eval_counter));
         }
 
         // max iter exceeded
         if max_iter.is_some_and(|max| i >= max) {
-            return Err(roots::Error::NoConverge(vec![guess]));
+            log::trace!("did not converge {{best_guess: {best_guess}, poly: {poly}}}");
+            return Err(roots::Error::NoConverge(vec![best_guess]));
+        }
+
+        // check for cycles
+        if px.norm() >= best_px_norm {
+            cycle_counter += 1;
+            if cycle_counter > CYCLE_COUNT_THRESHOLD {
+                cycle_counter = 0;
+                log::trace!("cycle detected, backing off {{current_guess: {guess}, best_guess: {best_guess}}}");
+                // arbitrary constants
+                const ROTATION_RADIANS: f64 = 0.9250245;
+                const SCALE: f64 = 5.0;
+                // TODO: when const trait methods are supported, this should be
+                //       made fully const.
+                let backoff = Complex::from_polar(
+                    T::from_f64(SCALE).expect("overflow"),
+                    T::from_f64(ROTATION_RADIANS).expect("overflow"),
+                );
+                // reverting to older base guess, but offset
+                guess = best_guess - guess_delta * backoff;
+            }
+        } else {
+            cycle_counter = 0;
+            best_guess = guess;
+            best_px_norm = px.norm();
         }
 
         let pdx = p_diff.eval_point(guess);
