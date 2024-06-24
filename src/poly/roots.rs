@@ -32,6 +32,85 @@ impl<T> Error<T> {
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
+/// Estimate root multiplicity using Lagouanelle 1966
+fn multiplicity_lagouanelle<T: Scalar>(
+    px: Complex<T>,
+    pdx: Complex<T>,
+    pddx: Complex<T>,
+) -> Complex<T> {
+    let pdx_2 = pdx * pdx;
+    pdx_2 / (pdx_2 - px * pddx)
+}
+
+/// Speed up convergence using Madsen 1973
+fn line_search_accelerate<T: ScalarOps>(
+    poly: &Poly<T>,
+    guess: Complex<T>,
+    delta: Complex<T>,
+) -> (Complex<T>, u128) {
+    let mut eval_count = 0;
+
+    let mut guess_best = guess - delta;
+    let mut px_best_norm = poly.eval_point(guess_best).norm();
+    eval_count += 1;
+    for p in 2..=poly.degree_raw() {
+        let step_size = T::from_usize(p).expect("overflow");
+        let guess_new = guess - delta.scale(step_size);
+        let px_new = poly.eval_point(guess_new);
+        eval_count += 1;
+        let px_new_norm = px_new.norm();
+
+        if px_new_norm >= px_best_norm {
+            // stop searching as soon as it stops improving
+            break;
+        }
+        log::trace!(
+            "accelerated {{step_size: \"{step_size:?}\", before: \"{guess_best:?}\", after: \"{guess_new:?}\"}}"
+        );
+        px_best_norm = px_new_norm;
+        guess_best = guess_new;
+    }
+
+    (guess_best, eval_count)
+}
+
+/// Slow down convergence using Madsen 1973
+fn line_search_decelerate<T: ScalarOps>(
+    poly: &Poly<T>,
+    guess: Complex<T>,
+    delta: Complex<T>,
+) -> (Complex<T>, u128) {
+    // arbitrary constants
+    const MAX_STEPS: u32 = 2;
+    const ROTATION_RADIANS: f64 = 0.6435011087932844 /* atan(0.75) */;
+    // TODO: when const trait methods are supported, this should be
+    //       made fully const.
+    let rotation = Complex::from_polar(T::one(), T::from_f64(ROTATION_RADIANS).expect("overflow"));
+
+    let mut eval_count = 0;
+
+    let mut delta_best = delta;
+    let mut px_best_norm = poly.eval_point(guess - delta_best).norm();
+    eval_count += 1;
+    for p in 1..=MAX_STEPS {
+        let step_size = T::from_i32(2i32.pow(p)).expect("overflow").recip();
+        let delta_new = delta.scale(step_size);
+        let guess_new = guess - delta_new;
+        let px_new = poly.eval_point(guess_new);
+        eval_count += 1;
+        let px_new_norm = px_new.norm();
+        if px_new_norm >= px_best_norm {
+            // stop searching as soon as it stops improving
+            return (guess_new, eval_count);
+        }
+        log::trace!("decelerated {{step_size: \"{step_size:?}\", after: \"{guess_new:?}\"}}");
+        px_best_norm = px_new_norm;
+        delta_best = delta_new;
+    }
+
+    (guess - delta_best * rotation, eval_count)
+}
+
 /// A think wrapper for facilitating access to root finder history
 ///
 /// Innermost vector is the history for a single root, outermost vector is the

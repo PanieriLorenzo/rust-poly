@@ -1,10 +1,12 @@
 use crate::{
     __util::{self, float::F64_PHI},
     num::{Complex, Float, Zero},
+    roots::{line_search_accelerate, line_search_decelerate},
     scalar::SafeConstants,
     Poly,
 };
 use na::{ComplexField, RealField};
+use num::One;
 
 use crate::{
     poly::roots::{self, FinderConfig, FinderState, RootFinder},
@@ -21,7 +23,7 @@ use super::IterativeRootFinder;
 /// also detect when it gets stuck in a local minimum or maximum and unstuck
 /// itself.
 ///
-/// This implementation was based on [Henrik Vestermark 2020](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
+/// This implementation was based on [Henrik Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
 pub fn newton<T: ScalarOps + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
@@ -41,7 +43,7 @@ pub fn newton<T: ScalarOps + RealField>(
 
         debug_assert!(poly.is_normalized());
         if poly.degree_raw() == 0 {
-            log::debug!("evaluations: {eval_counter}");
+            log::debug!("{{evaluations: {eval_counter}}}");
             return Ok(roots);
         }
 
@@ -65,7 +67,7 @@ fn next_root<T: ScalarOps + RealField>(
     let mut guess = initial_guess.unwrap_or_else(|| poly.initial_guess_smallest());
     let mut guess_old = guess;
     let mut guess_old_old = guess;
-    let mut guess_delta = Complex::large_safe();
+    let mut guess_delta = Complex::one();
     let p_diff = poly.clone().diff();
 
     // until convergence
@@ -104,11 +106,11 @@ fn next_root<T: ScalarOps + RealField>(
             // it "falls" towards the correct guess instead of jumping somewhere
             // else.
             if px_new.norm() > px.norm() {
-                let res = handle_overshoot(&poly, px_new, guess_new, guess, guess_delta);
+                let res = line_search_decelerate(&poly, guess, guess_delta);
                 guess_new = res.0;
                 eval_counter += res.1;
             } else {
-                let res = handle_multiplicity(&poly, px_new, guess_new, guess, guess_delta);
+                let res = line_search_accelerate(&poly, guess, guess_delta);
                 guess_new = res.0;
                 eval_counter += res.1;
             }
@@ -156,89 +158,6 @@ fn compute_delta<T: Scalar>(px: Complex<T>, pdx: Complex<T>, delta_old: Complex<
     }
 
     delta
-}
-
-/// Improve upon a newton step by exponentially reducing the step size in case
-/// of overshoot.
-///
-/// Takes:
-/// - `poly`: current polynomial
-/// - `px`: the polynomial evaluated at `guess`
-/// - `guess`: the current naive guess we want to improve, this should be
-///    equal to `guess_old` - `guess_delta`.
-/// - `guess_old`: the finalized guess from the previous iteration
-/// - `guess_delta`: the current naive newton step we want to improve.
-fn handle_overshoot<T: ScalarOps>(
-    poly: &Poly<T>,
-    px: Complex<T>,
-    guess: Complex<T>,
-    guess_old: Complex<T>,
-    guess_delta: Complex<T>,
-) -> (Complex<T>, u128) {
-    debug_assert_eq!(guess_old - guess_delta, guess);
-    let mut eval_counter = 0;
-
-    // this is arbitrary, originally chosen by Madsen.
-    const ROTATION_RADIANS: f64 = 0.9250245;
-    // TODO: when const trait methods are supported, this should be
-    //       made fully const.
-    let rotation = Complex::from_polar(T::one(), T::from_f64(ROTATION_RADIANS).expect("overflow"));
-
-    // how many times backoff is attempted
-    const BACKOFF_STEPS: u32 = 2;
-
-    let mut best_guess = guess;
-    let mut best_px_norm = px.norm();
-    for i in 0..BACKOFF_STEPS {
-        let backoff = T::from_u32(2u32.pow(i)).expect("overflow").recip();
-        let guess_new = guess_old - guess_delta.scale(backoff);
-        let px_new = poly.eval_point(guess_new);
-        eval_counter += 1;
-        let px_norm_new = px_new.norm();
-
-        if px_norm_new >= best_px_norm {
-            // we're not improving, quit early
-            return (best_guess, eval_counter);
-        }
-        best_guess = guess_new;
-        best_px_norm = px_norm_new;
-    }
-
-    // we succesfully decreased step size, we are probably on a saddle point,
-    // so we rotate the gradient to point away from the uphill of the saddle.
-    (best_guess * rotation, eval_counter)
-}
-
-/// Improve upon a naive newton guess by linearly increasing step size, this
-/// will automatically find the optimal step size for the current multiplicity,
-/// without having to explicitly compute the multiplicity.
-fn handle_multiplicity<T: ScalarOps>(
-    poly: &Poly<T>,
-    px: Complex<T>,
-    guess: Complex<T>,
-    guess_old: Complex<T>,
-    guess_delta: Complex<T>,
-) -> (Complex<T>, u128) {
-    let mut eval_counter = 0;
-    let mut best_guess = guess;
-    let mut best_px_norm = px.norm();
-
-    // multiplicity cannot be higher than the degree
-    for m in 1..poly.degree_raw() {
-        let step_size = T::from_usize(m).expect("overflow");
-        let guess_new = guess_old - guess_delta.scale(step_size);
-        let px_new = poly.eval_point(guess_new);
-        eval_counter += 1;
-        let px_norm_new = px_new.norm();
-
-        if px_norm_new >= best_px_norm {
-            // we're not improving, quit early
-            return (best_guess, eval_counter);
-        }
-        best_guess = guess_new;
-        best_px_norm = px_norm_new;
-    }
-    (best_guess, eval_counter)
 }
 
 /// Heuristic that tries to determine if the current guess is close enough to the
@@ -436,39 +355,82 @@ impl<T: ScalarOps + Float + RealField> IterativeRootFinder<T> for Newton<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::{poly::roots::RootFinder, Poly, __util::testing::check_roots};
+    use crate::__util::testing::check_roots;
 
-    use super::Newton;
+    use crate::num::One;
+
+    use crate::Poly64;
+
+    use super::newton;
 
     #[test]
-    fn newton_degree_3() {
-        // easy: only real roots
-        let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
-        let p = Poly::from_roots(&roots_expected);
-        let roots = Newton::from_poly(p)
-            .with_epsilon(1E-14)
-            .with_max_iter(100)
-            .roots()
-            .unwrap();
+    pub fn degree_0() {
+        let mut p = Poly64::one();
+        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        assert!(roots.is_empty());
+        assert!(p.is_one());
+    }
+
+    #[test]
+    fn degree_1() {
+        let roots_expected = vec![complex!(1.0)];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 
     #[test]
-    fn newton_degree_5() {
-        // medium: some conjugate roots
+    fn degree_2() {
+        let roots_expected = vec![complex!(1.0), complex!(2.0)];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
+    }
+
+    #[test]
+    fn degree_3() {
+        let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
+    }
+
+    #[test]
+    fn degree_3_complex() {
+        let roots_expected = vec![complex!(1.0), complex!(0.0, 1.0), complex!(0.0, -1.0)];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
+    }
+
+    #[test]
+    fn degree_5_multiplicity_3() {
         let roots_expected = vec![
             complex!(1.0),
             complex!(2.0),
+            complex!(2.0),
+            complex!(2.0),
             complex!(3.0),
-            complex!(0.0, -1.0),
-            complex!(0.0, 1.0),
         ];
-        let p = Poly::from_roots(&roots_expected);
-        let roots = Newton::from_poly(p)
-            .with_epsilon(1E-14)
-            .with_max_iter(100)
-            .roots()
-            .unwrap();
-        assert!(check_roots(roots, roots_expected, 1E-1));
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        assert!(
+            check_roots(roots.clone(), roots_expected, 1E-4),
+            "{roots:?}"
+        );
+    }
+
+    #[test]
+    fn degree_5_2_zeros() {
+        let roots_expected = vec![
+            complex!(0.0),
+            complex!(0.0),
+            complex!(1.0),
+            complex!(2.0),
+            complex!(3.0),
+        ];
+        let mut p = crate::Poly::from_roots(&roots_expected);
+        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        assert!(check_roots(roots, roots_expected, 1E-12));
     }
 }
