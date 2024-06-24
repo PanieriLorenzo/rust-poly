@@ -84,7 +84,7 @@ pub fn francis_qr<T: ScalarOps + RealField>(
             *poly = Poly::one();
             roots.extend(v);
             log::debug!("{{evaluations: {eval_counter}}}");
-            return Ok(roots);
+            Ok(roots)
         }
         Err(mut v) => {
             if needs_unshifting {
@@ -95,7 +95,7 @@ pub fn francis_qr<T: ScalarOps + RealField>(
             }
             // note that the roots in `roots` are clean, so we don't return
             // them in the error result
-            return Err(NoConverge(v));
+            Err(NoConverge(v))
         }
     }
 }

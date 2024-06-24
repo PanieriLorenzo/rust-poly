@@ -18,8 +18,8 @@
 
 use rust_poly::{
     __util::testing::{
-        check_roots, test_case_conj_roots, test_case_multiple_roots, test_case_roots,
-        RandStreamC64Cartesian, RandStreamC64Polar, RandStreamR64,
+        check_roots, test_case_multiple_roots, test_case_roots, RandStreamC64Cartesian,
+        RandStreamC64Polar, RandStreamR64,
     },
     roots::{halley, naive, newton},
 };

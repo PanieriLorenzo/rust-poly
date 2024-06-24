@@ -1,7 +1,9 @@
 use crate::{
     Poly, Scalar, ScalarOps,
-    __util::casting::{usize_to_f64, usize_to_i32, usize_to_u32},
-    __util::luts::factorial_lut,
+    __util::{
+        casting::{usize_to_f64, usize_to_i32, usize_to_u32},
+        luts::factorial_lut,
+    },
 };
 use num::{BigUint, FromPrimitive, Zero};
 

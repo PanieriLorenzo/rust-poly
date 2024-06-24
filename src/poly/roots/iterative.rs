@@ -8,7 +8,7 @@ use super::RootFinder;
 mod naive;
 pub use naive::naive;
 mod newton;
-pub use newton::{newton, Newton};
+pub use newton::newton;
 mod halley;
 pub use halley::halley;
 

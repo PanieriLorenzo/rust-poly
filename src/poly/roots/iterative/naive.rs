@@ -24,7 +24,7 @@ pub fn naive<T: ScalarOps + RealField>(
     let mut eval_counter = 0;
     let epsilon = epsilon.unwrap_or(T::tiny_safe());
     let mut roots = vec![];
-    let mut initial_guesses = initial_guesses.iter().cloned();
+    let mut initial_guesses = initial_guesses.iter().copied();
 
     // until we've found all roots
     loop {

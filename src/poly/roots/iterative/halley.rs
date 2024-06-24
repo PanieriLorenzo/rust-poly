@@ -3,11 +3,9 @@ use crate::{
     num::{Complex, One, Zero},
     poly::roots,
     roots::{line_search_accelerate, line_search_decelerate, multiplicity_lagouanelle},
-    scalar::SafeConstants,
     Poly, ScalarOps,
 };
 use na::RealField;
-use num::Num;
 
 /// Find all roots of a polynomial using a modified Halley's method.
 ///
@@ -21,7 +19,7 @@ pub fn halley<T: ScalarOps + RealField>(
     let mut eval_counter = 0;
     let epsilon = epsilon.unwrap_or(T::tiny_safe());
     let mut roots = vec![];
-    let mut initial_guesses = initial_guesses.iter().cloned();
+    let mut initial_guesses = initial_guesses.iter().copied();
 
     // until we've found all roots
     loop {
@@ -99,7 +97,7 @@ fn next_root<T: ScalarOps + RealField>(
                 cycle_counter = 0;
                 log::trace!("cycle detected, backing off {{current_guess: {guess}, best_guess: {best_guess}}}");
                 // arbitrary constants
-                const ROTATION_RADIANS: f64 = 0.9250245;
+                const ROTATION_RADIANS: f64 = 0.925_024_5;
                 const SCALE: f64 = 5.0;
                 // TODO: when const trait methods are supported, this should be
                 //       made fully const.
@@ -125,7 +123,7 @@ fn next_root<T: ScalarOps + RealField>(
             log::trace!("local minimum, backing off");
 
             // these are arbitrary, originally chosen by Madsen.
-            const ROTATION_RADIANS: f64 = 0.9250245;
+            const ROTATION_RADIANS: f64 = 0.925_024_5;
             const SCALE: f64 = 5.0;
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
@@ -146,7 +144,7 @@ fn next_root<T: ScalarOps + RealField>(
             log::trace!("exploding gradient, backing off");
 
             // these are arbitrary, originally chosen by Madsen.
-            const ROTATION_RADIANS: f64 = 0.9250245;
+            const ROTATION_RADIANS: f64 = 0.925_024_5;
             const SCALE: f64 = 5.0;
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
@@ -181,59 +179,10 @@ fn next_root<T: ScalarOps + RealField>(
     unreachable!()
 }
 
-/// Improve upon a newton step by exponentially reducing the step size in case
-/// of overshoot.
-///
-/// Takes:
-/// - `poly`: current polynomial
-/// - `px`: the polynomial evaluated at `guess`
-/// - `guess`: the current naive guess we want to improve, this should be
-///    equal to `guess_old` - `guess_delta`.
-/// - `guess_old`: the finalized guess from the previous iteration
-/// - `guess_delta`: the current naive newton step we want to improve.
-fn handle_overshoot<T: ScalarOps>(
-    poly: &Poly<T>,
-    px: Complex<T>,
-    guess: Complex<T>,
-    guess_old: Complex<T>,
-    guess_delta: Complex<T>,
-) -> (Complex<T>, u128) {
-    debug_assert_eq!(guess_old - guess_delta, guess);
-    let mut eval_counter = 0;
-
-    // this is arbitrary, originally chosen by Madsen.
-    const ROTATION_RADIANS: f64 = 0.9250245;
-    // TODO: when const trait methods are supported, this should be
-    //       made fully const.
-    let rotation = Complex::from_polar(T::one(), T::from_f64(ROTATION_RADIANS).expect("overflow"));
-
-    // how many times backoff is attempted
-    const BACKOFF_STEPS: u32 = 2;
-
-    let px_norm = px.norm();
-    for i in 0..BACKOFF_STEPS {
-        let backoff = T::from_u32(2u32.pow(i)).expect("overflow").recip();
-        let guess_new = guess_old - guess_delta.scale(backoff);
-        let px_new = poly.eval_point(guess_new);
-        eval_counter += 1;
-        let px_norm_new = px_new.norm();
-
-        if px_norm_new < px_norm {
-            // stop at first improvement
-            return (guess_new, eval_counter);
-        }
-    }
-
-    // we couldn't improve the guess, give up
-    (guess * rotation, eval_counter)
-}
-
 #[cfg(test)]
 mod test {
     use super::halley;
-    use crate::__util::testing::check_roots;
-    use crate::num::One;
-    use crate::Poly64;
+    use crate::{__util::testing::check_roots, num::One, Poly64};
 
     #[test]
     pub fn degree_0() {

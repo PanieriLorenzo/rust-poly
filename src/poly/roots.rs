@@ -1,12 +1,11 @@
+use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
 use na::{Complex, ComplexField, RealField};
 use num::{traits::real::Real, Float, FromPrimitive, One, Zero};
-
-use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
 
 mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
-pub use iterative::{halley, naive, newton, IterativeRootFinder, Newton};
+pub use iterative::{halley, naive, newton, IterativeRootFinder};
 
 mod initial_guess;
 mod multiroot;
@@ -82,7 +81,7 @@ fn line_search_decelerate<T: ScalarOps>(
 ) -> (Complex<T>, u128) {
     // arbitrary constants
     const MAX_STEPS: u32 = 2;
-    const ROTATION_RADIANS: f64 = 0.6435011087932844 /* atan(0.75) */;
+    const ROTATION_RADIANS: f64 = 0.643_501_108_793_284_4 /* atan(0.75) */;
     // TODO: when const trait methods are supported, this should be
     //       made fully const.
     let rotation = Complex::from_polar(T::one(), T::from_f64(ROTATION_RADIANS).expect("overflow"));
@@ -364,26 +363,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
         debug_assert!(self.is_normalized());
-
-        // trivial cases
-        match self.degree_raw() {
-            0 => return Ok(vec![]),
-            1 => return Ok(self.clone().linear()),
-            2 => return Ok(self.clone().quadratic()),
-            _ => {}
-        }
-
-        let mut finder = FrancisQR::from_poly(self.clone())
-            .with_epsilon(epsilon)
-            .with_max_iter(max_iter)
-            .with_companion_matrix_type(eigenvalue::CompanionMatrixType::Schmeisser);
-
-        let _ = finder.run();
-
-        Newton::from_root_finder(finder, true)
-            .with_epsilon(epsilon)
-            .with_max_iter(max_iter)
-            .roots()
+        newton(&mut self.clone(), Some(epsilon), Some(max_iter), &[])
     }
 }
 

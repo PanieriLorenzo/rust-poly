@@ -83,7 +83,7 @@ pub trait EigenvalueRootFinder<T: ScalarOps + RealField>: RootFinder<T> {
                 self.state_mut().poly.make_monic();
                 self.eigen_state_mut().matrix = Some(self.state().poly.companion());
                 if let Some(m) = self.eigen_state_mut().matrix.as_mut() {
-                    m.transpose_mut()
+                    m.transpose_mut();
                 }
             }
             CompanionMatrixType::FrobeniusRotated => {
