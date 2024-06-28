@@ -2,7 +2,9 @@ use crate::{
     __util,
     num::{Complex, One, Zero},
     poly::roots,
-    roots::{line_search_accelerate, line_search_decelerate, multiplicity_lagouanelle},
+    roots::{
+        line_search_accelerate, line_search_decelerate, multiplicity_lagouanelle, LazyDerivatives,
+    },
     Poly, ScalarOps,
 };
 use na::RealField;
@@ -67,8 +69,7 @@ fn next_root<T: ScalarOps + RealField>(
     let mut best_guess = guess;
     let mut best_px_norm = guess.norm();
 
-    let p_diff = poly.clone().diff();
-    let p_diff2 = p_diff.clone().diff();
+    let mut diffs = LazyDerivatives::new(poly);
 
     // until convergence
     for i in __util::iterator::saturating_counter() {
@@ -114,8 +115,8 @@ fn next_root<T: ScalarOps + RealField>(
             best_px_norm = px.norm();
         }
 
-        let pdx = p_diff.eval_point(guess);
-        let pddx = p_diff2.eval_point(guess);
+        let pdx = diffs.get_nth_derivative(1).eval_point(guess);
+        let pddx = diffs.get_nth_derivative(2).eval_point(guess);
         eval_counter += 2;
         let denom = (pdx * pdx).scale(T::from_u8(2).expect("overflow")) - px * pddx;
 

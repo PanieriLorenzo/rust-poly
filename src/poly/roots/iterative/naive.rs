@@ -2,6 +2,7 @@ use crate::{
     __util,
     num::{Complex, Zero},
     poly::roots,
+    roots::LazyDerivatives,
     Poly, ScalarOps,
 };
 use na::RealField;
@@ -63,7 +64,7 @@ fn next_root<T: ScalarOps + RealField>(
     let mut guess = initial_guess.unwrap_or_else(|| poly.initial_guess_smallest());
     let mut guess_old = guess;
     let mut guess_old_old = guess;
-    let p_diff = poly.clone().diff();
+    let mut diffs = LazyDerivatives::new(poly);
 
     // until convergence
     for i in __util::iterator::saturating_counter() {
@@ -85,7 +86,7 @@ fn next_root<T: ScalarOps + RealField>(
         }
 
         eval_counter += 1;
-        let pdx = p_diff.eval_point(guess);
+        let pdx = diffs.get_nth_derivative(1).eval_point(guess);
 
         // got stuck at local minimum
         if pdx.is_zero() {
@@ -103,13 +104,10 @@ fn next_root<T: ScalarOps + RealField>(
 
 #[cfg(test)]
 mod test {
-    use crate::__util::testing::check_roots;
-
-    use crate::num::One;
-
-    use crate::Poly64;
-
     use super::naive;
+    use crate::__util::testing::check_roots;
+    use crate::num::One;
+    use crate::Poly64;
 
     #[test]
     pub fn degree_0() {

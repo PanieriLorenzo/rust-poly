@@ -31,6 +31,47 @@ impl<T> Error<T> {
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
+/// This struct lazily computes derivatives upon request, so that they are only
+/// used by methods that require them.
+///
+/// Many methods use derivatives, but they don't always need to compute them.
+/// For ease of implementation, all methods that require derivatives can use
+/// this one type.
+pub(crate) struct LazyDerivatives<'a, T: Scalar> {
+    zeroth: &'a Poly<T>,
+    first_and_higher: Vec<Poly<T>>,
+}
+
+impl<'a, T: Scalar> LazyDerivatives<'a, T> {
+    pub fn new(poly: &'a Poly<T>) -> Self {
+        Self {
+            zeroth: poly,
+            first_and_higher: vec![],
+        }
+    }
+
+    pub fn get_nth_derivative(&mut self, n: usize) -> &Poly<T> {
+        if n == 0 {
+            return self.zeroth;
+        }
+
+        if self.first_and_higher.is_empty() {
+            self.first_and_higher.push(self.zeroth.clone().diff());
+        }
+
+        for _ in self.first_and_higher.len()..n {
+            let next_diff = self
+                .first_and_higher
+                .last()
+                .expect("infallible")
+                .clone()
+                .diff();
+            self.first_and_higher.push(next_diff);
+        }
+        &self.first_and_higher[n - 1]
+    }
+}
+
 /// Estimate root multiplicity using Lagouanelle 1966
 fn multiplicity_lagouanelle<T: Scalar>(
     px: Complex<T>,
@@ -454,6 +495,8 @@ mod test {
 
     use crate::Poly64;
 
+    use super::LazyDerivatives;
+
     #[test]
     fn initial_guess_smallest() {
         assert!(
@@ -473,5 +516,37 @@ mod test {
         assert!((roots[0].im().abs() - 0.866).abs() < 0.01);
         assert!((roots[1].re() - -1.5).abs() < 0.01);
         assert!((roots[1].im().abs() - 0.866).abs() < 0.01);
+    }
+
+    #[test]
+    fn lazy_derivative() {
+        let poly = poly![1.0, 2.0, 3.0, 4.0];
+        let mut lazy = LazyDerivatives::new(&poly);
+        assert_eq!(*lazy.get_nth_derivative(0), poly![1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(lazy.first_and_higher.len(), 0);
+        assert_eq!(*lazy.get_nth_derivative(1), poly![2.0, 6.0, 12.0]);
+        assert_eq!(lazy.first_and_higher.len(), 1);
+        assert_eq!(*lazy.get_nth_derivative(2), poly![6.0, 24.0]);
+        assert_eq!(lazy.first_and_higher.len(), 2);
+        assert_eq!(*lazy.get_nth_derivative(3), poly![24.0]);
+        assert_eq!(lazy.first_and_higher.len(), 3);
+        assert_eq!(*lazy.get_nth_derivative(4), poly![0.0]);
+        assert_eq!(lazy.first_and_higher.len(), 4);
+    }
+
+    #[test]
+    fn lazy_derivative_out_of_order() {
+        let poly = poly![1.0, 2.0, 3.0, 4.0];
+        let mut lazy = LazyDerivatives::new(&poly);
+        assert_eq!(*lazy.get_nth_derivative(2), poly![6.0, 24.0]);
+        assert_eq!(lazy.first_and_higher.len(), 2);
+        assert_eq!(*lazy.get_nth_derivative(0), poly![1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(lazy.first_and_higher.len(), 2);
+        assert_eq!(*lazy.get_nth_derivative(3), poly![24.0]);
+        assert_eq!(lazy.first_and_higher.len(), 3);
+        assert_eq!(*lazy.get_nth_derivative(4), poly![0.0]);
+        assert_eq!(lazy.first_and_higher.len(), 4);
+        assert_eq!(*lazy.get_nth_derivative(1), poly![2.0, 6.0, 12.0]);
+        assert_eq!(lazy.first_and_higher.len(), 4);
     }
 }
