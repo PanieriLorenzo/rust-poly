@@ -91,12 +91,12 @@ fn line_search_accelerate<T: ScalarOps>(
     let mut eval_count = 0;
 
     let mut guess_best = guess - delta;
-    let mut px_best_norm = poly.eval_point(guess_best).norm();
+    let mut px_best_norm = poly.eval(guess_best).norm();
     eval_count += 1;
     for p in 2..=poly.degree_raw() {
         let step_size = T::from_usize(p).expect("overflow");
         let guess_new = guess - delta.scale(step_size);
-        let px_new = poly.eval_point(guess_new);
+        let px_new = poly.eval(guess_new);
         eval_count += 1;
         let px_new_norm = px_new.norm();
 
@@ -130,13 +130,13 @@ fn line_search_decelerate<T: ScalarOps>(
     let mut eval_count = 0;
 
     let mut delta_best = delta;
-    let mut px_best_norm = poly.eval_point(guess - delta_best).norm();
+    let mut px_best_norm = poly.eval(guess - delta_best).norm();
     eval_count += 1;
     for p in 1..=MAX_STEPS {
         let step_size = T::from_i32(2i32.pow(p)).expect("overflow").recip();
         let delta_new = delta.scale(step_size);
         let guess_new = guess - delta_new;
-        let px_new = poly.eval_point(guess_new);
+        let px_new = poly.eval(guess_new);
         eval_count += 1;
         let px_new_norm = px_new.norm();
         if px_new_norm >= px_best_norm {
@@ -416,7 +416,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 
         let mut roots = vec![];
         for _ in 0..self.degree_raw() {
-            if self.eval_point(Complex::zero()).norm() < epsilon {
+            if self.eval(Complex::zero()).norm() < epsilon {
                 eval_counter += 1;
                 roots.push(Complex::zero());
                 // TODO: deflating zero roots can be accomplished simply by shifting

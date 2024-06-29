@@ -292,20 +292,12 @@ impl<T: Scalar + PartialOrd> Poly<T> {
 impl<T: ScalarOps> Poly<T> {
     /// Evaluate the polynomial for each entry of a matrix.
     #[must_use]
-    pub fn eval(
-        &self,
-        x: na::DMatrixView<Complex<T>>, /*&na::DMatrix<Complex<T>>*/
-    ) -> na::DMatrix<Complex<T>> {
+    pub fn eval_multiple(&self, points: &mut [Complex<T>]) {
         debug_assert!(self.is_normalized());
-        // TODO: this is kinda slow...
-        //       instead, implement it like eval_point but using SIMD
-        let mut c0: na::DMatrix<_> =
-            na::DMatrix::<_>::from_element(x.nrows(), x.ncols(), self.last());
-        for i in 2..=self.len_raw() {
-            c0 = c0.clone() * x;
-            c0.apply(|c| *c += &self.0[self.len_raw() - i]);
+
+        for x in points {
+            *x = self.eval(x.clone());
         }
-        c0
     }
 
     /// Evaluate the polynomial at a single value of `x`.
@@ -318,7 +310,7 @@ impl<T: ScalarOps> Poly<T> {
     /// let x = Complex::new(1.0, 0.0);
     /// assert_eq!(p.eval_point(x), Complex::new(6.0, 0.0));
     /// ```
-    pub fn eval_point(&self, x: Complex<T>) -> Complex<T> {
+    pub fn eval(&self, x: Complex<T>) -> Complex<T> {
         // use Horner's method: https://en.wikipedia.org/wiki/Horner%27s_method
         // in theory, Estrin's method is more parallelizable, but benchmarking
         // against fast_polynomial crate shows no significant difference, this

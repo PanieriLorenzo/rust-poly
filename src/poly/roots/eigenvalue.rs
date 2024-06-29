@@ -156,7 +156,7 @@ fn schmeisser<T: ScalarOps + Float + RealField>(
             f_ip1 = f_ip2;
         }
 
-        qs.push(-q.eval_point(Complex::zero()));
+        qs.push(-q.eval(Complex::zero()));
     }
 
     ensure!(
@@ -164,7 +164,7 @@ fn schmeisser<T: ScalarOps + Float + RealField>(
         "cannot compute Schmeisser companion matrix due to pathological input"
     );
 
-    qs.push(-f_i.eval_point(Complex::zero()));
+    qs.push(-f_i.eval(Complex::zero()));
 
     let mut t = DMatrix::from_diagonal(&DVector::from(qs));
     set_subdiagonal(&mut t.as_view_mut(), 1, &cs);

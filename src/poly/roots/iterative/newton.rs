@@ -73,7 +73,7 @@ fn next_root<T: ScalarOps + RealField>(
 
     // until convergence
     for i in __util::iterator::saturating_counter() {
-        let px = poly.eval_point(guess);
+        let px = poly.eval(guess);
         eval_counter += 1;
 
         // stopping criterion 1: converged
@@ -116,15 +116,15 @@ fn next_root<T: ScalarOps + RealField>(
             best_px_norm = px.norm();
         }
 
-        let pdx = diffs.get_nth_derivative(1).eval_point(guess);
+        let pdx = diffs.get_nth_derivative(1).eval(guess);
         eval_counter += 1;
 
         guess_delta = compute_delta(px, pdx, guess_delta);
 
         // naive newton step, we're gonna improve this.
         let mut guess_new = guess - guess_delta;
-        let px_new = poly.eval_point(guess_new);
-        let pdx_new = diffs.get_nth_derivative(1).eval_point(guess_new);
+        let px_new = poly.eval(guess_new);
+        let pdx_new = diffs.get_nth_derivative(1).eval(guess_new);
 
         if !check_will_converge(guess_new, guess, px_new, pdx_new, pdx) {
             // if the current guess isn't captured, we adjust our guess more

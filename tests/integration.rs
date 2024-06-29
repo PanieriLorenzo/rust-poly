@@ -18,7 +18,7 @@ fn zero_polynomial_properties() {
     assert!(poly![1.0, 2.0, 3.0].checked_div(&zp).is_none());
 
     // should yield zero everywhere
-    assert_eq!(zp.eval_point(complex!(100.0, -100.0)), complex!(0.0, 0.0));
+    assert_eq!(zp.eval(complex!(100.0, -100.0)), complex!(0.0, 0.0));
 
     // composition with any polynomial should yield zero
     assert_eq!(zp.clone().compose(poly![1.0, 2.0, 3.0]), zp);

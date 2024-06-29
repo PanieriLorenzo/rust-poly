@@ -73,7 +73,7 @@ fn next_root<T: ScalarOps + RealField>(
 
     // until convergence
     for i in __util::iterator::saturating_counter() {
-        let px = poly.eval_point(guess);
+        let px = poly.eval(guess);
         log::trace!("{{current_guess: {guess}, error: {}}}", px.norm());
 
         // stopping criterion 1: converged
@@ -115,8 +115,8 @@ fn next_root<T: ScalarOps + RealField>(
             best_px_norm = px.norm();
         }
 
-        let pdx = diffs.get_nth_derivative(1).eval_point(guess);
-        let pddx = diffs.get_nth_derivative(2).eval_point(guess);
+        let pdx = diffs.get_nth_derivative(1).eval(guess);
+        let pddx = diffs.get_nth_derivative(2).eval(guess);
         eval_counter += 2;
         let denom = (pdx * pdx).scale(T::from_u8(2).expect("overflow")) - px * pddx;
 
@@ -160,7 +160,7 @@ fn next_root<T: ScalarOps + RealField>(
         };
 
         eval_counter += 1;
-        let guess_new = if poly.eval_point(guess - guess_delta).norm() >= px.norm() {
+        let guess_new = if poly.eval(guess - guess_delta).norm() >= px.norm() {
             log::trace!("overshooting, shortening step");
             let res = line_search_decelerate(poly, guess, guess_delta);
             eval_counter += res.1;

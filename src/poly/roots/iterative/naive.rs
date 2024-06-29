@@ -68,7 +68,7 @@ fn next_root<T: ScalarOps + RealField>(
 
     // until convergence
     for i in __util::iterator::saturating_counter() {
-        let px = poly.eval_point(guess);
+        let px = poly.eval(guess);
 
         // stopping criterion 1: converged
         if px.norm() <= epsilon {
@@ -86,7 +86,7 @@ fn next_root<T: ScalarOps + RealField>(
         }
 
         eval_counter += 1;
-        let pdx = diffs.get_nth_derivative(1).eval_point(guess);
+        let pdx = diffs.get_nth_derivative(1).eval(guess);
 
         // got stuck at local minimum
         if pdx.is_zero() {

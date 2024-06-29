@@ -12,8 +12,8 @@ impl<T: ScalarOps + Float> Poly<T> {
 
         let small = Float::recip(T::from_u16(1_000).expect("overflow"));
         let p_diff = self.clone().diff();
-        let mut pz = self.eval_point(Complex::zero());
-        let mut pdz = p_diff.eval_point(Complex::zero());
+        let mut pz = self.eval(Complex::zero());
+        let mut pdz = p_diff.eval(Complex::zero());
 
         // avoid divide by zero
         if pdz.norm() < small {
