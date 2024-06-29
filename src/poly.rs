@@ -290,13 +290,14 @@ impl<T: Scalar + PartialOrd> Poly<T> {
 }
 
 impl<T: ScalarOps> Poly<T> {
-    /// Evaluate the polynomial for each entry of a matrix.
+    /// Evaluate the polynomial for each entry of a slice.
     #[must_use]
-    pub fn eval_multiple(&self, points: &mut [Complex<T>]) {
+    pub fn eval_multiple(&self, points: &[Complex<T>], out: &mut [Complex<T>]) {
         debug_assert!(self.is_normalized());
 
-        for x in points {
-            *x = self.eval(x.clone());
+        // TODO: parallelize this loop
+        for (y, x) in out.iter_mut().zip(points) {
+            *y = self.eval(x.clone());
         }
     }
 
