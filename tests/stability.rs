@@ -16,12 +16,13 @@
 //! necessary to achieve that, and to some extent what epsilon is necessary to
 //! achieve at least 0.1 validation error.
 
+use num::{complex::Complex64, Zero};
 use rust_poly::{
     __util::testing::{
         check_roots, test_case_multiple_roots, test_case_roots, RandStreamC64Cartesian,
         RandStreamC64Polar, RandStreamR64,
     },
-    roots::{halley, naive, newton},
+    roots::{aberth_ehrlich, halley, initial_guesses_random, naive, newton},
 };
 
 const LOG_LEVEL: log::Level = log::Level::Warn;
@@ -74,6 +75,24 @@ fn halley_real() {
         );
     }
 }
+
+// #[test]
+// fn aberth_real() {
+//     test_setup();
+//     let mut roots_stream = RandStreamR64::new(1, -2.0, 2.0);
+//     let mut scale_stream = RandStreamR64::new(2, 1.0, 10.0);
+//     for i in 0..1000 {
+//         const DEGREE: usize = 5;
+//         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, DEGREE);
+//         let mut guesses = [Complex64::zero(); DEGREE];
+//         initial_guesses_random(&poly, 1, &mut guesses);
+//         let roots = aberth_ehrlich(&mut poly.clone(), Some(1E-11), Some(50), &guesses).unwrap();
+//         assert!(
+//             check_roots(roots.clone(), expected_roots.clone(), 0.1),
+//             "@ {i}: {roots:?} != {expected_roots:?}",
+//         );
+//     }
+// }
 
 #[test]
 fn naive_real_multiplicity_1() {

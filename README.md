@@ -70,8 +70,11 @@ The `__utils/linalg.rs` module is based on the [Rulinalg](https://github.com/Ath
 The `poly/eval.rs` module is based on the [fast_polynomial](https://crates.io/crates/fast_polynomial) crate, used in accordance to the original license, see [licenses/fast_polynomial/LICENSE](licenses/fast_polynomial/LICENSE).
 
 ## References
-- [Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728): Vestermark, Henrik. (2023). _Practical Implementation of Polynomial Root Finders._ DOI: 10.13140/RG.2.2.30423.34728.
-- [McNamee 2007 I](https://shop.elsevier.com/books/numerical-methods-for-roots-of-polynomials-part-i/mcnamee/978-0-444-52729-5): McNamee, J.M. _Numerical Methods for Roots of Polynomials - Part I._ ISBN: 978-0-444-52729-5.
-- [McNamee 2007 II](https://shop.elsevier.com/books/numerical-methods-for-roots-of-polynomials-part-ii/mcnamee/978-0-444-52730-1): McNamee, J.M. _Numerical Methods for Roots of Polynomials - Part II._ ISBN: 978-0-444-52730-1.
-- Lagouanelle 1966: Lagouanelle, J.L. (1966) _Sur Une Metode de Calcul de l’Ordre de Multiplicite des Zeros d’Un Polynome._ Comptes Rendus de l'Académie des Sciences, 262, 626-627.
-- [Madsen 1973](https://doi.org/10.1007/BF01933524): Madsen, K. (1973) _A root-finding algorithm based on Newton's method._ BIT 13, 71–75. DOI: 10.1007/BF01933524.
+- \[[Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728)\]: Vestermark, Henrik. (2023). _Practical Implementation of Polynomial Root Finders._ DOI: 10.13140/RG.2.2.30423.34728.
+- \[[McNamee 2005](https://www.researchgate.net/publication/228745231_A_comparison_of_a_priori_bounds_on_real_or_complex_roots_of_polynomials)\] Mcnamee, J. and Olhovsky M. (2005) _A comparison of a priori bounds on (real or complex) roots of polynomials._
+- \[[McNamee 2007 I](https://shop.elsevier.com/books/numerical-methods-for-roots-of-polynomials-part-i/mcnamee/978-0-444-52729-5)\]: McNamee, J.M. _Numerical Methods for Roots of Polynomials - Part I._ ISBN: 978-0-444-52729-5.
+- \[[McNamee 2007 II](https://shop.elsevier.com/books/numerical-methods-for-roots-of-polynomials-part-ii/mcnamee/978-0-444-52730-1)\]: McNamee, J.M. _Numerical Methods for Roots of Polynomials - Part II._ ISBN: 978-0-444-52730-1.
+- \[Lagouanelle 1966\]: Lagouanelle, J.L. (1966) _Sur Une Metode de Calcul de l’Ordre de Multiplicite des Zeros d’Un Polynome._ Comptes Rendus de l'Académie des Sciences, 262, 626-627.
+- \[[Madsen 1973](https://doi.org/10.1007/BF01933524)\]: Madsen, K. (1973) _A root-finding algorithm based on Newton's method._ BIT 13, 71–75. DOI: 10.1007/BF01933524.
+- \[[Bini 1996](https://doi.org/10.1007/BF02207694)\]: Bini, D. A. (1996) _Numerical computation of polynomial zeros by means of Aberth’s method._ Numer Algor, vol. 13, no. 2, pp. 179–200. DOI: 10.1007/BF02207694.
+

@@ -6,9 +6,11 @@ mod eigenvalue;
 pub use eigenvalue::{EigenvalueRootFinder, FrancisQR};
 mod iterative;
 pub use iterative::{halley, naive, newton, IterativeRootFinder};
+mod multiroot;
+pub use multiroot::aberth_ehrlich;
 
 mod initial_guess;
-mod multiroot;
+pub use initial_guess::initial_guesses_random;
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]

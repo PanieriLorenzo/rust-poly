@@ -105,6 +105,10 @@ impl<T: Scalar> Poly<T> {
         self.0[self.len_raw() - 1]
     }
 
+    pub(crate) fn is_monic(&self) -> bool {
+        self.last().is_one()
+    }
+
     /// Make the polynomial monic in-place.
     ///
     /// Monic polynomials are scaled such that the last coefficient is 1, and

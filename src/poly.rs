@@ -291,7 +291,6 @@ impl<T: Scalar + PartialOrd> Poly<T> {
 
 impl<T: ScalarOps> Poly<T> {
     /// Evaluate the polynomial for each entry of a slice.
-    #[must_use]
     pub fn eval_multiple(&self, points: &[Complex<T>], out: &mut [Complex<T>]) {
         debug_assert!(self.is_normalized());
 
