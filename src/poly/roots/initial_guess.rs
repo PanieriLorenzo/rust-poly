@@ -52,10 +52,11 @@ impl<T: ScalarOps + Float> Poly<T> {
     }
 }
 
-pub fn initial_guesses_random<T: Scalar>(poly: &Poly<T>, seed: u64, out: &mut [Complex<T>]) {
+pub fn initial_guesses_random<T: Scalar>(mut poly: Poly<T>, seed: u64, out: &mut [Complex<T>]) {
+    poly.make_monic();
     let mut rng = fastrand::Rng::with_seed(seed);
-    let low = lower_bound(poly).to_f64().expect("overflow");
-    let high = upper_bound(poly).to_f64().expect("overflow");
+    let low = lower_bound(&poly).to_f64().expect("overflow");
+    let high = upper_bound(&poly).to_f64().expect("overflow");
     let span = high - low;
     for y in out {
         let radius = T::from_f64(rng.f64() * span + low).expect("overflow");

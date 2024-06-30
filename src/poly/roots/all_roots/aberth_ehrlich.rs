@@ -1,9 +1,11 @@
+use na::RealField;
+
 use crate::{
     num::{Complex, One, Zero},
     roots, Poly, Scalar, ScalarOps, __util,
 };
 
-pub fn aberth_ehrlich<T: ScalarOps>(
+pub fn aberth_ehrlich<T: ScalarOps + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -16,6 +18,16 @@ pub fn aberth_ehrlich<T: ScalarOps>(
         "you must provide one distinct initial guess per root"
     );
 
+    let epsilon = epsilon.unwrap_or(T::tiny_safe());
+    let trivial_roots = poly.trivial_roots(epsilon).0;
+
+    debug_assert!(poly.is_normalized());
+    if poly.degree_raw() == 0 {
+        return Ok(trivial_roots);
+    }
+
+    poly.make_monic();
+
     let n = poly.degree_raw();
     for i in 0..n {
         for j in 0..n {
@@ -23,13 +35,13 @@ pub fn aberth_ehrlich<T: ScalarOps>(
                 continue;
             }
             assert!(
-                (initial_guesses[i] - initial_guesses[j]).norm() > epsilon.unwrap_or(T::zero()),
+                (initial_guesses[i] - initial_guesses[j]).norm() > T::zero(),
                 "initial guesses must be distinct"
             )
         }
     }
 
-    let mut points = Vec::from(initial_guesses);
+    let mut points = Vec::from(&initial_guesses[..n]);
     let mut alphas_buff = vec![Complex::<T>::zero(); n];
     let mut betas_buff = vec![Complex::<T>::zero(); n];
 
@@ -52,10 +64,7 @@ pub fn aberth_ehrlich<T: ScalarOps>(
         }
 
         // stopping criteria
-        if deltas_buff
-            .iter()
-            .all(|d| d.norm() <= epsilon.unwrap_or(T::zero()))
-        {
+        if deltas_buff.iter().all(|d| d.norm() <= epsilon) {
             return Ok(points);
         }
     }
@@ -140,7 +149,7 @@ mod test {
         let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 3];
-        initial_guesses_random(&p, 1, &mut guesses);
+        initial_guesses_random(p.clone(), 1, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-14), Some(100), &guesses).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
@@ -150,7 +159,7 @@ mod test {
         let roots_expected = vec![complex!(1.0), complex!(0.0, 1.0), complex!(0.0, -1.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 3];
-        initial_guesses_random(&p, 1, &mut guesses);
+        initial_guesses_random(p.clone(), 1, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-14), Some(100), &guesses).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
@@ -166,7 +175,7 @@ mod test {
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 5];
-        initial_guesses_random(&p, 1, &mut guesses);
+        initial_guesses_random(p.clone(), 1, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-5), Some(100), &guesses).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-4),
