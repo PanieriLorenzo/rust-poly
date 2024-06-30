@@ -68,8 +68,23 @@ pub fn initial_guesses_random<T: Scalar>(mut poly: Poly<T>, seed: u64, out: &mut
 /// Equidistant points around a circle.
 ///
 /// The bias parameter controls the radius of the circle. A bias of 0 means the
-/// lower bound is used, whereas a bias of 1 means the upper bound is used.
-pub fn initial_guesses_circle<T: Scalar>(poly: &Poly<T>, bias: T, out: &mut [Complex<T>]) {
+/// lower bound is used, whereas a bias of 1 means the upper bound is used. This
+/// parameter can be extrapolated.
+///
+/// The perturbation parameter controls the amount of randomization. At 0 no
+/// randomization is applied. At 1, the radius is picked uniformly between the
+/// lower bound and upper bound, and the angle has a uniform random offset of
+/// `pi / n_odd` where `n_odd` is the degree of the polynomial, rounded up to
+/// the next odd number. In essence, the annulus that contains all the roots is
+/// partitioned into equal slices and then a guess is picked at random in each
+/// of these slices. This parameter can be extrapolated above 1.
+pub fn initial_guesses_circle<T: Scalar>(
+    poly: &Poly<T>,
+    bias: T,
+    seed: u64,
+    perturbation: T,
+    out: &mut [Complex<T>],
+) {
     let n = out.len();
 
     // ensuring n is odd makes the points always asymmetrical, even with even
@@ -77,11 +92,20 @@ pub fn initial_guesses_circle<T: Scalar>(poly: &Poly<T>, bias: T, out: &mut [Com
     // guesses are symmetrical.
     let n_odd = if n % 2 == 0 { n + 1 } else { n };
 
+    let mut rng = fastrand::Rng::with_seed(seed);
     let angle_increment = std::f64::consts::TAU / (n_odd as f64);
-    let radius = upper_bound(poly) * bias + lower_bound(poly) * (T::one() - bias);
+    let low = lower_bound(poly);
+    let high = upper_bound(poly);
+    let span = high - low;
+    let radius = high * bias + low * (T::one() - bias);
     let mut angle_accumulator = 0.0;
     for y in out {
-        *y = Complex::from_polar(radius, T::from_f64(angle_accumulator).expect("overflow"));
+        let angle = T::from_f64(angle_accumulator).expect("overflow")
+            + T::from_f64(rng.f64() * angle_increment - angle_increment / 2.0).expect("overflow")
+                * perturbation;
+        let radius = radius * (T::one() - perturbation)
+            + (T::from_f64(rng.f64()).expect("overflow") * span + low) * perturbation;
+        *y = Complex::from_polar(radius, angle);
         angle_accumulator += angle_increment;
     }
 }

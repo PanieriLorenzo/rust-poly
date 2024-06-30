@@ -2,7 +2,8 @@ use na::RealField;
 
 use crate::{
     num::{Complex, One, Zero},
-    roots, Poly, Scalar, ScalarOps, __util,
+    roots::{self, initial_guess::initial_guesses_circle},
+    Poly, Scalar, ScalarOps, __util,
 };
 
 pub fn aberth_ehrlich<T: ScalarOps + RealField>(
@@ -12,11 +13,6 @@ pub fn aberth_ehrlich<T: ScalarOps + RealField>(
     initial_guesses: &[Complex<T>],
 ) -> roots::Result<T> {
     debug_assert!(poly.is_normalized());
-    assert_eq!(
-        poly.degree_raw(),
-        initial_guesses.len(),
-        "you must provide one distinct initial guess per root"
-    );
 
     let epsilon = epsilon.unwrap_or(T::tiny_safe());
     let trivial_roots = poly.trivial_roots(epsilon).0;
@@ -27,6 +23,28 @@ pub fn aberth_ehrlich<T: ScalarOps + RealField>(
     }
 
     poly.make_monic();
+
+    // fill remaining initial guesses
+    // TODO: this should be factored out to a separate function
+    let initial_guesses = {
+        let mut complete_initial_guesses = Vec::with_capacity(poly.degree_raw());
+        for z in initial_guesses {
+            complete_initial_guesses.push(*z);
+        }
+        let remaining_guesses_delta = poly.degree_raw() - complete_initial_guesses.len();
+        let mut remaining_guesses = vec![Complex::zero(); remaining_guesses_delta];
+        initial_guesses_circle(
+            poly,
+            T::from_f64(0.5).expect("overflow"),
+            1,
+            T::from_f64(0.5).expect("overflow"),
+            &mut remaining_guesses,
+        );
+        for z in remaining_guesses.drain(..) {
+            complete_initial_guesses.push(z);
+        }
+        complete_initial_guesses
+    };
 
     let n = poly.degree_raw();
     for i in 0..n {
@@ -199,7 +217,7 @@ mod test {
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 10];
-        initial_guesses_circle(&p, 0.5, &mut guesses);
+        initial_guesses_circle(&p, 0.5, 1, 0.5, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-5), Some(100), &guesses).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-4),
