@@ -68,38 +68,6 @@ impl<T: Scalar> Poly<T> {
         ret
     }
 
-    // TODO: move this somewhere else, it's not a "base" algorithm
-    pub(crate) fn companion(&self) -> na::DMatrix<Complex<T>> {
-        // invariant: poly is normalized
-        debug_assert!(self.is_normalized());
-
-        // pre-condition: poly has degree 1 or more
-        assert!(
-            self.degree_raw() >= 1,
-            "polynomials of degree 0 or less do not have a companion matrix"
-        );
-
-        if self.len_raw() == 2 {
-            return na::DMatrix::from_row_slice(1, 1, &[c_neg(self.0[0]) / self.0[1]]);
-        }
-
-        let n = self.len_raw() - 1;
-        let mut mat: na::DMatrix<Complex<T>> = na::DMatrix::zeros(n, n);
-
-        // fill sub-diagonal with 1
-        mat.view_mut((1, 0), (n - 1, n - 1))
-            .fill_diagonal(Complex::<T>::one());
-
-        // fill the rightmost column with the coefficients of the associated
-        // monic polynomial
-        let mut monic = self.clone();
-        monic.make_monic();
-        for i in 0..n {
-            mat.column_mut(n - 1)[i] = c_neg(monic[i]);
-        }
-        mat
-    }
-
     /// The last coefficient
     pub(crate) fn last(&self) -> Complex<T> {
         self.0[self.len_raw() - 1]
@@ -259,22 +227,6 @@ mod test {
     fn is_normalized0() {
         let p = Poly(DVector::from_column_slice(&[Complex64::zero()]));
         assert!(p.is_normalized());
-    }
-
-    #[test]
-    fn companion() {
-        let p = poly![1.0, 2.0, 3.0, 4.0];
-        let c = p.companion();
-        let c_expected =
-            Matrix3::new(0., 0., -0.25, 1., 0., -0.5, 0., 1., -0.75).cast::<Complex64>();
-        assert_eq!(c, c_expected);
-    }
-
-    #[test]
-    fn companion_tiny() {
-        let p = poly![1.0, 2.0];
-        let c = p.companion();
-        assert_eq!(c[0], complex!(-0.5));
     }
 
     #[test]
