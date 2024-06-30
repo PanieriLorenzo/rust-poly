@@ -101,7 +101,9 @@ mod test {
 
     use super::aberth_ehrlich;
     use crate::{
-        __util::testing::check_roots, num::One, roots::initial_guess::initial_guesses_random,
+        __util::testing::check_roots,
+        num::One,
+        roots::initial_guess::{initial_guesses_circle, initial_guesses_random},
         Poly64,
     };
 
@@ -188,7 +190,7 @@ mod test {
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 10];
-        initial_guesses_random(&p, 1, &mut guesses);
+        initial_guesses_circle(&p, 0.5, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-5), Some(100), &guesses).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-4),

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use itertools::Itertools;
 use num::FromPrimitive;
 
@@ -48,14 +50,6 @@ impl<T: ScalarOps + Float> Poly<T> {
         }
         guess
     }
-
-    pub(crate) fn initial_guess_lower_bound(&self) -> T {
-        todo!()
-    }
-
-    pub(crate) fn initial_guess_uppwer_bound(&self) -> T {
-        todo!()
-    }
 }
 
 pub fn initial_guesses_random<T: Scalar>(poly: &Poly<T>, seed: u64, out: &mut [Complex<T>]) {
@@ -67,6 +61,27 @@ pub fn initial_guesses_random<T: Scalar>(poly: &Poly<T>, seed: u64, out: &mut [C
         let radius = T::from_f64(rng.f64() * span + low).expect("overflow");
         let angle = T::from_f64(rng.f64() * std::f64::consts::TAU).expect("overflow");
         *y = Complex::from_polar(radius, angle);
+    }
+}
+
+/// Equidistant points around a circle.
+///
+/// The bias parameter controls the radius of the circle. A bias of 0 means the
+/// lower bound is used, whereas a bias of 1 means the upper bound is used.
+pub fn initial_guesses_circle<T: Scalar>(poly: &Poly<T>, bias: T, out: &mut [Complex<T>]) {
+    let n = out.len();
+
+    // ensuring n is odd makes the points always asymmetrical, even with even
+    // number of roots. This is important as some methods may get stuck if the
+    // guesses are symmetrical.
+    let n_odd = if n % 2 == 0 { n + 1 } else { n };
+
+    let angle_increment = std::f64::consts::TAU / (n_odd as f64);
+    let radius = upper_bound(poly) * bias + lower_bound(poly) * (T::one() - bias);
+    let mut angle_accumulator = 0.0;
+    for y in out {
+        *y = Complex::from_polar(radius, T::from_f64(angle_accumulator).expect("overflow"));
+        angle_accumulator += angle_increment;
     }
 }
 
@@ -102,4 +117,38 @@ fn lower_bound<T: Scalar>(poly: &Poly<T>) -> T {
     let mut this = Poly::from_complex_vec(poly.0.iter().cloned().rev().collect_vec());
     this.make_monic();
     upper_bound(&this).recip()
+}
+
+/// 2D cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
+/// Returns a positive value, if OAB makes a counter-clockwise turn,
+/// negative for clockwise turn, and zero if the points are collinear.
+///
+/// [From Wiki Books](https://web.archive.org/web/20240617105108/https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python)
+fn cross_2d<T: Scalar>(o: (T, T), a: (T, T), b: (T, T)) -> T {
+    (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0)
+}
+
+/// Extract upper envelope of the convex hull of a set of points
+///
+/// [From Wiki Books](https://web.archive.org/web/20240617105108/https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python)
+fn upper_convex_envelope<T: Scalar>(points: &mut Vec<(T, T)>) -> Vec<(T, T)> {
+    points.sort_by(
+        |a, b| match (a.0.partial_cmp(&b.0), a.1.partial_cmp(&b.1)) {
+            (None, _) => panic!("cannot order NaNs"),
+            (Some(Ordering::Equal), None) => panic!("cannot order NaNs"),
+            (Some(Ordering::Equal), Some(ord)) => ord,
+            (Some(ord), _) => ord,
+        },
+    );
+
+    let mut upper = vec![];
+    for p in points.into_iter().rev() {
+        while upper.len() >= 2
+            && cross_2d(upper[upper.len() - 2], upper[upper.len() - 1], *p) <= T::zero()
+        {
+            upper.pop();
+        }
+        upper.push(*p);
+    }
+    upper
 }
