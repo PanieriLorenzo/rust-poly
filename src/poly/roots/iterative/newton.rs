@@ -1,8 +1,10 @@
+use super::{
+    line_search_accelerate, line_search_decelerate, multiplicity_lagouanelle, LazyDerivatives,
+};
 use crate::{
     __util,
     num::{Complex, Zero},
     poly::roots,
-    roots::{line_search_accelerate, line_search_decelerate, LazyDerivatives},
     scalar::SafeConstants,
     Poly, Scalar, ScalarOps,
 };
@@ -17,37 +19,14 @@ use num::One;
 /// itself.
 ///
 /// This implementation was based on [Henrik Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
+#[inline]
 pub fn newton<T: ScalarOps + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
     initial_guesses: &[Complex<T>],
 ) -> roots::Result<T> {
-    let mut eval_counter = 0;
-    let epsilon = epsilon.unwrap_or(T::tiny_safe());
-    let mut roots = vec![];
-    let mut initial_guesses = initial_guesses.iter().copied();
-
-    // until we've found all roots
-    loop {
-        let trivial_roots = poly.trivial_roots(epsilon);
-        eval_counter += trivial_roots.1;
-        roots.extend(trivial_roots.0.iter());
-
-        debug_assert!(poly.is_normalized());
-        if poly.degree_raw() == 0 {
-            log::debug!("{{evaluations: {eval_counter}}}");
-            return Ok(roots);
-        }
-
-        let next_guess = initial_guesses.next();
-        let (next_roots, num_evals) = next_root(poly, epsilon, max_iter, next_guess)?;
-        let root = next_roots[0];
-        eval_counter += num_evals;
-        roots.push(root);
-        // TODO: deflate_composite should borrow instead
-        *poly = poly.clone().deflate_composite(root);
-    }
+    super::deflate(next_root, poly, epsilon, max_iter, initial_guesses)
 }
 
 fn next_root<T: ScalarOps + RealField>(
