@@ -43,7 +43,14 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
         debug_assert!(self.is_normalized());
-        newton_deflate(&mut self.clone(), Some(epsilon), Some(max_iter), &[])
+        let mut initial_guesses = Vec::with_capacity(self.degree_raw());
+        initial_guesses_random(self.clone(), 1, &mut initial_guesses);
+        aberth_ehrlich(
+            &mut self.clone(),
+            Some(epsilon),
+            Some(max_iter),
+            &initial_guesses,
+        )
     }
 }
 
