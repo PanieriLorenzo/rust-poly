@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, BatchSize, Benchmark
 use rust_poly::{
     Poly64,
     __util::testing::{PolyStream, RandStreamC64Polar},
-    roots::newton,
+    roots::newton_deflate,
 };
 
 criterion_main!(/*micro_benches, realistic_benches,*/ solver_benches);
@@ -73,7 +73,7 @@ pub fn newton_complex_uniform(c: &mut Criterion) {
             b.iter_batched(
                 || cases.next().unwrap().1,
                 |mut poly| {
-                    black_box(newton(
+                    black_box(newton_deflate(
                         black_box(&mut poly),
                         Some(EPSILON),
                         Some(MAX_ITER),

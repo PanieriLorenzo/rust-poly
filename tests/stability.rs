@@ -22,7 +22,9 @@ use rust_poly::{
         check_roots, test_case_multiple_roots, test_case_roots, RandStreamC64Cartesian,
         RandStreamC64Polar, RandStreamR64,
     },
-    roots::{aberth_ehrlich, halley, initial_guesses_random, naive, newton},
+    roots::{
+        aberth_ehrlich, halley_deflate, initial_guesses_random, naive_deflate, newton_deflate,
+    },
 };
 
 const LOG_LEVEL: log::Level = log::Level::Warn;
@@ -38,7 +40,7 @@ fn naive_real() {
     let mut scale_stream = RandStreamR64::new(2, 1.0, 10.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 6);
-        let roots = naive(&mut poly.clone(), Some(1E-14), Some(50), &[]).unwrap();
+        let roots = naive_deflate(&mut poly.clone(), Some(1E-14), Some(50), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -53,7 +55,7 @@ fn newton_real() {
     let mut scale_stream = RandStreamR64::new(2, 1.0, 10.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 6);
-        let roots = newton(&mut poly.clone(), Some(1E-14), Some(25), &[]).unwrap();
+        let roots = newton_deflate(&mut poly.clone(), Some(1E-14), Some(25), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -68,7 +70,7 @@ fn halley_real() {
     let mut scale_stream = RandStreamR64::new(2, 1.0, 10.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 5);
-        let roots = halley(&mut poly.clone(), Some(1E-11), Some(50), &[]).unwrap();
+        let roots = halley_deflate(&mut poly.clone(), Some(1E-11), Some(50), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -102,7 +104,7 @@ fn naive_real_multiplicity_1() {
     for i in 0..1000 {
         let (poly, expected_roots) =
             test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 6, 1);
-        let roots = naive(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut poly.clone(), Some(1E-14), Some(100), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -118,7 +120,7 @@ fn newton_real_multiplicity_1() {
     for i in 0..1000 {
         let (poly, expected_roots) =
             test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 6, 1);
-        let roots = newton(&mut poly.clone(), Some(1E-14), Some(50), &[]).unwrap();
+        let roots = newton_deflate(&mut poly.clone(), Some(1E-14), Some(50), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -134,7 +136,7 @@ fn halley_real_multiplicity_1() {
     for i in 0..1000 {
         let (poly, expected_roots) =
             test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 5, 1);
-        let roots = halley(&mut poly.clone(), Some(1E-12), Some(50), &[]).unwrap();
+        let roots = halley_deflate(&mut poly.clone(), Some(1E-12), Some(50), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -150,7 +152,7 @@ fn naive_real_multiplicity_3() {
     for i in 0..1000 {
         let (poly, expected_roots) =
             test_case_multiple_roots(&mut roots_stream, &mut scale_stream, 6, 3);
-        let roots = naive(&mut poly.clone(), Some(1E-15), Some(200), &[]).unwrap();
+        let roots = naive_deflate(&mut poly.clone(), Some(1E-15), Some(200), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -182,7 +184,7 @@ fn naive_complex() {
     let mut scale_stream = RandStreamC64Polar::new(4, 1.0, 10.0, 0.0, 1.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 10);
-        let roots = naive(&mut poly.clone(), Some(1E-12), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut poly.clone(), Some(1E-12), Some(100), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -197,7 +199,7 @@ fn newton_complex() {
     let mut scale_stream = RandStreamC64Polar::new(4, 1.0, 10.0, 0.0, 1.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 10);
-        let roots = newton(&mut poly.clone(), Some(1E-12), Some(50), &[]).unwrap();
+        let roots = newton_deflate(&mut poly.clone(), Some(1E-12), Some(50), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",
@@ -212,7 +214,7 @@ fn halley_complex() {
     let mut scale_stream = RandStreamC64Polar::new(4, 1.0, 10.0, 0.0, 1.0);
     for i in 0..1000 {
         let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, 9);
-        let roots = halley(&mut poly.clone(), Some(1E-10), Some(50), &[]).unwrap();
+        let roots = halley_deflate(&mut poly.clone(), Some(1E-10), Some(50), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), expected_roots.clone(), 0.1),
             "@ {i}: {roots:?} != {expected_roots:?}",

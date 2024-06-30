@@ -21,47 +21,6 @@ pub type NextRootFun<T> =
         initial_guess: Option<Complex<T>>,
     ) -> std::result::Result<(Vec<Complex<T>>, u128), super::Error<Vec<Complex<T>>>>;
 
-pub(crate) fn deflate<T: ScalarOps + RealField>(
-    next_root_fun: NextRootFun<T>,
-    poly: &mut Poly<T>,
-    epsilon: Option<T>,
-    max_iter: Option<usize>,
-    initial_guesses: &[Complex<T>],
-) -> super::Result<T> {
-    let mut eval_counter = 0;
-    let epsilon = epsilon.unwrap_or(T::tiny_safe());
-    let mut roots = vec![];
-    let mut initial_guesses = initial_guesses.iter().copied();
-
-    // until we've found all roots
-    loop {
-        let trivial_roots = poly.trivial_roots(epsilon);
-        eval_counter += trivial_roots.1;
-        roots.extend(trivial_roots.0.iter());
-
-        debug_assert!(poly.is_normalized());
-        if poly.degree_raw() == 0 {
-            log::debug!("{{evaluations: {eval_counter}}}");
-            return Ok(roots);
-        }
-
-        let next_guess = initial_guesses.next();
-        let (next_roots, num_evals) = next_root_fun(poly, epsilon, max_iter, next_guess)?;
-        let root = next_roots[0];
-        eval_counter += num_evals;
-        roots.push(root);
-        // TODO: deflate_composite should borrow instead
-        *poly = poly.clone().deflate_composite(root);
-    }
-}
-
-pub enum DeflationStrategy {
-    LongDivision,
-    DeflateForward,
-    DeflateBackward,
-    DeflateComposite,
-}
-
 /// Garwick & Ward stopping criterion (see [Nikolajsen 2014](https://doi.org/10.1098/rsos.140206))
 // TODO: with specialization use Nikolajsen 2014 if T is f64 or f32, but right
 //       now this is fine for all real-like, including fractions and infinite

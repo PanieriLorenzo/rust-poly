@@ -2,10 +2,10 @@ use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
 use na::{Complex, ComplexField, RealField};
 use num::{traits::real::Real, Float, FromPrimitive, One, Zero};
 
-mod iterative;
-pub use iterative::{halley, naive, newton};
-mod multiroot;
-pub use multiroot::aberth_ehrlich;
+mod single_root;
+pub use single_root::{halley, naive, newton};
+mod all_roots;
+pub use all_roots::{aberth_ehrlich, deflate, halley_deflate, naive_deflate, newton_deflate};
 
 mod initial_guess;
 pub use initial_guess::initial_guesses_random;
@@ -43,7 +43,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
         debug_assert!(self.is_normalized());
-        newton(&mut self.clone(), Some(epsilon), Some(max_iter), &[])
+        newton_deflate(&mut self.clone(), Some(epsilon), Some(max_iter), &[])
     }
 }
 

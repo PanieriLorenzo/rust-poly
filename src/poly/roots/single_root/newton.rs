@@ -4,32 +4,14 @@ use super::{
 use crate::{
     __util,
     num::{Complex, Zero},
-    poly::roots,
+    poly::roots::{self, deflate},
     scalar::SafeConstants,
     Poly, Scalar, ScalarOps,
 };
 use na::RealField;
 use num::One;
 
-/// Modified Newton's method, originally conceived by [Kaj Madsen 1973](https://doi.org/10.1007/BF01933524).
-///
-/// This method is a much more robust than traditional naive Newton iteration.
-/// It can detect when convergence slows down and increase the step size. It can
-/// also detect when it gets stuck in a local minimum or maximum and unstuck
-/// itself.
-///
-/// This implementation was based on [Henrik Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
-#[inline]
 pub fn newton<T: ScalarOps + RealField>(
-    poly: &mut Poly<T>,
-    epsilon: Option<T>,
-    max_iter: Option<usize>,
-    initial_guesses: &[Complex<T>],
-) -> roots::Result<T> {
-    super::deflate(next_root, poly, epsilon, max_iter, initial_guesses)
-}
-
-fn next_root<T: ScalarOps + RealField>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,
@@ -187,13 +169,12 @@ fn check_will_converge<T: Scalar>(
 
 #[cfg(test)]
 mod test {
-    use super::newton;
-    use crate::{__util::testing::check_roots, num::One, Poly64};
+    use crate::{__util::testing::check_roots, num::One, roots::newton_deflate, Poly64};
 
     #[test]
     pub fn degree_0() {
         let mut p = Poly64::one();
-        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(roots.is_empty());
         assert!(p.is_one());
     }
@@ -202,7 +183,7 @@ mod test {
     fn degree_1() {
         let roots_expected = vec![complex!(1.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 
@@ -210,7 +191,7 @@ mod test {
     fn degree_2() {
         let roots_expected = vec![complex!(1.0), complex!(2.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 
@@ -218,7 +199,7 @@ mod test {
     fn degree_3() {
         let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-6));
     }
 
@@ -226,7 +207,7 @@ mod test {
     fn degree_3_complex() {
         let roots_expected = vec![complex!(1.0), complex!(0.0, 1.0), complex!(0.0, -1.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-8));
     }
 
@@ -240,7 +221,7 @@ mod test {
             complex!(3.0),
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-3),
             "{roots:?}"
@@ -257,7 +238,7 @@ mod test {
             complex!(3.0),
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = newton(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = newton_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-6));
     }
 }

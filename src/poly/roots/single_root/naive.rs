@@ -4,36 +4,17 @@ use super::{
 use crate::{
     __util,
     num::{Complex, Zero},
-    poly::roots,
+    poly::roots::{self, deflate},
     Poly, ScalarOps,
 };
 use na::RealField;
-
-/// Find all roots of a polynomial using a naive Newton-Raphson approach.
-///
-/// You are likely looking for [`roots::newton`] instead, which is a more
-/// robust implementation of the same algorithm.
-///
-/// This algorithm is not very stable, and will often fail to find fairly ordinary
-/// roots. So only use this approach for specific purposes, namely:
-/// - You know its not going to get stuck and you want a slight performance improvement
-/// - You are benchmarking your custom root finder against a classical Newton-Raphson approach.
-#[inline]
-pub fn naive<T: ScalarOps + RealField>(
-    poly: &mut Poly<T>,
-    epsilon: Option<T>,
-    max_iter: Option<usize>,
-    initial_guesses: &[Complex<T>],
-) -> roots::Result<T> {
-    super::deflate(next_root, poly, epsilon, max_iter, initial_guesses)
-}
 
 /// Find a single root
 ///
 /// # Returns
 /// - vector of roots (usually 1)
 /// - number of evaluations
-fn next_root<T: ScalarOps + RealField>(
+pub fn naive<T: ScalarOps + RealField>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,
@@ -83,15 +64,12 @@ fn next_root<T: ScalarOps + RealField>(
 
 #[cfg(test)]
 mod test {
-    use super::naive;
-    use crate::__util::testing::check_roots;
-    use crate::num::One;
-    use crate::Poly64;
+    use crate::{__util::testing::check_roots, num::One, roots::naive_deflate, Poly64};
 
     #[test]
     pub fn degree_0() {
         let mut p = Poly64::one();
-        let roots = naive(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(roots.is_empty());
         assert!(p.is_one());
     }
@@ -100,7 +78,7 @@ mod test {
     fn degree_1() {
         let roots_expected = vec![complex!(1.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = super::naive(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 
@@ -108,7 +86,7 @@ mod test {
     fn degree_2() {
         let roots_expected = vec![complex!(1.0), complex!(2.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = super::naive(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 
@@ -116,7 +94,7 @@ mod test {
     fn degree_3() {
         let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = super::naive(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 
@@ -124,7 +102,7 @@ mod test {
     fn degree_3_complex() {
         let roots_expected = vec![complex!(1.0), complex!(0.0, 1.0), complex!(0.0, -1.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = super::naive(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 
@@ -138,7 +116,7 @@ mod test {
             complex!(3.0),
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = super::naive(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-4),
             "{roots:?}"
@@ -155,7 +133,7 @@ mod test {
             complex!(3.0),
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
-        let roots = super::naive(&mut p, Some(1E-14), Some(100), &[]).unwrap();
+        let roots = naive_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
 }
