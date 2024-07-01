@@ -9,47 +9,45 @@ use crate::{
     __util::complex::{c_min, c_neg},
 };
 
-impl<T: ScalarOps + Float> Poly<T> {
-    /// [ref](https://doi.org/10.1007/BF01933524)
-    pub(crate) fn initial_guess_smallest(&self) -> Complex<T> {
-        debug_assert!(self.is_normalized());
-        debug_assert!(self.len_raw() >= 2);
+/// [ref](https://doi.org/10.1007/BF01933524)
+pub fn initial_guess_smallest<T: ScalarOps>(poly: &Poly<T>) -> Complex<T> {
+    debug_assert!(poly.is_normalized());
+    debug_assert!(poly.len_raw() >= 2);
 
-        let small = Float::recip(T::from_u16(1_000).expect("overflow"));
-        let p_diff = self.clone().diff();
-        let mut pz = self.eval(Complex::zero());
-        let mut pdz = p_diff.eval(Complex::zero());
+    let small = Float::recip(T::from_u16(1_000).expect("overflow"));
+    let p_diff = poly.clone().diff();
+    let mut pz = poly.eval(Complex::zero());
+    let mut pdz = p_diff.eval(Complex::zero());
 
-        // avoid divide by zero
-        if pdz.norm() < small {
-            pz += small;
-            pdz += small;
-        }
-
-        let theta = (c_neg(pz) / pdz).arg();
-        let mut iter_coeffs = self.0.iter();
-        let a0 = iter_coeffs.next().expect("infallible");
-
-        let mut guess = iter_coeffs
-            .zip(1..)
-            .map(|(ak, k)| {
-                Complex::i()
-                    .scale(theta)
-                    .exp()
-                    .scale((a0 / ak).norm())
-                    .powf(T::one() / T::from_usize(k).expect("overflow"))
-            })
-            .reduce(c_min)
-            .expect("infallible")
-            .scale(Float::recip(T::from_u8(2).expect("overflow")));
-
-        if guess.im.is_zero() {
-            // add a small constant because some methods can't converge to
-            // complex roots if the initial guess is real
-            guess += Complex::i().scale(Float::recip(T::from_u16(1_000).expect("overflow")));
-        }
-        guess
+    // avoid divide by zero
+    if pdz.norm() < small {
+        pz += small;
+        pdz += small;
     }
+
+    let theta = (c_neg(pz) / pdz).arg();
+    let mut iter_coeffs = poly.0.iter();
+    let a0 = iter_coeffs.next().expect("infallible");
+
+    let mut guess = iter_coeffs
+        .zip(1..)
+        .map(|(ak, k)| {
+            Complex::i()
+                .scale(theta)
+                .exp()
+                .scale((a0 / ak).norm())
+                .powf(T::one() / T::from_usize(k).expect("overflow"))
+        })
+        .reduce(c_min)
+        .expect("infallible")
+        .scale(Float::recip(T::from_u8(2).expect("overflow")));
+
+    if guess.im.is_zero() {
+        // add a small constant because some methods can't converge to
+        // complex roots if the initial guess is real
+        guess += Complex::i().scale(Float::recip(T::from_u16(1_000).expect("overflow")));
+    }
+    guess
 }
 
 pub fn initial_guesses_random<T: Scalar>(mut poly: Poly<T>, seed: u64, out: &mut [Complex<T>]) {

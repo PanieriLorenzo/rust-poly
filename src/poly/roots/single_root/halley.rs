@@ -5,6 +5,7 @@ use crate::{
     __util,
     num::{Complex, One, Zero},
     poly::roots::{self, deflate},
+    roots::initial_guess::initial_guess_smallest,
     Poly, ScalarOps,
 };
 use na::RealField;
@@ -21,7 +22,7 @@ pub fn halley<T: ScalarOps + RealField>(
     initial_guess: Option<Complex<T>>,
 ) -> std::result::Result<(Vec<Complex<T>>, u128), roots::Error<Vec<Complex<T>>>> {
     let mut eval_counter = 0;
-    let mut guess = initial_guess.unwrap_or_else(|| poly.initial_guess_smallest());
+    let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(&poly));
     let mut guess_old = guess;
     let mut guess_old_old = guess;
     let mut guess_delta_old = Complex::one();

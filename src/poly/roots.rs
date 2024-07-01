@@ -8,7 +8,7 @@ mod all_roots;
 pub use all_roots::{aberth_ehrlich, deflate, halley_deflate, naive_deflate, newton_deflate};
 
 mod initial_guess;
-pub use initial_guess::initial_guesses_random;
+pub use initial_guess::{initial_guess_smallest, initial_guesses_circle, initial_guesses_random};
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]

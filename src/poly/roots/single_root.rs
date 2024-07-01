@@ -166,14 +166,14 @@ mod test {
     use na::Complex;
     use num::complex::ComplexFloat;
 
-    use crate::Poly64;
+    use crate::{roots::initial_guess::initial_guess_smallest, Poly64};
 
     use super::LazyDerivatives;
 
     #[test]
-    fn initial_guess_smallest() {
+    fn test_initial_guess_smallest() {
         assert!(
-            (poly![24.0, -14.0, -13.0, 2.0, 1.0].initial_guess_smallest()
+            (initial_guess_smallest(&poly![24.0, -14.0, -13.0, 2.0, 1.0])
                 - Complex::new(0.68, 0.0))
             .norm()
                 < 0.01
