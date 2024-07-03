@@ -6,6 +6,8 @@ mod single_root;
 pub use single_root::{halley, naive, newton};
 mod all_roots;
 pub use all_roots::{aberth_ehrlich, deflate, halley_deflate, naive_deflate, newton_deflate};
+mod many_roots;
+pub use many_roots::{halley_parallel, naive_parallel, newton_parallel, parallel};
 
 mod initial_guess;
 pub use initial_guess::{initial_guess_smallest, initial_guesses_circle, initial_guesses_random};
@@ -43,13 +45,15 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
         debug_assert!(self.is_normalized());
-        let mut initial_guesses = Vec::with_capacity(self.degree_raw());
-        initial_guesses_random(self.clone(), 1, &mut initial_guesses);
-        aberth_ehrlich(
+        let roots = aberth_ehrlich(&mut self.clone(), Some(epsilon), Some(max_iter), &[])?;
+
+        // further polishing of roots
+        newton_parallel(
             &mut self.clone(),
             Some(epsilon),
             Some(max_iter),
-            &initial_guesses,
+            roots.len(),
+            &roots,
         )
     }
 }
