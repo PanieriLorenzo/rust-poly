@@ -5,7 +5,7 @@ use rust_poly::{
     roots::newton_deflate,
 };
 
-criterion_main!(/*micro_benches, realistic_benches,*/ solver_benches);
+criterion_main!(/*micro_benches, */ realistic_benches, solver_benches);
 criterion_group!(micro_benches, bessel, reverse_bessel, legendre,);
 
 pub fn bessel(c: &mut Criterion) {

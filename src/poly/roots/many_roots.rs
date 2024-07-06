@@ -14,6 +14,8 @@ pub fn parallel<T: ScalarOps + RealField>(
     num: usize,
     initial_guesses: &[Complex<T>],
 ) -> super::Result<T> {
+    poly.make_monic();
+
     let initial_guesses = {
         let mut complete_initial_guesses = Vec::with_capacity(num);
         for z in initial_guesses {

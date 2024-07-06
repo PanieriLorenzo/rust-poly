@@ -113,8 +113,8 @@ pub fn initial_guesses_circle<T: Scalar>(
 /// Uses Deutsch's simple formula \[[McNamee 2005](https://www.researchgate.net/publication/228745231_A_comparison_of_a_priori_bounds_on_real_or_complex_roots_of_polynomials)\]
 fn upper_bound<T: Scalar>(poly: &Poly<T>) -> T {
     debug_assert!(
-        poly.degree_raw() >= 1,
-        "there are no bounds for a polynomial with no roots"
+        poly.degree_raw() >= 2,
+        "upper bound of small degree polynomials is not supported, use explicit solver"
     );
     debug_assert!(
         poly.is_monic(),

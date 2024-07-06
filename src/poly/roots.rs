@@ -47,6 +47,11 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
         debug_assert!(self.is_normalized());
         let roots = aberth_ehrlich(&mut self.clone(), Some(epsilon), Some(max_iter), &[])?;
 
+        // don't bother refining small polys
+        if roots.len() <= 2 {
+            return Ok(roots);
+        }
+
         // further polishing of roots
         newton_parallel(
             &mut self.clone(),
