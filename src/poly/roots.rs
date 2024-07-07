@@ -74,8 +74,8 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
             if self.eval(Complex::zero()).norm() < epsilon {
                 eval_counter += 1;
                 roots.push(Complex::zero());
-                // TODO: deflating zero roots can be accomplished simply by shifting
-                self.deflate_composite(Complex::zero());
+                // deflating zero roots can be accomplished simply by shifting
+                *self = self.shift_down(1);
             } else {
                 break;
             }
