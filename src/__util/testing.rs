@@ -287,33 +287,3 @@ pub fn check_roots(roots1: Vec<Complex64>, mut roots2: Vec<Complex64>, tol: f64)
     }
     true
 }
-
-/// Run this manually to visually inspect the random generators
-#[test]
-#[ignore]
-fn plot_random_roots() -> Result<(), Box<dyn std::error::Error>> {
-    use itertools::chain;
-    use plotters::prelude::*;
-    use std::fs;
-
-    let file_id: String = chain!(
-        "temp/".chars(),
-        iter::from_fn(|| Some(fastrand::alphanumeric())).take(22),
-        ".png".chars()
-    )
-    .collect();
-
-    // if fails it already exists and that's fine
-    let _ = fs::create_dir("./temp/");
-
-    let root = BitMapBackend::new(&file_id, (640, 480)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root).build_cartesian_2d(-2.0..2.0, -2.0..2.0)?;
-    chart.draw_series(
-        RandStreamC64Polar::new(1, 0.5, 1.5, 0.125, 0.5)
-            .take(1000)
-            .map(|z| Circle::new((z.re, z.im), 1, BLACK.filled())),
-    )?;
-    root.present()?;
-    Ok(())
-}
