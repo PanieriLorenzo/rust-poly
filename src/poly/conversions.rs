@@ -1,3 +1,4 @@
+use na::DVector;
 use num::Complex;
 
 use crate::{Poly, Scalar};
@@ -49,16 +50,12 @@ impl<T: Scalar> Poly<T> {
     pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, na::Complex<T>> {
         self.0.as_mut_slice().iter_mut()
     }
-}
 
-impl<T: Scalar> Poly<T> {
     #[must_use]
     pub fn to_vec(&self) -> Vec<Complex<T>> {
         Vec::from(self.as_slice())
     }
-}
 
-impl<T: Scalar> Poly<T> {
     /// The same as `Poly::new()`
     pub fn from_complex_slice(value: &[Complex<T>]) -> Self {
         Self::new(value)
@@ -70,16 +67,27 @@ impl<T: Scalar> Poly<T> {
         Self::new(value.as_slice())
     }
 
+    #[must_use]
     pub fn from_real_slice(value: &[T]) -> Self {
-        // TODO: avoid unnecessary initialization of Vec
-        let temp_vec: Vec<_> = value.iter().map(Complex::from).collect();
-        Self::new(&temp_vec)
+        Self::from_real_iterator(value.iter().cloned(), value.len())
     }
 
     #[allow(clippy::needless_pass_by_value)]
     #[must_use]
     pub fn from_real_vec(value: Vec<T>) -> Self {
         Self::from_real_slice(value.as_slice())
+    }
+
+    #[must_use]
+    pub fn from_real_iterator(coeffs: impl Iterator<Item = T>, len: usize) -> Self {
+        let res = Self::from_complex_iterator(coeffs.map(|x| Complex::from(x)), len);
+        debug_assert!(res.is_normalized());
+        res
+    }
+
+    #[must_use]
+    pub fn from_complex_iterator(coeffs: impl Iterator<Item = Complex<T>>, len: usize) -> Self {
+        Poly(DVector::from_iterator(len, coeffs)).normalize()
     }
 }
 
