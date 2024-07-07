@@ -1,6 +1,6 @@
-use crate::{Poly, RealScalar, Scalar, __util::complex::c_neg};
-use na::{Complex, ComplexField, RealField};
-use num::{traits::real::Real, Float, FromPrimitive, One, Zero};
+use crate::{Poly, RealScalar, __util::complex::c_neg};
+use na::{Complex, RealField};
+use num::{Float, FromPrimitive, One, Zero};
 
 mod single_root;
 pub use single_root::{halley, naive, newton};

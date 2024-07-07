@@ -1,13 +1,11 @@
-use super::{
-    line_search_accelerate, line_search_decelerate, multiplicity_lagouanelle, LazyDerivatives,
-};
+use super::{line_search_accelerate, line_search_decelerate, LazyDerivatives};
 use crate::{
     __util,
     num::{Complex, Zero},
-    poly::roots::{self, deflate},
+    poly::roots,
     roots::initial_guess::initial_guess_smallest,
     scalar::SafeConstants,
-    Poly, Scalar, RealScalar,
+    Poly, RealScalar,
 };
 use na::RealField;
 use num::One;
@@ -111,7 +109,11 @@ pub fn newton<T: RealScalar + RealField>(
     unreachable!()
 }
 
-fn compute_delta<T: Scalar>(px: Complex<T>, pdx: Complex<T>, delta_old: Complex<T>) -> Complex<T> {
+fn compute_delta<T: RealScalar>(
+    px: Complex<T>,
+    pdx: Complex<T>,
+    delta_old: Complex<T>,
+) -> Complex<T> {
     const EXPLODE_THRESHOLD: f64 = 5.0;
 
     if pdx.is_zero() {
@@ -154,7 +156,7 @@ fn compute_delta<T: Scalar>(px: Complex<T>, pdx: Complex<T>, delta_old: Complex<
 ///
 /// This condition is based on [Ostrowski 1966](https://doi.org/10.2307/2005025),
 /// but uses an approximation by [Henrik Vestermark 2020](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
-fn check_will_converge<T: Scalar>(
+fn check_will_converge<T: RealScalar>(
     guess: Complex<T>,
     guess_old: Complex<T>,
     px: Complex<T>,

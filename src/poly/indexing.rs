@@ -3,19 +3,19 @@ use std::ops::{
     RangeToInclusive,
 };
 
-use super::{Complex, Poly, Scalar};
+use super::{Complex, Poly, RealScalar};
 
 mod sealed {
     pub trait Sealed {}
 }
 
-pub trait Get<I, T: Scalar>: sealed::Sealed {
+pub trait Get<I, T: RealScalar>: sealed::Sealed {
     fn get(&self, idx: I) -> Option<Poly<T>>;
 }
 
-impl<T: Scalar> sealed::Sealed for Poly<T> {}
+impl<T: RealScalar> sealed::Sealed for Poly<T> {}
 
-impl<T: Scalar> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// Index from the end, useful for porting algorithm that use the descending convention
     pub(crate) fn coeff_descending(&self, idx: usize) -> &Complex<T> {
         &self.0[self.len_raw() - idx - 1]
@@ -49,14 +49,14 @@ impl<T: Scalar> Poly<T> {
     }
 }
 
-impl<T: Scalar> Get<usize, T> for Poly<T> {
+impl<T: RealScalar> Get<usize, T> for Poly<T> {
     fn get(&self, idx: usize) -> Option<Self> {
         debug_assert!(self.is_normalized());
         self.terms().nth(idx)
     }
 }
 
-impl<T: Scalar> Get<isize, T> for Poly<T> {
+impl<T: RealScalar> Get<isize, T> for Poly<T> {
     #[allow(clippy::cast_possible_wrap)]
     #[allow(clippy::cast_sign_loss)]
     fn get(&self, idx: isize) -> Option<Self> {
@@ -77,17 +77,9 @@ impl<T: Scalar> Get<isize, T> for Poly<T> {
     }
 }
 
-// impl<T: Scalar> Get<Range<usize>, T> for Poly<T> {
-//     type Output = Poly<T>;
-
-//     fn get(&self, idx: Range<usize>) -> Option<Poly<T>> {
-//
-//     }
-// }
-
 macro_rules! impl_get_for_bounds {
     ($r:ty) => {
-        impl<T: Scalar> Get<$r, T> for Poly<T> {
+        impl<T: RealScalar> Get<$r, T> for Poly<T> {
             fn get(&self, idx: $r) -> Option<Poly<T>> {
                 self.get_range_inner(idx.start_bound(), idx.end_bound())
             }
@@ -103,7 +95,7 @@ impl_get_for_bounds!(RangeToInclusive<usize>);
 impl_get_for_bounds!(RangeFull);
 
 // TODO: should be defined in terms of Get or vice-versa
-impl<T: Scalar> Index<usize> for Poly<T> {
+impl<T: RealScalar> Index<usize> for Poly<T> {
     type Output = Complex<T>;
 
     fn index(&self, index: usize) -> &Self::Output {

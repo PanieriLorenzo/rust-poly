@@ -1,10 +1,4 @@
-use crate::{
-    num::{Complex, Float},
-    Poly, Scalar,
-};
-use na::RealField;
-
-use crate::RealScalar;
+use crate::{num::Complex, Poly, RealScalar};
 
 mod naive;
 pub use naive::naive;
@@ -46,12 +40,12 @@ fn stopping_criterion_garwick<T: RealScalar>(
 /// Many methods use derivatives, but they don't always need to compute them.
 /// For ease of implementation, all methods that require derivatives can use
 /// this one type.
-pub(crate) struct LazyDerivatives<'a, T: Scalar> {
+pub(crate) struct LazyDerivatives<'a, T: RealScalar> {
     zeroth: &'a Poly<T>,
     first_and_higher: Vec<Poly<T>>,
 }
 
-impl<'a, T: Scalar> LazyDerivatives<'a, T> {
+impl<'a, T: RealScalar> LazyDerivatives<'a, T> {
     pub fn new(poly: &'a Poly<T>) -> Self {
         Self {
             zeroth: poly,
@@ -82,7 +76,7 @@ impl<'a, T: Scalar> LazyDerivatives<'a, T> {
 }
 
 /// Estimate root multiplicity using Lagouanelle 1966
-fn multiplicity_lagouanelle<T: Scalar>(
+fn multiplicity_lagouanelle<T: RealScalar>(
     px: Complex<T>,
     pdx: Complex<T>,
     pddx: Complex<T>,

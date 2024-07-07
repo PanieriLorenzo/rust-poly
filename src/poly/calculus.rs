@@ -1,9 +1,9 @@
 use itertools::chain;
 use num::{Complex, Zero};
 
-use crate::{Poly, Scalar};
+use crate::{Poly, RealScalar};
 
-impl<T: Scalar> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// Derivative
     ///
     /// # Panics

@@ -3,7 +3,7 @@ use na::RealField;
 use crate::{
     num::{Complex, One, Zero},
     roots::{self, initial_guess::initial_guesses_circle},
-    Poly, Scalar, RealScalar, __util,
+    Poly, RealScalar, __util,
 };
 
 pub fn aberth_ehrlich<T: RealScalar + RealField>(
@@ -129,9 +129,7 @@ mod test {
     use super::aberth_ehrlich;
     use crate::{
         __util::testing::check_roots,
-        num::One,
         roots::initial_guess::{initial_guesses_circle, initial_guesses_random},
-        Poly64,
     };
 
     // #[test]

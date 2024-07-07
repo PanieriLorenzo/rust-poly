@@ -4,15 +4,15 @@ use std::cmp::Ordering;
 
 use num::{Complex, One, Zero};
 
-use crate::Scalar;
+use crate::RealScalar;
 
 // neg operator for Complex, as it does not implement std::ops::Neg
-pub(crate) fn c_neg<T: Scalar>(x: Complex<T>) -> Complex<T> {
+pub(crate) fn c_neg<T: RealScalar>(x: Complex<T>) -> Complex<T> {
     Complex::<T>::zero() - x
 }
 
 // min based on norm1
-pub(crate) fn c_min<T: Scalar + PartialOrd>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
+pub(crate) fn c_min<T: RealScalar>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
     if a.norm_sqr() < b.norm_sqr() {
         a
     } else {
@@ -21,7 +21,7 @@ pub(crate) fn c_min<T: Scalar + PartialOrd>(a: Complex<T>, b: Complex<T>) -> Com
 }
 
 // sort a vector of complex numbers lexicographically, using their real part first
-pub(crate) fn complex_sort_mut<T: Scalar + PartialOrd>(v: &mut [Complex<T>]) {
+pub(crate) fn complex_sort_mut<T: RealScalar>(v: &mut [Complex<T>]) {
     v.sort_by(|a, b| {
         let re_ord = a.re.partial_cmp(&b.re).unwrap_or(Ordering::Equal);
         if re_ord != Ordering::Equal {

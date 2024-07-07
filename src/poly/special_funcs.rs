@@ -1,13 +1,13 @@
 use crate::{
-    Poly, Scalar, RealScalar,
+    Poly, RealScalar,
     __util::{
         casting::{usize_to_f64, usize_to_i32, usize_to_u32},
         luts::factorial_lut,
     },
 };
-use num::{BigUint, FromPrimitive, Zero};
+use num::{BigUint, FromPrimitive};
 
-impl<T: Scalar + FromPrimitive> Poly<T> {
+impl<T: RealScalar + FromPrimitive> Poly<T> {
     #[deprecated(note = "use cheby1 instead")]
     #[inline]
     #[must_use]

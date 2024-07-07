@@ -1,11 +1,11 @@
 use na::Complex;
 use num::{One, Zero};
 
-use crate::{Poly, Scalar, __util::complex::c_neg, scalar::SafeConstants};
+use crate::{scalar::SafeConstants, Poly, RealScalar};
 
 use super::indexing::Get;
 
-impl<T: Scalar> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// Applies a closure to each coefficient in-place
     pub(crate) fn apply(&mut self, f: impl FnMut(&mut Complex<T>)) {
         self.0.apply(f);
@@ -191,19 +191,6 @@ impl<T: Scalar> Poly<T> {
         *self = self.shift_down(1).normalize();
     }
 }
-
-// impl<T: Scalar + PartialOrd> Poly<T> {
-//     /// Check if the polynomial is actually a monomial
-//     pub(crate) fn is_monomial(&self, tol: T) -> bool {
-//         debug_assert!(self.is_normalized());
-//         let degree = self.degree_raw();
-//         if degree < 0 {
-//             return false;
-//         }
-//         let degree: usize = degree.try_into().expect("overflow");
-//         self.iter().take(degree).all(|z| z.norm_sqr() < tol)
-//     }
-// }
 
 #[cfg(test)]
 mod test {

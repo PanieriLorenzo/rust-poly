@@ -1,9 +1,9 @@
 use na::DVector;
 use num::Complex;
 
-use crate::{Poly, Scalar};
+use crate::{Poly, RealScalar};
 
-impl<T: Scalar> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     #[must_use]
     pub const fn from_dvector(value: na::DVector<Complex<T>>) -> Self {
         Self(value)
@@ -91,19 +91,19 @@ impl<T: Scalar> Poly<T> {
     }
 }
 
-impl<T: Scalar> From<na::DVector<Complex<T>>> for Poly<T> {
+impl<T: RealScalar> From<na::DVector<Complex<T>>> for Poly<T> {
     fn from(value: na::DVector<Complex<T>>) -> Self {
         Self::from_dvector(value)
     }
 }
 
-impl<T: Scalar> From<&[Complex<T>]> for Poly<T> {
+impl<T: RealScalar> From<&[Complex<T>]> for Poly<T> {
     fn from(value: &[Complex<T>]) -> Self {
         Self::from_complex_slice(value)
     }
 }
 
-impl<T: Scalar> From<Vec<Complex<T>>> for Poly<T> {
+impl<T: RealScalar> From<Vec<Complex<T>>> for Poly<T> {
     fn from(value: Vec<Complex<T>>) -> Self {
         Self::from_complex_vec(value)
     }
@@ -124,31 +124,31 @@ impl<T: Scalar> From<Vec<Complex<T>>> for Poly<T> {
 //     }
 // }
 
-impl<T: Scalar> From<Poly<T>> for *const Complex<T> {
+impl<T: RealScalar> From<Poly<T>> for *const Complex<T> {
     fn from(val: Poly<T>) -> Self {
         val.as_ptr()
     }
 }
 
-impl<T: Scalar> From<Poly<T>> for *mut Complex<T> {
+impl<T: RealScalar> From<Poly<T>> for *mut Complex<T> {
     fn from(mut val: Poly<T>) -> Self {
         val.as_mut_ptr()
     }
 }
 
-impl<T: Scalar> From<Poly<T>> for Vec<Complex<T>> {
+impl<T: RealScalar> From<Poly<T>> for Vec<Complex<T>> {
     fn from(val: Poly<T>) -> Self {
         val.to_vec()
     }
 }
 
-impl<T: Scalar> From<Poly<T>> for na::DVector<Complex<T>> {
+impl<T: RealScalar> From<Poly<T>> for na::DVector<Complex<T>> {
     fn from(val: Poly<T>) -> Self {
         val.to_dvector()
     }
 }
 
-impl<'a, T: Scalar> IntoIterator for &'a Poly<T> {
+impl<'a, T: RealScalar> IntoIterator for &'a Poly<T> {
     type IntoIter = std::slice::Iter<'a, na::Complex<T>>;
     type Item = &'a na::Complex<T>;
     fn into_iter(self) -> Self::IntoIter {
@@ -156,7 +156,7 @@ impl<'a, T: Scalar> IntoIterator for &'a Poly<T> {
     }
 }
 
-impl<'a, T: Scalar> IntoIterator for &'a mut Poly<T> {
+impl<'a, T: RealScalar> IntoIterator for &'a mut Poly<T> {
     type IntoIter = std::slice::IterMut<'a, na::Complex<T>>;
     type Item = &'a mut na::Complex<T>;
     fn into_iter(self) -> Self::IntoIter {

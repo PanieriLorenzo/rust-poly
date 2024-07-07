@@ -1,38 +1,10 @@
 //! Traits for the coefficients of polynomials
 
-use na::ComplexField;
 use num::{
     traits::{Float, MulAdd, MulAddAssign},
     Complex, FromPrimitive, Num,
 };
 use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
-
-/// The trait bounds necessary to provide the basic functionality of this crate.
-pub trait Scalar:
-    SafeConstants
-    + Clone
-    + PartialEq
-    + std::fmt::Debug
-    + Num
-    + Float
-    + FromPrimitive
-    + std::ops::Neg<Output = Self>
-    + 'static
-{
-}
-impl<
-        T: Clone
-            + PartialEq
-            + std::fmt::Debug
-            + Num
-            + Float
-            + FromPrimitive
-            + SafeConstants
-            + std::ops::Neg<Output = Self>
-            + 'static,
-    > Scalar for T
-{
-}
 
 // pub trait ComplexScalar: Scalar {
 //     type ComponentScalar;
@@ -45,12 +17,18 @@ impl<
 //     type ComponentScalar = f32;
 // }
 
-// TODO: these are required by nalgebra for things that shouldn't require them.
-//       perhaps in the future they can be dropped?
-/// Trait bounds necessary to provide more advanced mathematical features.
+/// The trait bounds necessary to provide the basic functionality of this crate.
 #[allow(clippy::module_name_repetitions)]
 pub trait RealScalar:
-    Scalar
+    Clone
+    + PartialEq
+    + std::fmt::Debug
+    + Num
+    + Float
+    + FromPrimitive
+    + SafeConstants
+    + std::ops::Neg<Output = Self>
+    + 'static
     + AddAssign
     + SubAssign
     + MulAssign
@@ -61,7 +39,23 @@ pub trait RealScalar:
 {
 }
 impl<
-        T: Scalar
+        T: Clone
+            + PartialEq
+            + PartialOrd
+            + std::fmt::Debug
+            + Num
+            + Float
+            + FromPrimitive
+            + SafeConstants
+            + std::ops::Neg<Output = Self>
+            + 'static
+            + AddAssign
+            + SubAssign
+            + MulAssign
+            + DivAssign
+            + RemAssign
+            + MulAdd<Output = Self>
+            + MulAddAssign
             + AddAssign
             + SubAssign
             + MulAssign

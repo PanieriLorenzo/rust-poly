@@ -4,7 +4,7 @@ use super::{
 use crate::{
     __util,
     num::{Complex, One, Zero},
-    poly::roots::{self, deflate},
+    poly::roots,
     roots::initial_guess::initial_guess_smallest,
     Poly, RealScalar,
 };

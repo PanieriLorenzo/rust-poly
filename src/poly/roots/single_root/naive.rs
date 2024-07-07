@@ -1,10 +1,8 @@
-use super::{
-    line_search_accelerate, line_search_decelerate, multiplicity_lagouanelle, LazyDerivatives,
-};
+use super::LazyDerivatives;
 use crate::{
     __util,
     num::{Complex, Zero},
-    poly::roots::{self, deflate},
+    poly::roots,
     roots::initial_guess::initial_guess_smallest,
     Poly, RealScalar,
 };

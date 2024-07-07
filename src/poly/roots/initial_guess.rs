@@ -1,11 +1,10 @@
 use std::cmp::Ordering;
 
 use itertools::Itertools;
-use num::FromPrimitive;
 
 use crate::{
     num::{Complex, Float, Zero},
-    Poly, Scalar, RealScalar,
+    Poly, RealScalar,
     __util::complex::{c_min, c_neg},
 };
 
@@ -50,7 +49,7 @@ pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
     guess
 }
 
-pub fn initial_guesses_random<T: Scalar>(mut poly: Poly<T>, seed: u64, out: &mut [Complex<T>]) {
+pub fn initial_guesses_random<T: RealScalar>(mut poly: Poly<T>, seed: u64, out: &mut [Complex<T>]) {
     poly.make_monic();
     let mut rng = fastrand::Rng::with_seed(seed);
     let low = lower_bound(&poly).to_f64().expect("overflow");
@@ -76,7 +75,7 @@ pub fn initial_guesses_random<T: Scalar>(mut poly: Poly<T>, seed: u64, out: &mut
 /// the next odd number. In essence, the annulus that contains all the roots is
 /// partitioned into equal slices and then a guess is picked at random in each
 /// of these slices. This parameter can be extrapolated above 1.
-pub fn initial_guesses_circle<T: Scalar>(
+pub fn initial_guesses_circle<T: RealScalar>(
     poly: &Poly<T>,
     bias: T,
     seed: u64,
@@ -111,7 +110,7 @@ pub fn initial_guesses_circle<T: Scalar>(
 /// The radius of a disk containing all the roots
 ///
 /// Uses Deutsch's simple formula \[[McNamee 2005](https://www.researchgate.net/publication/228745231_A_comparison_of_a_priori_bounds_on_real_or_complex_roots_of_polynomials)\]
-fn upper_bound<T: Scalar>(poly: &Poly<T>) -> T {
+fn upper_bound<T: RealScalar>(poly: &Poly<T>) -> T {
     debug_assert!(
         poly.degree_raw() >= 2,
         "upper bound of small degree polynomials is not supported, use explicit solver"
@@ -136,7 +135,7 @@ fn upper_bound<T: Scalar>(poly: &Poly<T>) -> T {
 }
 
 /// The radius of a disk containing none of the roots
-fn lower_bound<T: Scalar>(poly: &Poly<T>) -> T {
+fn lower_bound<T: RealScalar>(poly: &Poly<T>) -> T {
     let mut this = Poly::from_complex_vec(poly.0.iter().cloned().rev().collect_vec());
     this.make_monic();
     upper_bound(&this).recip()
@@ -147,14 +146,14 @@ fn lower_bound<T: Scalar>(poly: &Poly<T>) -> T {
 /// negative for clockwise turn, and zero if the points are collinear.
 ///
 /// [From Wiki Books](https://web.archive.org/web/20240617105108/https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python)
-fn cross_2d<T: Scalar>(o: (T, T), a: (T, T), b: (T, T)) -> T {
+fn cross_2d<T: RealScalar>(o: (T, T), a: (T, T), b: (T, T)) -> T {
     (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0)
 }
 
 /// Extract upper envelope of the convex hull of a set of points
 ///
 /// [From Wiki Books](https://web.archive.org/web/20240617105108/https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python)
-fn upper_convex_envelope<T: Scalar>(points: &mut Vec<(T, T)>) -> Vec<(T, T)> {
+fn upper_convex_envelope<T: RealScalar>(points: &mut Vec<(T, T)>) -> Vec<(T, T)> {
     points.sort_by(
         |a, b| match (a.0.partial_cmp(&b.0), a.1.partial_cmp(&b.1)) {
             (None, _) => panic!("cannot order NaNs"),

@@ -6,7 +6,7 @@ use fastrand::Rng;
 use itertools::Itertools;
 use num::{complex::Complex64, Complex};
 
-use crate::{Poly, Poly64, Scalar, __util::float::f64_make_safe};
+use crate::{Poly, Poly64, RealScalar, __util::float::f64_make_safe};
 
 use super::float::f64_make_nonzero;
 
@@ -172,12 +172,12 @@ impl<I: Iterator<Item = Complex<f64>>> Iterator for RandStreamConjugate64<I> {
     }
 }
 
-pub struct PolyStream<T: Scalar> {
+pub struct PolyStream<T: RealScalar> {
     max_degree: usize,
     root_stream: Box<dyn Iterator<Item = Complex<T>>>,
 }
 
-impl<T: Scalar> PolyStream<T> {
+impl<T: RealScalar> PolyStream<T> {
     pub fn new(max_degree: usize, root_stream: impl Iterator<Item = Complex<T>> + 'static) -> Self {
         Self {
             max_degree,
@@ -186,7 +186,7 @@ impl<T: Scalar> PolyStream<T> {
     }
 }
 
-impl<T: Scalar + PartialOrd> Iterator for PolyStream<T> {
+impl<T: RealScalar> Iterator for PolyStream<T> {
     type Item = (Vec<Complex<T>>, Poly<T>);
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
-use num::{traits::MulAdd, Complex, Float, One, Zero};
+use num::{traits::MulAdd, Complex, One, Zero};
 
 use crate::{
-    Scalar, RealScalar,
+    RealScalar,
     __util::complex::{c_neg, complex_fmt, complex_sort_mut},
 };
 
@@ -16,9 +16,9 @@ pub mod roots;
 mod special_funcs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Poly<T: Scalar>(pub(crate) na::DVector<Complex<T>>);
+pub struct Poly<T: RealScalar>(pub(crate) na::DVector<Complex<T>>);
 
-impl<T: Scalar> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// # Examples
     /// ```
     /// # use rust_poly::{poly, Poly};
@@ -44,7 +44,7 @@ impl<T: Scalar> Poly<T> {
     }
 }
 
-impl<T: Scalar> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {
         Self(na::DVector::from_row_slice(coeffs)).normalize()
     }
@@ -226,7 +226,7 @@ impl<T: Scalar> Poly<T> {
     }
 }
 
-impl<T: Scalar + PartialOrd> Poly<T> {
+impl<T: RealScalar + PartialOrd> Poly<T> {
     /// Monic polynomial from its complex roots.
     ///
     /// # Examples
@@ -341,7 +341,7 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
     }
 }
 
-impl<T: Scalar + Float> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// Returns true if every coefficient in the polynomial is smaller than the
     /// tolerance (using complex norm).
     ///
@@ -360,7 +360,7 @@ impl<T: Scalar + Float> Poly<T> {
     }
 }
 
-impl<T: Scalar + Display + PartialOrd> Display for Poly<T> {
+impl<T: RealScalar + Display> Display for Poly<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut iter = self.iter().enumerate();
         if let Some((_, c)) = iter.next() {

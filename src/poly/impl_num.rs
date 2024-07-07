@@ -8,9 +8,9 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
 
-use crate::{Poly, Scalar, RealScalar, __util::linalg::convolve_1d};
+use crate::{Poly, RealScalar, __util::linalg::convolve_1d};
 
-impl<T: Scalar> Zero for Poly<T> {
+impl<T: RealScalar> Zero for Poly<T> {
     fn zero() -> Self {
         Self::from_real_slice(&[T::zero()])
     }
@@ -88,13 +88,13 @@ impl<T: RealScalar> Poly<T> {
     }
 }
 
-impl<T: Scalar> One for Poly<T> {
+impl<T: RealScalar> One for Poly<T> {
     fn one() -> Self {
         Self(na::DVector::from_vec(vec![Complex::<T>::one()]))
     }
 }
 
-impl<T: Scalar> Add<Self> for Poly<T> {
+impl<T: RealScalar> Add<Self> for Poly<T> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -120,7 +120,7 @@ impl<T: Scalar> Add<Self> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Add<&Self> for Poly<T> {
+impl<T: RealScalar> Add<&Self> for Poly<T> {
     type Output = Self;
 
     fn add(self, rhs: &Self) -> Self::Output {
@@ -128,7 +128,7 @@ impl<T: Scalar> Add<&Self> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Add<Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Add<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn add(self, rhs: Poly<T>) -> Self::Output {
@@ -136,7 +136,7 @@ impl<T: Scalar> Add<Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Add<&Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Add<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn add(self, rhs: &Poly<T>) -> Self::Output {
@@ -144,7 +144,7 @@ impl<T: Scalar> Add<&Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<Self> for Poly<T> {
+impl<T: RealScalar> Mul<Self> for Poly<T> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -167,7 +167,7 @@ impl<T: Scalar> Mul<Self> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<&Self> for Poly<T> {
+impl<T: RealScalar> Mul<&Self> for Poly<T> {
     type Output = Self;
 
     fn mul(self, rhs: &Self) -> Self::Output {
@@ -175,7 +175,7 @@ impl<T: Scalar> Mul<&Self> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Mul<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn mul(self, rhs: Poly<T>) -> Self::Output {
@@ -183,7 +183,7 @@ impl<T: Scalar> Mul<Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<&Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Mul<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn mul(self, rhs: &Poly<T>) -> Self::Output {
@@ -191,7 +191,7 @@ impl<T: Scalar> Mul<&Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
+impl<T: RealScalar> Mul<Complex<T>> for Poly<T> {
     type Output = Self;
 
     fn mul(self, rhs: Complex<T>) -> Self::Output {
@@ -199,7 +199,7 @@ impl<T: Scalar> Mul<Complex<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
+impl<T: RealScalar> Mul<&Complex<T>> for Poly<T> {
     type Output = Self;
 
     fn mul(self, rhs: &Complex<T>) -> Self::Output {
@@ -209,7 +209,7 @@ impl<T: Scalar> Mul<&Complex<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<Complex<T>> for &Poly<T> {
+impl<T: RealScalar> Mul<Complex<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn mul(self, rhs: Complex<T>) -> Self::Output {
@@ -217,7 +217,7 @@ impl<T: Scalar> Mul<Complex<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Mul<&Complex<T>> for &Poly<T> {
+impl<T: RealScalar> Mul<&Complex<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn mul(self, rhs: &Complex<T>) -> Self::Output {
@@ -225,7 +225,7 @@ impl<T: Scalar> Mul<&Complex<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Sub<Self> for Poly<T> {
+impl<T: RealScalar> Sub<Self> for Poly<T> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -251,7 +251,7 @@ impl<T: Scalar> Sub<Self> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Sub<&Self> for Poly<T> {
+impl<T: RealScalar> Sub<&Self> for Poly<T> {
     type Output = Self;
 
     fn sub(self, rhs: &Self) -> Self::Output {
@@ -259,7 +259,7 @@ impl<T: Scalar> Sub<&Self> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Sub<Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Sub<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn sub(self, rhs: Poly<T>) -> Self::Output {
@@ -267,7 +267,7 @@ impl<T: Scalar> Sub<Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Sub<&Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Sub<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn sub(self, rhs: &Poly<T>) -> Self::Output {
@@ -319,7 +319,7 @@ impl<T: RealScalar> Div<&Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Div<Complex<T>> for Poly<T> {
+impl<T: RealScalar> Div<Complex<T>> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: Complex<T>) -> Self::Output {
@@ -327,7 +327,7 @@ impl<T: Scalar> Div<Complex<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Div<&Complex<T>> for Poly<T> {
+impl<T: RealScalar> Div<&Complex<T>> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: &Complex<T>) -> Self::Output {
@@ -337,7 +337,7 @@ impl<T: Scalar> Div<&Complex<T>> for Poly<T> {
     }
 }
 
-impl<T: Scalar> Div<Complex<T>> for &Poly<T> {
+impl<T: RealScalar> Div<Complex<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn div(self, rhs: Complex<T>) -> Self::Output {
@@ -345,7 +345,7 @@ impl<T: Scalar> Div<Complex<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Div<&Complex<T>> for &Poly<T> {
+impl<T: RealScalar> Div<&Complex<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn div(self, rhs: &Complex<T>) -> Self::Output {
@@ -385,7 +385,7 @@ impl<T: RealScalar> Rem<&Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: Scalar> Neg for Poly<T> {
+impl<T: RealScalar> Neg for Poly<T> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
@@ -393,7 +393,7 @@ impl<T: Scalar> Neg for Poly<T> {
     }
 }
 
-impl<T: Scalar> Neg for &Poly<T> {
+impl<T: RealScalar> Neg for &Poly<T> {
     type Output = Poly<T>;
 
     fn neg(self) -> Self::Output {
@@ -401,7 +401,7 @@ impl<T: Scalar> Neg for &Poly<T> {
     }
 }
 
-impl<T: Scalar> std::iter::Sum for Poly<T> {
+impl<T: RealScalar> std::iter::Sum for Poly<T> {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::zero(), |acc, x| acc + x).normalize()
     }

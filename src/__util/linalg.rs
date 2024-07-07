@@ -1,12 +1,9 @@
-use std::{cmp, ops::Div};
-
-use na::{dvector, matrix, ComplexField, DMatrix, DMatrixViewMut, Matrix2, RealField};
 use nalgebra::DVector;
-use num::{Complex, One, Zero};
+use num::{Complex, Zero};
 
-use crate::Scalar;
+use crate::RealScalar;
 
-pub(crate) fn convolve_1d<T: Scalar>(
+pub(crate) fn convolve_1d<T: RealScalar>(
     input: &DVector<Complex<T>>,
     kernel: &DVector<Complex<T>>,
 ) -> DVector<Complex<T>> {
