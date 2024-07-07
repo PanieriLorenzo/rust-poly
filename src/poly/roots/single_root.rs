@@ -4,7 +4,7 @@ use crate::{
 };
 use na::RealField;
 
-use crate::ScalarOps;
+use crate::RealScalar;
 
 mod naive;
 pub use naive::naive;
@@ -25,7 +25,7 @@ pub type NextRootFun<T> =
 // TODO: with specialization use Nikolajsen 2014 if T is f64 or f32, but right
 //       now this is fine for all real-like, including fractions and infinite
 //       precision
-fn stopping_criterion_garwick<T: ScalarOps>(
+fn stopping_criterion_garwick<T: RealScalar>(
     z: Complex<T>,
     z_old: Complex<T>,
     z_old_old: Complex<T>,
@@ -92,7 +92,7 @@ fn multiplicity_lagouanelle<T: Scalar>(
 }
 
 /// Speed up convergence using Madsen 1973
-fn line_search_accelerate<T: ScalarOps>(
+fn line_search_accelerate<T: RealScalar>(
     poly: &Poly<T>,
     guess: Complex<T>,
     delta: Complex<T>,
@@ -124,7 +124,7 @@ fn line_search_accelerate<T: ScalarOps>(
 }
 
 /// Slow down convergence using Madsen 1973
-fn line_search_decelerate<T: ScalarOps>(
+fn line_search_decelerate<T: RealScalar>(
     poly: &Poly<T>,
     guess: Complex<T>,
     delta: Complex<T>,

@@ -7,12 +7,12 @@ use crate::{
     poly::roots::{self, deflate},
     roots::initial_guess::initial_guess_smallest,
     scalar::SafeConstants,
-    Poly, Scalar, ScalarOps,
+    Poly, Scalar, RealScalar,
 };
 use na::RealField;
 use num::One;
 
-pub fn newton<T: ScalarOps + RealField>(
+pub fn newton<T: RealScalar + RealField>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,

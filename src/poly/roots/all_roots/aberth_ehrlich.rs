@@ -3,10 +3,10 @@ use na::RealField;
 use crate::{
     num::{Complex, One, Zero},
     roots::{self, initial_guess::initial_guesses_circle},
-    Poly, Scalar, ScalarOps, __util,
+    Poly, Scalar, RealScalar, __util,
 };
 
-pub fn aberth_ehrlich<T: ScalarOps + RealField>(
+pub fn aberth_ehrlich<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -92,7 +92,7 @@ pub fn aberth_ehrlich<T: ScalarOps + RealField>(
 /// Alpha coefficients of the Aberth-Ehrlich method
 ///
 /// Needs `points.len() == out.len()`.
-fn alphas<T: ScalarOps>(poly: &Poly<T>, points: &[Complex<T>], out: &mut [Complex<T>]) {
+fn alphas<T: RealScalar>(poly: &Poly<T>, points: &[Complex<T>], out: &mut [Complex<T>]) {
     debug_assert_eq!(points.len(), out.len());
 
     let p_diff = poly.clone().diff();
@@ -107,7 +107,7 @@ fn alphas<T: ScalarOps>(poly: &Poly<T>, points: &[Complex<T>], out: &mut [Comple
 /// Beta coefficients of the Aberth-Ehrlich method
 ///
 /// Needs `points.len() == out.len()`.
-fn betas<T: ScalarOps>(points: &[Complex<T>], out: &mut [Complex<T>]) {
+fn betas<T: RealScalar>(points: &[Complex<T>], out: &mut [Complex<T>]) {
     debug_assert_eq!(points.len(), out.len());
 
     let n = points.len();

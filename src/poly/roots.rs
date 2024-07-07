@@ -1,4 +1,4 @@
-use crate::{Poly, Scalar, ScalarOps, __util::complex::c_neg};
+use crate::{Poly, RealScalar, Scalar, __util::complex::c_neg};
 use na::{Complex, ComplexField, RealField};
 use num::{traits::real::Real, Float, FromPrimitive, One, Zero};
 
@@ -33,7 +33,7 @@ impl<T> Error<T> {
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
-impl<T: ScalarOps + RealField + Float> Poly<T> {
+impl<T: RealScalar + RealField + Float> Poly<T> {
     /// A convenient way of finding roots, with a pre-configured root finder.
     /// Should work well for most real polynomials of low degree.
     ///
@@ -64,7 +64,7 @@ impl<T: ScalarOps + RealField + Float> Poly<T> {
 }
 
 // private
-impl<T: ScalarOps + RealField + Float> Poly<T> {
+impl<T: RealScalar + RealField + Float> Poly<T> {
     fn trivial_roots(&mut self, epsilon: T) -> (Vec<Complex<T>>, u128) {
         let mut eval_counter = 0;
         debug_assert!(self.is_normalized());

@@ -94,7 +94,7 @@ macro_rules! poly {
 }
 
 mod scalar;
-pub use scalar::{Scalar, ScalarOps};
+pub use scalar::{RealScalar, Scalar};
 
 mod poly;
 pub use poly::{roots, Poly};

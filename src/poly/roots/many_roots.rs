@@ -1,12 +1,12 @@
 //! Methods that find multiple roots at the same time (but not all roots)
 
 use super::{halley, naive, newton, single_root::NextRootFun};
-use crate::{num::Complex, roots::initial_guesses_circle, Poly, ScalarOps};
+use crate::{num::Complex, roots::initial_guesses_circle, Poly, RealScalar};
 use na::RealField;
 use num::Zero;
 
 /// Run multiple single-root root finders in parallel.
-pub fn parallel<T: ScalarOps + RealField>(
+pub fn parallel<T: RealScalar + RealField>(
     next_root_fun: NextRootFun<T>,
     poly: &mut Poly<T>,
     epsilon: Option<T>,
@@ -44,7 +44,7 @@ pub fn parallel<T: ScalarOps + RealField>(
 }
 
 #[inline]
-pub fn naive_parallel<T: ScalarOps + RealField>(
+pub fn naive_parallel<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -55,7 +55,7 @@ pub fn naive_parallel<T: ScalarOps + RealField>(
 }
 
 #[inline]
-pub fn newton_parallel<T: ScalarOps + RealField>(
+pub fn newton_parallel<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -66,7 +66,7 @@ pub fn newton_parallel<T: ScalarOps + RealField>(
 }
 
 #[inline]
-pub fn halley_parallel<T: ScalarOps + RealField>(
+pub fn halley_parallel<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,

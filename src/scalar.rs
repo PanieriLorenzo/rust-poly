@@ -45,16 +45,11 @@ impl<
 //     type ComponentScalar = f32;
 // }
 
-pub trait RealScalar: Scalar {}
-
-impl RealScalar for f32 {}
-impl RealScalar for f64 {}
-
 // TODO: these are required by nalgebra for things that shouldn't require them.
 //       perhaps in the future they can be dropped?
 /// Trait bounds necessary to provide more advanced mathematical features.
 #[allow(clippy::module_name_repetitions)]
-pub trait ScalarOps:
+pub trait RealScalar:
     Scalar
     + AddAssign
     + SubAssign
@@ -74,7 +69,7 @@ impl<
             + RemAssign
             + MulAdd<Output = Self>
             + MulAddAssign,
-    > ScalarOps for T
+    > RealScalar for T
 {
 }
 

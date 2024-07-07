@@ -1,5 +1,5 @@
 use crate::{
-    Poly, Scalar, ScalarOps,
+    Poly, Scalar, RealScalar,
     __util::{
         casting::{usize_to_f64, usize_to_i32, usize_to_u32},
         luts::factorial_lut,
@@ -79,7 +79,7 @@ impl<T: Scalar + FromPrimitive> Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     // TODO: technically it can panic in some extreme cases, would need to
     //       do some boundary testing to write a proper doc comment
     #[allow(clippy::missing_panics_doc)]

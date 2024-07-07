@@ -4,12 +4,12 @@ pub mod aberth_ehrlich;
 pub use aberth_ehrlich::aberth_ehrlich;
 use na::{Complex, RealField};
 
-use crate::{Poly, ScalarOps};
+use crate::{Poly, RealScalar};
 
 use super::{halley, naive, newton, single_root::NextRootFun};
 
 /// Combinator that makes an all-roots root finder from a single-root root finder.
-pub fn deflate<T: ScalarOps + RealField>(
+pub fn deflate<T: RealScalar + RealField>(
     next_root_fun: NextRootFun<T>,
     poly: &mut Poly<T>,
     epsilon: Option<T>,
@@ -46,7 +46,7 @@ pub fn deflate<T: ScalarOps + RealField>(
 ///
 /// This implementation is based on [Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
 #[inline]
-pub fn halley_deflate<T: ScalarOps + RealField>(
+pub fn halley_deflate<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -65,7 +65,7 @@ pub fn halley_deflate<T: ScalarOps + RealField>(
 /// - You know its not going to get stuck and you want a slight performance improvement
 /// - You are benchmarking your custom root finder against a classical Newton-Raphson approach.
 #[inline]
-pub fn naive_deflate<T: ScalarOps + RealField>(
+pub fn naive_deflate<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -83,7 +83,7 @@ pub fn naive_deflate<T: ScalarOps + RealField>(
 ///
 /// This implementation was based on [Henrik Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
 #[inline]
-pub fn newton_deflate<T: ScalarOps + RealField>(
+pub fn newton_deflate<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,

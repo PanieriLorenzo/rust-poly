@@ -6,7 +6,7 @@ use crate::{
     num::{Complex, Zero},
     poly::roots::{self, deflate},
     roots::initial_guess::initial_guess_smallest,
-    Poly, ScalarOps,
+    Poly, RealScalar,
 };
 use na::RealField;
 
@@ -15,7 +15,7 @@ use na::RealField;
 /// # Returns
 /// - vector of roots (usually 1)
 /// - number of evaluations
-pub fn naive<T: ScalarOps + RealField>(
+pub fn naive<T: RealScalar + RealField>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,

@@ -3,7 +3,7 @@ use std::fmt::Display;
 use num::{traits::MulAdd, Complex, Float, One, Zero};
 
 use crate::{
-    Scalar, ScalarOps,
+    Scalar, RealScalar,
     __util::complex::{c_neg, complex_fmt, complex_sort_mut},
 };
 
@@ -289,7 +289,7 @@ impl<T: Scalar + PartialOrd> Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// Evaluate the polynomial for each entry of a slice.
     pub fn eval_multiple(&self, points: &[Complex<T>], out: &mut [Complex<T>]) {
         debug_assert!(self.is_normalized());
@@ -328,7 +328,7 @@ impl<T: ScalarOps> Poly<T> {
     }
 }
 
-impl<T: ScalarOps + PartialOrd> Poly<T> {
+impl<T: RealScalar + PartialOrd> Poly<T> {
     /// Translate along x-axis (or x-plane) and y-axis (or y-plane).
     ///
     /// Using complex coordinates means you'll effectively be translating in

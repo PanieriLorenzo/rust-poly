@@ -8,7 +8,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
 
-use crate::{Poly, Scalar, ScalarOps, __util::linalg::convolve_1d};
+use crate::{Poly, Scalar, RealScalar, __util::linalg::convolve_1d};
 
 impl<T: Scalar> Zero for Poly<T> {
     fn zero() -> Self {
@@ -24,7 +24,7 @@ impl<T: Scalar> Zero for Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// Calculate the quotient and remainder using long division. More efficient than
     /// calculating them separately.
     ///
@@ -275,19 +275,19 @@ impl<T: Scalar> Sub<&Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: ScalarOps> CheckedDiv for Poly<T> {
+impl<T: RealScalar> CheckedDiv for Poly<T> {
     fn checked_div(&self, rhs: &Self) -> Option<Self> {
         self.clone().checked_div_impl(rhs)
     }
 }
 
-impl<T: ScalarOps> CheckedRem for Poly<T> {
+impl<T: RealScalar> CheckedRem for Poly<T> {
     fn checked_rem(&self, rhs: &Self) -> Option<Self> {
         self.clone().checked_rem_impl(rhs)
     }
 }
 
-impl<T: ScalarOps> Div<Self> for Poly<T> {
+impl<T: RealScalar> Div<Self> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
@@ -295,7 +295,7 @@ impl<T: ScalarOps> Div<Self> for Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Div<&Self> for Poly<T> {
+impl<T: RealScalar> Div<&Self> for Poly<T> {
     type Output = Self;
 
     fn div(self, rhs: &Self) -> Self::Output {
@@ -303,7 +303,7 @@ impl<T: ScalarOps> Div<&Self> for Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Div<Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Div<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn div(self, rhs: Poly<T>) -> Self::Output {
@@ -311,7 +311,7 @@ impl<T: ScalarOps> Div<Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Div<&Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Div<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn div(self, rhs: &Poly<T>) -> Self::Output {
@@ -353,7 +353,7 @@ impl<T: Scalar> Div<&Complex<T>> for &Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Rem<Self> for Poly<T> {
+impl<T: RealScalar> Rem<Self> for Poly<T> {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
@@ -361,7 +361,7 @@ impl<T: ScalarOps> Rem<Self> for Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Rem<&Self> for Poly<T> {
+impl<T: RealScalar> Rem<&Self> for Poly<T> {
     type Output = Self;
 
     fn rem(self, rhs: &Self) -> Self::Output {
@@ -369,7 +369,7 @@ impl<T: ScalarOps> Rem<&Self> for Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Rem<Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Rem<Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn rem(self, rhs: Poly<T>) -> Self::Output {
@@ -377,7 +377,7 @@ impl<T: ScalarOps> Rem<Poly<T>> for &Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Rem<&Poly<T>> for &Poly<T> {
+impl<T: RealScalar> Rem<&Poly<T>> for &Poly<T> {
     type Output = Poly<T>;
 
     fn rem(self, rhs: &Poly<T>) -> Self::Output {
@@ -407,7 +407,7 @@ impl<T: Scalar> std::iter::Sum for Poly<T> {
     }
 }
 
-impl<T: ScalarOps> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     pub(crate) fn checked_div_impl(self, rhs: &Self) -> Option<Self> {
         Some(self.div_rem(rhs)?.0)
     }

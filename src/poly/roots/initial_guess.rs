@@ -5,12 +5,12 @@ use num::FromPrimitive;
 
 use crate::{
     num::{Complex, Float, Zero},
-    Poly, Scalar, ScalarOps,
+    Poly, Scalar, RealScalar,
     __util::complex::{c_min, c_neg},
 };
 
 /// [ref](https://doi.org/10.1007/BF01933524)
-pub fn initial_guess_smallest<T: ScalarOps>(poly: &Poly<T>) -> Complex<T> {
+pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
     debug_assert!(poly.is_normalized());
     debug_assert!(poly.len_raw() >= 2);
 
