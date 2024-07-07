@@ -102,11 +102,10 @@ impl<T: Scalar> Poly<T> {
         *self = self.clone().normalize();
     }
 
-    // TODO: deflate_downward would be a better name
     /// Factor out one root of the polynomial, by scaling coefficients from
     /// the one with the highest degree down, then discarding the smallest
     /// coefficient.
-    pub(crate) fn deflate_forward(mut self, r: Complex<T>) -> Self {
+    pub(crate) fn deflate_downward(mut self, r: Complex<T>) -> Self {
         // TODO: it is possible to use FFT for forward deflation
         let mut z0 = Complex::<T>::zero();
         // FIXME: I think this does exactly one wasted iteration at the end
@@ -117,13 +116,12 @@ impl<T: Scalar> Poly<T> {
         self.shift_down(1).normalize()
     }
 
-    // TODO: deflate_upward would be a better name
     // TODO: single letter names
     /// Factor out one root of the polynomial, by scaling coefficients from
     /// the one with the lowest degree upwards, then discarding the largest
     /// coefficient.
     #[allow(clippy::many_single_char_names)]
-    pub(crate) fn deflate_backward(mut self, r: Complex<T>) -> Self {
+    pub(crate) fn deflate_upward(mut self, r: Complex<T>) -> Self {
         let n = self.degree_raw();
         if n == 0 {
             return self;
@@ -152,8 +150,8 @@ impl<T: Scalar> Poly<T> {
     pub(crate) fn deflate_composite(&mut self, r: Complex<T>) {
         // TODO: should take a mutable reference instead
         let n = self.degree_raw();
-        let fwd = self.clone().deflate_forward(r);
-        let bwd = self.clone().deflate_backward(r);
+        let fwd = self.clone().deflate_downward(r);
+        let bwd = self.clone().deflate_upward(r);
         // TODO: in order to drop the Bounded trait bound, this should be
         //       done without explicit reference to max value
         let mut ra = T::max_value();
