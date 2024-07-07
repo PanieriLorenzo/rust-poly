@@ -97,8 +97,7 @@ mod scalar;
 pub use scalar::{Scalar, ScalarOps};
 
 mod poly;
-// TODO: wildcard bad
-pub use poly::*;
+pub use poly::{roots, Poly};
 
 #[doc(hidden)]
 pub mod __util;
