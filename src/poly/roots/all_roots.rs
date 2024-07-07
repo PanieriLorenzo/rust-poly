@@ -38,8 +38,7 @@ pub fn deflate<T: ScalarOps + RealField>(
         let root = next_roots[0];
         eval_counter += num_evals;
         roots.push(root);
-        // TODO: deflate_composite should borrow instead
-        *poly = poly.clone().deflate_composite(root);
+        poly.deflate_composite(root);
     }
 }
 
