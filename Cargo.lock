@@ -1259,7 +1259,6 @@ dependencies = [
  "num",
  "plotly",
  "simple_logger",
- "softfloat",
  "thiserror",
 ]
 
@@ -1400,12 +1399,6 @@ dependencies = [
  "time",
  "windows-sys 0.48.0",
 ]
-
-[[package]]
-name = "softfloat"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "359a2aa2309eed307acc397678f7fbb43989db6ee417a11752248fc98451e696"
 
 [[package]]
 name = "strsim"

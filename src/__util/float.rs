@@ -1,15 +1,6 @@
 //! floating point utilities
 
-use softfloat::F64;
-
-#[deprecated]
-pub const F64_SMALL_NUM: f64 = f64_const_sqrt(f64::MIN_POSITIVE) / f64::EPSILON;
-
-pub const F64_PHI: f64 = 1.618_033_988_749_895;
-
-pub const fn f64_const_sqrt(x: f64) -> f64 {
-    F64::from_native_f64(x).sqrt().to_native_f64()
-}
+use crate::scalar::SafeConstants;
 
 /// Makes a degenerate float normal again by either clamping it or replacing
 /// NaN with zero.
@@ -49,13 +40,15 @@ pub fn f64_make_nonzero(x: f64) -> f64 {
 }
 
 /// If a float's absolute value is outside of the safe range
-/// `[F64_SMALL_NUM, F64_BIG_NUM]`, bump it to the nearest safe value.
+/// `[f64::small_safe(), f64::large_safe()]`, bump it to the nearest safe value.
 /// This also bumps zeros, as they are inherently unsafe, and NaNs are
-/// treated as `F64_SMALL_NUM`.
+/// treated as `f64::small_safe()`.
 pub fn f64_make_safe(x: f64) -> f64 {
     let x = f64_make_normal(x);
-    if x.abs() < F64_SMALL_NUM {
-        F64_SMALL_NUM.copysign(x)
+    if x.is_small() {
+        f64::small_safe().copysign(x)
+    } else if x.is_large() {
+        f64::large_safe().copysign(x)
     } else {
         x
     }
