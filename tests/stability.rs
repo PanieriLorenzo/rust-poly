@@ -16,14 +16,13 @@
 //! necessary to achieve that, and to some extent what epsilon is necessary to
 //! achieve at least 0.1 validation error.
 
-use num::{complex::Complex64, Zero};
 use rust_poly::{
     __util::testing::{
         check_roots, test_case_multiple_roots, test_case_roots, RandStreamC64Cartesian,
         RandStreamC64Polar, RandStreamR64,
     },
     roots::{
-        aberth_ehrlich, halley_deflate, initial_guesses_random, naive_deflate, newton_deflate,
+        aberth_ehrlich, halley_deflate, naive_deflate, newton_deflate,
     },
 };
 

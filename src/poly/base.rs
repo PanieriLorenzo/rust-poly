@@ -194,7 +194,7 @@ impl<T: RealScalar> Poly<T> {
 
 #[cfg(test)]
 mod test {
-    use na::{DVector, Matrix3};
+    use na::DVector;
     use num::{complex::Complex64, Zero};
 
     use crate::Poly;

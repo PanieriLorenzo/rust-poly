@@ -158,9 +158,8 @@ fn line_search_decelerate<T: RealScalar>(
 mod test {
 
     use na::Complex;
-    use num::complex::ComplexFloat;
 
-    use crate::{roots::initial_guess::initial_guess_smallest, Poly64};
+    use crate::roots::initial_guess::initial_guess_smallest;
 
     use super::LazyDerivatives;
 

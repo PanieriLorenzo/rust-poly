@@ -2,7 +2,7 @@
 
 use num::{
     traits::{Float, MulAdd, MulAddAssign},
-    Complex, FromPrimitive, Num, Zero,
+    Complex, FromPrimitive, Num,
 };
 use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
 
