@@ -3,8 +3,6 @@ use num::{One, Zero};
 
 use crate::{scalar::SafeConstants, Poly, RealScalar};
 
-use super::indexing::Get;
-
 impl<T: RealScalar> Poly<T> {
     /// Applies a closure to each coefficient in-place
     pub(crate) fn apply(&mut self, f: impl FnMut(&mut Complex<T>)) {
@@ -95,7 +93,7 @@ impl<T: RealScalar> Poly<T> {
     pub(crate) fn trim(&mut self) {
         let last_coeff = self.last();
         if last_coeff.is_small() {
-            let mut res = self.get(0..self.len_raw() - 1).expect("infallible");
+            let mut res = Poly::new(&self.as_slice()[0..self.len_raw() - 1]);
             res.trim();
             *self = res;
         }
@@ -110,8 +108,8 @@ impl<T: RealScalar> Poly<T> {
         let mut z0 = Complex::<T>::zero();
         // FIXME: I think this does exactly one wasted iteration at the end
         for j in 0..self.len_raw() {
-            z0 = z0 * r + *self.coeff_descending(j);
-            *self.coeff_descending_mut(j) = z0;
+            z0 = z0 * r + *self.coeffs_descending(j);
+            *self.coeffs_descending_mut(j) = z0;
         }
         self.shift_down(1).normalize()
     }
@@ -129,13 +127,13 @@ impl<T: RealScalar> Poly<T> {
         let mut z0 = Complex::zero();
         if r != z0 {
             let mut i = n - 1;
-            let mut t = *self.coeff_descending(n.try_into().expect("overflow"));
+            let mut t = *self.coeffs_descending(n.try_into().expect("overflow"));
             let mut s;
             loop {
                 s = t;
-                t = *self.coeff_descending(i.try_into().expect("overflow"));
+                t = *self.coeffs_descending(i.try_into().expect("overflow"));
                 z0 = (z0 - s) / r;
-                *self.coeff_descending_mut(i.try_into().expect("overflow")) = z0;
+                *self.coeffs_descending_mut(i.try_into().expect("overflow")) = z0;
                 i -= 1;
                 if i == 0 {
                     break;
@@ -157,11 +155,15 @@ impl<T: RealScalar> Poly<T> {
         let mut ua;
         let mut k = 0;
         for i in 0..n {
-            ua = fwd.coeff_descending(i.try_into().expect("overflow")).norm()
-                + bwd.coeff_descending(i.try_into().expect("overflow")).norm();
+            ua = fwd
+                .coeffs_descending(i.try_into().expect("overflow"))
+                .norm()
+                + bwd
+                    .coeffs_descending(i.try_into().expect("overflow"))
+                    .norm();
             if !ua.is_zero() {
-                ua = (fwd.coeff_descending(i.try_into().expect("overflow"))
-                    - bwd.coeff_descending(i.try_into().expect("overflow")))
+                ua = (fwd.coeffs_descending(i.try_into().expect("overflow"))
+                    - bwd.coeffs_descending(i.try_into().expect("overflow")))
                 .norm()
                     / ua;
                 if ua < ra {
@@ -172,20 +174,20 @@ impl<T: RealScalar> Poly<T> {
         }
         let mut i = k.saturating_sub(1);
         loop {
-            *self.coeff_descending_mut(i.try_into().expect("overflow")) =
-                *fwd.coeff_descending(i.try_into().expect("overflow"));
+            *self.coeffs_descending_mut(i.try_into().expect("overflow")) =
+                *fwd.coeffs_descending(i.try_into().expect("overflow"));
             if i == 0 {
                 break;
             }
             i -= 1;
         }
-        *self.coeff_descending_mut(k.try_into().expect("overflow")) = (fwd
-            .coeff_descending(k.try_into().expect("overflow"))
-            + bwd.coeff_descending(k.try_into().expect("overflow")))
+        *self.coeffs_descending_mut(k.try_into().expect("overflow")) = (fwd
+            .coeffs_descending(k.try_into().expect("overflow"))
+            + bwd.coeffs_descending(k.try_into().expect("overflow")))
         .scale(T::from_u8(2).expect("should fit").recip());
         for i in (k + 1)..n {
-            *self.coeff_descending_mut(i.try_into().expect("overflow")) =
-                *bwd.coeff_descending(i.try_into().expect("overflow"));
+            *self.coeffs_descending_mut(i.try_into().expect("overflow")) =
+                *bwd.coeffs_descending(i.try_into().expect("overflow"));
         }
 
         *self = self.shift_down(1).normalize();

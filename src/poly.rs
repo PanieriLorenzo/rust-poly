@@ -200,7 +200,7 @@ impl<T: RealScalar> Poly<T> {
         if degree as usize >= self.len_raw() {
             return None;
         }
-        Some(Self::term(self[degree as usize], degree))
+        Some(Self::term(self.as_slice()[degree as usize], degree))
     }
 
     /// Iterate over the terms of a polynomial
