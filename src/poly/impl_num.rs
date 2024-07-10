@@ -9,8 +9,8 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 extern crate nalgebra as na;
 
 use crate::{
+    util::{casting::usize_to_u32, linalg::convolve_1d},
     Poly, RealScalar,
-    __util::{casting::usize_to_u32, linalg::convolve_1d},
 };
 
 impl<T: RealScalar> Zero for Poly<T> {

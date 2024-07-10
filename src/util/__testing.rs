@@ -6,7 +6,7 @@ use fastrand::Rng;
 use itertools::Itertools;
 use num::{complex::Complex64, Complex};
 
-use crate::{Poly, Poly64, RealScalar, __util::float::f64_make_safe};
+use crate::{util::float::f64_make_safe, Poly, Poly64, RealScalar};
 
 use super::float::f64_make_nonzero;
 

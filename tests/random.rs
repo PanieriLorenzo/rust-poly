@@ -1,7 +1,7 @@
 //! Exploratory tests which use randomized test cases
 
 use fastrand::Rng;
-use rust_poly::__util::testing::{check_roots, test_case_roots, RandStreamR64};
+use rust_poly::__testing::{check_roots, test_case_roots, RandStreamR64};
 
 #[test]
 fn test_uniform_real_roots() {

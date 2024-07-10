@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use rust_poly::{
     Poly64,
-    __util::testing::{PolyStream, RandStreamC64Polar},
+    __testing::{PolyStream, RandStreamC64Polar},
     roots::newton_deflate,
 };
 

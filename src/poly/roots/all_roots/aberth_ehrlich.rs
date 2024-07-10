@@ -3,11 +3,11 @@ use na::RealField;
 use crate::{
     num::{Complex, One, Zero},
     roots::{self, initial_guess::initial_guesses_circle},
-    Poly, RealScalar,
-    __util::{
+    util::{
         self,
         doc_macros::{errors_no_converge, panic_t_from_f64},
     },
+    Poly, RealScalar,
 };
 
 /// TODO: document this
@@ -76,7 +76,7 @@ pub fn aberth_ehrlich<T: RealScalar + RealField>(
     let mut alphas_buff = vec![Complex::<T>::zero(); n];
     let mut betas_buff = vec![Complex::<T>::zero(); n];
 
-    for i in __util::iterator::saturating_counter() {
+    for i in util::iterator::saturating_counter() {
         if max_iter.is_some_and(|max| i > max) {
             return Err(roots::Error::NoConverge(points));
         }
@@ -141,8 +141,8 @@ mod test {
 
     use super::aberth_ehrlich;
     use crate::{
-        __util::testing::check_roots,
         roots::initial_guess::{initial_guesses_circle, initial_guesses_random},
+        util::__testing::check_roots,
     };
 
     // #[test]

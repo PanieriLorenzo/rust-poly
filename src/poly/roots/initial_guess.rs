@@ -4,12 +4,12 @@ use itertools::Itertools;
 
 use crate::{
     num::{Complex, Float, Zero},
-    Poly, RealScalar,
-    __util::{
+    util::{
         casting::usize_to_f64,
         complex::{c_min, c_neg},
         doc_macros::{panic_t_from_f64, panic_t_from_int},
     },
+    Poly, RealScalar,
 };
 
 // TODO: initial guesses Bini (see allow(unused) functions below)

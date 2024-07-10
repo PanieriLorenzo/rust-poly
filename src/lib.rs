@@ -108,8 +108,8 @@ pub use scalar::RealScalar;
 mod poly;
 pub use poly::{roots, Poly};
 
-#[doc(hidden)]
-pub mod __util;
+pub(crate) mod util;
+pub use util::__testing;
 
 pub type Poly32 = Poly<f32>;
 pub type Poly64 = Poly<f64>;

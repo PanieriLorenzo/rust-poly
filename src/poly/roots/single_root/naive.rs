@@ -1,12 +1,12 @@
 use super::LazyDerivatives;
 use crate::{
-    __util::{
-        self,
-        doc_macros::{errors_no_converge, panic_t_from_f64},
-    },
     num::{Complex, Zero},
     poly::roots,
     roots::initial_guess::initial_guess_smallest,
+    util::{
+        self,
+        doc_macros::{errors_no_converge, panic_t_from_f64},
+    },
     Poly, RealScalar,
 };
 use na::RealField;
@@ -37,7 +37,7 @@ pub fn naive<T: RealScalar + RealField>(
     let mut diffs = LazyDerivatives::new(poly);
 
     // until convergence
-    for i in __util::iterator::saturating_counter() {
+    for i in util::iterator::saturating_counter() {
         let px = poly.eval(guess);
 
         // stopping criterion 1: converged
@@ -73,7 +73,7 @@ pub fn naive<T: RealScalar + RealField>(
 
 #[cfg(test)]
 mod test {
-    use crate::{__util::testing::check_roots, num::One, roots::naive_deflate, Poly64};
+    use crate::{num::One, roots::naive_deflate, util::__testing::check_roots, Poly64};
 
     #[test]
     pub fn degree_0() {

@@ -1,4 +1,4 @@
-use crate::{Poly, RealScalar, __util::complex::c_neg};
+use crate::{util::complex::c_neg, Poly, RealScalar};
 use na::{Complex, RealField};
 use num::{Float, FromPrimitive, One, Zero};
 

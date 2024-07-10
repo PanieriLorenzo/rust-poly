@@ -1,9 +1,9 @@
 use crate::{
-    Poly, RealScalar,
-    __util::{
+    util::{
         casting::{usize_to_f64, usize_to_i32, usize_to_u32},
         luts::factorial_lut,
     },
+    Poly, RealScalar,
 };
 use num::{BigUint, FromPrimitive};
 

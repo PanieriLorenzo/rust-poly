@@ -4,7 +4,7 @@ pub mod aberth_ehrlich;
 pub use aberth_ehrlich::aberth_ehrlich;
 use na::{Complex, RealField};
 
-use crate::{Poly, RealScalar, __util::doc_macros::errors_no_converge};
+use crate::{util::doc_macros::errors_no_converge, Poly, RealScalar};
 
 use super::{halley, naive, newton, single_root::NextRootFun};
 

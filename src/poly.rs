@@ -3,11 +3,11 @@ use std::fmt::Display;
 use num::{traits::MulAdd, Complex, One, Zero};
 
 use crate::{
-    RealScalar,
-    __util::{
+    util::{
         complex::{c_neg, complex_fmt, complex_sort_mut},
         doc_macros::panic_absurd_size,
     },
+    RealScalar,
 };
 
 mod base;

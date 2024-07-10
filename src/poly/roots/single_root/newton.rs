@@ -1,13 +1,13 @@
 use super::{line_search_accelerate, line_search_decelerate, LazyDerivatives};
 use crate::{
-    __util::{
-        self,
-        doc_macros::{errors_no_converge, panic_t_from_f64},
-    },
     num::{Complex, Zero},
     poly::roots,
     roots::initial_guess::initial_guess_smallest,
     scalar::SafeConstants,
+    util::{
+        self,
+        doc_macros::{errors_no_converge, panic_t_from_f64},
+    },
     Poly, RealScalar,
 };
 use na::RealField;
@@ -45,7 +45,7 @@ pub fn newton<T: RealScalar + RealField>(
     let mut diffs = LazyDerivatives::new(poly);
 
     // until convergence
-    for i in __util::iterator::saturating_counter() {
+    for i in util::iterator::saturating_counter() {
         let px = poly.eval(guess);
         eval_counter += 1;
 
@@ -187,7 +187,7 @@ fn check_will_converge<T: RealScalar>(
 
 #[cfg(test)]
 mod test {
-    use crate::{__util::testing::check_roots, num::One, roots::newton_deflate, Poly64};
+    use crate::{num::One, roots::newton_deflate, util::__testing::check_roots, Poly64};
 
     #[test]
     pub fn degree_0() {
