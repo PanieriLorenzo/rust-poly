@@ -17,6 +17,7 @@ impl<T: RealScalar> Poly<T> {
     ///
     /// This is an alias for [`Poly::as_slice`] for API consistency.
     #[inline]
+    #[must_use]
     pub fn coeffs(&self) -> &[Complex<T>] {
         self.as_slice()
     }

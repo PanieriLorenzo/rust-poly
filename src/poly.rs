@@ -4,7 +4,10 @@ use num::{traits::MulAdd, Complex, One, Zero};
 
 use crate::{
     RealScalar,
-    __util::complex::{c_neg, complex_fmt, complex_sort_mut},
+    __util::{
+        complex::{c_neg, complex_fmt, complex_sort_mut},
+        doc_macros::panic_absurd_size,
+    },
 };
 
 mod base;
@@ -124,13 +127,18 @@ impl<T: RealScalar> Poly<T> {
     /// Note that this will return `-1` for zero polynomials. The degree of
     /// zero polynomials is undefined, but we use the `-1` convention adopted
     /// by some authors.
+    ///
+    /// # Panics
+    #[doc = panic_absurd_size!()]
     #[must_use]
     pub fn degree(&self) -> i64 {
         debug_assert!(self.is_normalized());
         if self.is_zero() {
             return -1;
         }
-        self.degree_raw() as i64
+        self.degree_raw()
+            .try_into()
+            .expect("infallible except for absurd cases")
     }
 
     #[must_use]
@@ -296,7 +304,7 @@ impl<T: RealScalar> Poly<T> {
 
         // TODO: parallelize this loop
         for (y, x) in out.iter_mut().zip(points) {
-            *y = self.eval(x.clone());
+            *y = self.eval(*x);
         }
     }
 
@@ -319,8 +327,23 @@ impl<T: RealScalar> Poly<T> {
         // computing them in parallel using SIMD, Rayon or GPU.
         debug_assert!(self.is_normalized());
         let mut eval = self.last();
-        let n = self.len_raw();
+
+        // inlined len_raw() to ensure safety conditions are not broken by
+        // updating len_raw() implementation
+        let n = self.0.len();
+
         for i in 1..n {
+            // SAFETY: index n - i - 1 is always in bounds
+            // PROOF:
+            // 1. the safe bounds for the index are [0, n - 1]
+            // 2. i is always in the range [1, n - 1]
+            // 3. the range of the index n - i - 1 is given by:
+            //    n - i - 1 => n - [1, n - 1] - 1
+            //             <=> [n - 1 - 1, n - 1 - (n - 1)]
+            //             <=> [n - 2, 0]
+            //             <=> [0, n - 2]   reversing bounds is equivalent
+            // 4. the range of the index [0, n - 2] is a subset of [0, n - 1],
+            //    therefore the index is in bounds. QED
             let c = *unsafe { self.0.get_unchecked(n - i - 1) };
             eval = eval.mul_add(x, c);
         }

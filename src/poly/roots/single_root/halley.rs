@@ -2,7 +2,10 @@ use super::{
     line_search_accelerate, line_search_decelerate, multiplicity_lagouanelle, LazyDerivatives,
 };
 use crate::{
-    __util,
+    __util::{
+        self,
+        doc_macros::{errors_no_converge, panic_t_from_f64, panic_t_from_int},
+    },
     num::{Complex, One, Zero},
     poly::roots,
     roots::initial_guess::initial_guess_smallest,
@@ -15,6 +18,17 @@ use na::RealField;
 /// # Returns
 /// - vector of roots (usually 1)
 /// - number of evaluations
+///
+/// # Errors
+#[doc = errors_no_converge!()]
+///
+/// # Panics
+#[doc = panic_t_from_f64!()]
+#[doc = panic_t_from_int!(r"usize")]
+#[allow(clippy::items_after_statements)]
+// TODO: remove this when there's a better alternative
+#[allow(clippy::type_complexity)]
+#[allow(clippy::similar_names)]
 pub fn halley<T: RealScalar + RealField>(
     poly: &Poly<T>,
     epsilon: T,
@@ -22,7 +36,7 @@ pub fn halley<T: RealScalar + RealField>(
     initial_guess: Option<Complex<T>>,
 ) -> std::result::Result<(Vec<Complex<T>>, u128), roots::Error<Vec<Complex<T>>>> {
     let mut eval_counter = 0;
-    let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(&poly));
+    let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(poly));
     let mut guess_old = guess;
     let mut guess_old_old = guess;
     let mut guess_delta_old = Complex::one();
@@ -60,11 +74,13 @@ pub fn halley<T: RealScalar + RealField>(
         if px.norm() >= best_px_norm {
             cycle_counter += 1;
             if cycle_counter > CYCLE_COUNT_THRESHOLD {
-                cycle_counter = 0;
-                log::trace!("cycle detected, backing off {{current_guess: {guess}, best_guess: {best_guess}}}");
                 // arbitrary constants
                 const ROTATION_RADIANS: f64 = 0.925_024_5;
                 const SCALE: f64 = 5.0;
+
+                cycle_counter = 0;
+                log::trace!("cycle detected, backing off {{current_guess: {guess}, best_guess: {best_guess}}}");
+
                 // TODO: when const trait methods are supported, this should be
                 //       made fully const.
                 let backoff = Complex::from_polar(
@@ -86,11 +102,12 @@ pub fn halley<T: RealScalar + RealField>(
         let denom = (pdx * pdx).scale(T::from_u8(2).expect("overflow")) - px * pddx;
 
         let guess_delta = if denom.is_zero() || pdx.is_zero() {
-            log::trace!("local minimum, backing off");
-
             // these are arbitrary, originally chosen by Madsen.
             const ROTATION_RADIANS: f64 = 0.925_024_5;
             const SCALE: f64 = 5.0;
+
+            log::trace!("local minimum, backing off");
+
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
             let backoff = Complex::from_polar(
@@ -107,11 +124,12 @@ pub fn halley<T: RealScalar + RealField>(
         let guess_delta = if guess_delta.norm()
             > guess_delta_old.norm() * T::from_f64(EXPLODE_THRESHOLD).expect("overflow")
         {
-            log::trace!("exploding gradient, backing off");
-
             // these are arbitrary, originally chosen by Madsen.
             const ROTATION_RADIANS: f64 = 0.925_024_5;
             const SCALE: f64 = 5.0;
+
+            log::trace!("exploding gradient, backing off");
+
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
             let backoff = Complex::from_polar(

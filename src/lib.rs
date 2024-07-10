@@ -1,6 +1,15 @@
 // TODO(version: v1.0.0): license/author header project-wide, see MIT guidelines
+
+// lint groups
 #![warn(clippy::pedantic)]
-#![warn(clippy::nursery)]
+#![warn(clippy::cargo)]
+// restriction lints
+#![warn(clippy::dbg_macro)]
+#![warn(clippy::print_stdout)]
+#![warn(clippy::print_stderr)]
+#![warn(clippy::undocumented_unsafe_blocks)]
+#![warn(clippy::unnecessary_safety_doc)]
+#![warn(clippy::unwrap_used)]
 
 extern crate nalgebra as na;
 

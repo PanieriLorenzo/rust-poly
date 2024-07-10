@@ -1,6 +1,9 @@
 use super::{line_search_accelerate, line_search_decelerate, LazyDerivatives};
 use crate::{
-    __util,
+    __util::{
+        self,
+        doc_macros::{errors_no_converge, panic_t_from_f64},
+    },
     num::{Complex, Zero},
     poly::roots,
     roots::initial_guess::initial_guess_smallest,
@@ -10,6 +13,16 @@ use crate::{
 use na::RealField;
 use num::One;
 
+/// Find a single root using Newton's method
+///
+/// # Errors
+#[doc = errors_no_converge!()]
+///
+/// # Panics
+#[doc = panic_t_from_f64!()]
+#[allow(clippy::similar_names)]
+#[allow(clippy::items_after_statements)]
+#[allow(clippy::type_complexity)]
 pub fn newton<T: RealScalar + RealField>(
     poly: &Poly<T>,
     epsilon: T,
@@ -17,7 +30,7 @@ pub fn newton<T: RealScalar + RealField>(
     initial_guess: Option<Complex<T>>,
 ) -> std::result::Result<(Vec<Complex<T>>, u128), roots::Error<Vec<Complex<T>>>> {
     let mut eval_counter = 0;
-    let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(&poly));
+    let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(poly));
     let mut guess_old = guess;
     let mut guess_old_old = guess;
     let mut guess_delta = Complex::one();
@@ -56,11 +69,13 @@ pub fn newton<T: RealScalar + RealField>(
         if px.norm() >= best_px_norm {
             cycle_counter += 1;
             if cycle_counter > CYCLE_COUNT_THRESHOLD {
-                cycle_counter = 0;
-                log::trace!("cycle detected, backing off {{current_guess: {guess}, best_guess: {best_guess}}}");
                 // arbitrary constants
                 const ROTATION_RADIANS: f64 = 0.925_024_5;
                 const SCALE: f64 = 5.0;
+
+                cycle_counter = 0;
+                log::trace!("cycle detected, backing off {{current_guess: {guess}, best_guess: {best_guess}}}");
+
                 // TODO: when const trait methods are supported, this should be
                 //       made fully const.
                 let backoff = Complex::from_polar(

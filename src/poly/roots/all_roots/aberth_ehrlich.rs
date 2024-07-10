@@ -3,9 +3,22 @@ use na::RealField;
 use crate::{
     num::{Complex, One, Zero},
     roots::{self, initial_guess::initial_guesses_circle},
-    Poly, RealScalar, __util,
+    Poly, RealScalar,
+    __util::{
+        self,
+        doc_macros::{errors_no_converge, panic_t_from_f64},
+    },
 };
 
+/// TODO: document this
+///
+/// # Errors
+#[doc = errors_no_converge!()]
+///
+/// # Panics
+/// If the provided guesses are not unique, i.e. if two or more are the same.
+///
+#[doc = panic_t_from_f64!()]
 pub fn aberth_ehrlich<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
@@ -55,7 +68,7 @@ pub fn aberth_ehrlich<T: RealScalar + RealField>(
             assert!(
                 (initial_guesses[i] - initial_guesses[j]).norm() > T::zero(),
                 "initial guesses must be distinct"
-            )
+            );
         }
     }
 
@@ -100,7 +113,7 @@ fn alphas<T: RealScalar>(poly: &Poly<T>, points: &[Complex<T>], out: &mut [Compl
     // TODO: division by zero
     poly.eval_multiple(points, out);
     for (y, x) in out.iter_mut().zip(points) {
-        *y = *y / p_diff.eval(*x)
+        *y /= p_diff.eval(*x);
     }
 }
 

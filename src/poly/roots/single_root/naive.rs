@@ -1,6 +1,9 @@
 use super::LazyDerivatives;
 use crate::{
-    __util,
+    __util::{
+        self,
+        doc_macros::{errors_no_converge, panic_t_from_f64},
+    },
     num::{Complex, Zero},
     poly::roots,
     roots::initial_guess::initial_guess_smallest,
@@ -8,19 +11,27 @@ use crate::{
 };
 use na::RealField;
 
-/// Find a single root
+/// Find a single root using naive Newton's method
 ///
 /// # Returns
 /// - vector of roots (usually 1)
 /// - number of evaluations
+///
+/// # Errors
+#[doc = errors_no_converge!()]
+///
+/// # Panics
+#[doc = panic_t_from_f64!()]
+#[allow(clippy::similar_names)]
+#[allow(clippy::items_after_statements)]
+#[allow(clippy::type_complexity)]
 pub fn naive<T: RealScalar + RealField>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,
     initial_guess: Option<Complex<T>>,
 ) -> std::result::Result<(Vec<Complex<T>>, u128), roots::Error<Vec<Complex<T>>>> {
-    let mut eval_counter = 0;
-    let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(&poly));
+    let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(poly));
     let mut guess_old = guess;
     let mut guess_old_old = guess;
     let mut diffs = LazyDerivatives::new(poly);
@@ -31,12 +42,12 @@ pub fn naive<T: RealScalar + RealField>(
 
         // stopping criterion 1: converged
         if px.norm() <= epsilon {
-            return Ok((vec![guess], eval_counter));
+            return Ok((vec![guess], i as u128));
         }
 
         // stopping criterion 2: no improvement predicted due to numeric precision
         if i > 3 && super::stopping_criterion_garwick(guess, guess_old, guess_old_old) {
-            return Ok((vec![guess], eval_counter));
+            return Ok((vec![guess], i as u128));
         }
 
         // max iter exceeded
@@ -44,7 +55,6 @@ pub fn naive<T: RealScalar + RealField>(
             return Err(roots::Error::NoConverge(vec![guess]));
         }
 
-        eval_counter += 1;
         let pdx = diffs.get_nth_derivative(1).eval(guess);
 
         // got stuck at local minimum

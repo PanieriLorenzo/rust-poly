@@ -16,7 +16,7 @@ impl<T: RealScalar> Poly<T> {
 
     /// Scale a polynomial in-place
     pub(crate) fn scale(&mut self, factor: Complex<T>) {
-        self.apply(|z| *z = *z * factor);
+        self.apply(|z| *z *= factor);
     }
 
     /// Moving version of `scale`
@@ -86,14 +86,14 @@ impl<T: RealScalar> Poly<T> {
             // already monic
             return;
         }
-        self.apply(|x| *x = *x / last_coeff);
+        self.apply(|x| *x /= last_coeff);
     }
 
     /// Make sure trailing almost-zero coefficients are removed
     pub(crate) fn trim(&mut self) {
         let last_coeff = self.last();
         if last_coeff.is_small() {
-            let mut res = Poly::new(&self.as_slice()[0..self.len_raw() - 1]);
+            let mut res = Self::new(&self.as_slice()[0..self.len_raw() - 1]);
             res.trim();
             *self = res;
         }
@@ -127,13 +127,13 @@ impl<T: RealScalar> Poly<T> {
         let mut z0 = Complex::zero();
         if r != z0 {
             let mut i = n - 1;
-            let mut t = *self.coeffs_descending(n.try_into().expect("overflow"));
+            let mut t = *self.coeffs_descending(n);
             let mut s;
             loop {
                 s = t;
-                t = *self.coeffs_descending(i.try_into().expect("overflow"));
+                t = *self.coeffs_descending(i);
                 z0 = (z0 - s) / r;
-                *self.coeffs_descending_mut(i.try_into().expect("overflow")) = z0;
+                *self.coeffs_descending_mut(i) = z0;
                 i -= 1;
                 if i == 0 {
                     break;
@@ -155,17 +155,9 @@ impl<T: RealScalar> Poly<T> {
         let mut ua;
         let mut k = 0;
         for i in 0..n {
-            ua = fwd
-                .coeffs_descending(i.try_into().expect("overflow"))
-                .norm()
-                + bwd
-                    .coeffs_descending(i.try_into().expect("overflow"))
-                    .norm();
+            ua = fwd.coeffs_descending(i).norm() + bwd.coeffs_descending(i).norm();
             if !ua.is_zero() {
-                ua = (fwd.coeffs_descending(i.try_into().expect("overflow"))
-                    - bwd.coeffs_descending(i.try_into().expect("overflow")))
-                .norm()
-                    / ua;
+                ua = (fwd.coeffs_descending(i) - bwd.coeffs_descending(i)).norm() / ua;
                 if ua < ra {
                     ra = ua;
                     k = i;
@@ -174,20 +166,16 @@ impl<T: RealScalar> Poly<T> {
         }
         let mut i = k.saturating_sub(1);
         loop {
-            *self.coeffs_descending_mut(i.try_into().expect("overflow")) =
-                *fwd.coeffs_descending(i.try_into().expect("overflow"));
+            *self.coeffs_descending_mut(i) = *fwd.coeffs_descending(i);
             if i == 0 {
                 break;
             }
             i -= 1;
         }
-        *self.coeffs_descending_mut(k.try_into().expect("overflow")) = (fwd
-            .coeffs_descending(k.try_into().expect("overflow"))
-            + bwd.coeffs_descending(k.try_into().expect("overflow")))
-        .scale(T::from_u8(2).expect("should fit").recip());
+        *self.coeffs_descending_mut(k) = (fwd.coeffs_descending(k) + bwd.coeffs_descending(k))
+            .scale(T::from_u8(2).expect("should fit").recip());
         for i in (k + 1)..n {
-            *self.coeffs_descending_mut(i.try_into().expect("overflow")) =
-                *bwd.coeffs_descending(i.try_into().expect("overflow"));
+            *self.coeffs_descending_mut(i) = *bwd.coeffs_descending(i);
         }
 
         *self = self.shift_down(1).normalize();

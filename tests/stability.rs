@@ -21,9 +21,7 @@ use rust_poly::{
         check_roots, test_case_multiple_roots, test_case_roots, RandStreamC64Cartesian,
         RandStreamC64Polar, RandStreamR64,
     },
-    roots::{
-        aberth_ehrlich, halley_deflate, naive_deflate, newton_deflate,
-    },
+    roots::{aberth_ehrlich, halley_deflate, naive_deflate, newton_deflate},
 };
 
 const LOG_LEVEL: log::Level = log::Level::Warn;

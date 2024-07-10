@@ -48,7 +48,6 @@ impl<
             + FromPrimitive
             + SafeConstants
             + std::ops::Neg<Output = Self>
-            + 'static
             + AddAssign
             + SubAssign
             + MulAssign
@@ -56,13 +55,7 @@ impl<
             + RemAssign
             + MulAdd<Output = Self>
             + MulAddAssign
-            + AddAssign
-            + SubAssign
-            + MulAssign
-            + DivAssign
-            + RemAssign
-            + MulAdd<Output = Self>
-            + MulAddAssign,
+            + 'static,
     > RealScalar for T
 {
 }

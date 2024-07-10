@@ -72,7 +72,7 @@ fn example_circle<const DEGREE: usize>(
     location: &str,
 ) {
     let mut guesses = [complex!(0.0); DEGREE];
-    initial_guesses_circle(&p, bias, 1, perturbation, &mut guesses);
+    initial_guesses_circle(p, bias, 1, perturbation, &mut guesses);
     plot(roots_re, roots_im, &guesses, location);
 }
 

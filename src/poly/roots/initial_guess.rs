@@ -5,10 +5,20 @@ use itertools::Itertools;
 use crate::{
     num::{Complex, Float, Zero},
     Poly, RealScalar,
-    __util::complex::{c_min, c_neg},
+    __util::{
+        casting::usize_to_f64,
+        complex::{c_min, c_neg},
+        doc_macros::{panic_t_from_f64, panic_t_from_int},
+    },
 };
 
-/// [ref](https://doi.org/10.1007/BF01933524)
+// TODO: initial guesses Bini (see allow(unused) functions below)
+
+/// Guess close to the root with the smallest magnitude ([Madsen 1973](https://doi.org/10.1007/BF01933524))
+///
+/// # Panics
+#[doc = panic_t_from_int!(r"usize")]
+#[allow(clippy::module_name_repetitions)]
 pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
     debug_assert!(poly.is_normalized());
     debug_assert!(poly.len_raw() >= 2);
@@ -49,6 +59,10 @@ pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
     guess
 }
 
+/// TODO: doc
+///
+/// # Panics
+#[doc = panic_t_from_f64!()]
 pub fn initial_guesses_random<T: RealScalar>(mut poly: Poly<T>, seed: u64, out: &mut [Complex<T>]) {
     poly.make_monic();
     let mut rng = fastrand::Rng::with_seed(seed);
@@ -56,7 +70,7 @@ pub fn initial_guesses_random<T: RealScalar>(mut poly: Poly<T>, seed: u64, out: 
     let high = upper_bound(&poly).to_f64().expect("overflow");
     let span = high - low;
     for y in out {
-        let radius = T::from_f64(rng.f64() * span + low).expect("overflow");
+        let radius = T::from_f64(rng.f64().mul_add(span, low)).expect("overflow");
         let angle = T::from_f64(rng.f64() * std::f64::consts::TAU).expect("overflow");
         *y = Complex::from_polar(radius, angle);
     }
@@ -75,6 +89,9 @@ pub fn initial_guesses_random<T: RealScalar>(mut poly: Poly<T>, seed: u64, out: 
 /// the next odd number. In essence, the annulus that contains all the roots is
 /// partitioned into equal slices and then a guess is picked at random in each
 /// of these slices. This parameter can be extrapolated above 1.
+///
+/// # Panics
+#[doc = panic_t_from_f64!()]
 pub fn initial_guesses_circle<T: RealScalar>(
     poly: &Poly<T>,
     bias: T,
@@ -90,7 +107,7 @@ pub fn initial_guesses_circle<T: RealScalar>(
     let n_odd = if n % 2 == 0 { n + 1 } else { n };
 
     let mut rng = fastrand::Rng::with_seed(seed);
-    let angle_increment = std::f64::consts::TAU / (n_odd as f64);
+    let angle_increment = std::f64::consts::TAU / (usize_to_f64(n_odd));
     let low = lower_bound(poly);
     let high = upper_bound(poly);
     let span = high - low;
@@ -98,7 +115,8 @@ pub fn initial_guesses_circle<T: RealScalar>(
     let mut angle_accumulator = 0.0;
     for y in out {
         let angle = T::from_f64(angle_accumulator).expect("overflow")
-            + T::from_f64(rng.f64() * angle_increment - angle_increment / 2.0).expect("overflow")
+            + T::from_f64(rng.f64().mul_add(angle_increment, -(angle_increment / 2.0)))
+                .expect("overflow")
                 * perturbation;
         let radius = radius * (T::one() - perturbation)
             + (T::from_f64(rng.f64()).expect("overflow") * span + low) * perturbation;
@@ -128,7 +146,7 @@ fn upper_bound<T: RealScalar>(poly: &Poly<T>) -> T {
     let max_term = coeffs_iter
         .zip(coeffs_iter_shifted)
         .map(|(num, denom)| num / denom)
-        .map(|z| z.norm())
+        .map(na::Complex::norm)
         .reduce(|acc, z| if z > acc { z } else { acc })
         .expect("infallible");
     next_last.norm() + max_term
@@ -136,7 +154,7 @@ fn upper_bound<T: RealScalar>(poly: &Poly<T>) -> T {
 
 /// The radius of a disk containing none of the roots
 fn lower_bound<T: RealScalar>(poly: &Poly<T>) -> T {
-    let mut this = Poly::from_complex_vec(poly.0.iter().cloned().rev().collect_vec());
+    let mut this = Poly::from_complex_vec(poly.0.iter().copied().rev().collect_vec());
     this.make_monic();
     upper_bound(&this).recip()
 }
@@ -146,6 +164,7 @@ fn lower_bound<T: RealScalar>(poly: &Poly<T>) -> T {
 /// negative for clockwise turn, and zero if the points are collinear.
 ///
 /// [From Wiki Books](https://web.archive.org/web/20240617105108/https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python)
+#[allow(unused)]
 fn cross_2d<T: RealScalar>(o: (T, T), a: (T, T), b: (T, T)) -> T {
     (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0)
 }
@@ -153,18 +172,18 @@ fn cross_2d<T: RealScalar>(o: (T, T), a: (T, T), b: (T, T)) -> T {
 /// Extract upper envelope of the convex hull of a set of points
 ///
 /// [From Wiki Books](https://web.archive.org/web/20240617105108/https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python)
-fn upper_convex_envelope<T: RealScalar>(points: &mut Vec<(T, T)>) -> Vec<(T, T)> {
+#[allow(unused)]
+// TODO: should return an option instead of panic
+fn upper_convex_envelope<T: RealScalar>(points: &mut [(T, T)]) -> Vec<(T, T)> {
     points.sort_by(
         |a, b| match (a.0.partial_cmp(&b.0), a.1.partial_cmp(&b.1)) {
-            (None, _) => panic!("cannot order NaNs"),
-            (Some(Ordering::Equal), None) => panic!("cannot order NaNs"),
-            (Some(Ordering::Equal), Some(ord)) => ord,
-            (Some(ord), _) => ord,
+            (None, _) | (Some(Ordering::Equal), None) => panic!("cannot order NaNs"),
+            (Some(Ordering::Equal), Some(ord)) | (Some(ord), _) => ord,
         },
     );
 
     let mut upper = vec![];
-    for p in points.into_iter().rev() {
+    for p in points.iter_mut().rev() {
         while upper.len() >= 2
             && cross_2d(upper[upper.len() - 2], upper[upper.len() - 1], *p) <= T::zero()
         {

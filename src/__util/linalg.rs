@@ -27,7 +27,7 @@ pub(crate) fn convolve_1d<T: RealScalar>(
             // k is guaranteed to be positive by the conditional
             #[allow(clippy::cast_sign_loss)]
             if k >= 0 && k < input_len as isize {
-                sum = sum + input[k as usize] * kernel[j];
+                sum += input[k as usize] * kernel[j];
             }
         }
         output[i] = sum;

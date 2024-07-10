@@ -4,11 +4,14 @@ pub mod aberth_ehrlich;
 pub use aberth_ehrlich::aberth_ehrlich;
 use na::{Complex, RealField};
 
-use crate::{Poly, RealScalar};
+use crate::{Poly, RealScalar, __util::doc_macros::errors_no_converge};
 
 use super::{halley, naive, newton, single_root::NextRootFun};
 
 /// Combinator that makes an all-roots root finder from a single-root root finder.
+///
+/// # Errors
+/// Passes through any errors returned by the passed closure `next_root_fun`.
 pub fn deflate<T: RealScalar + RealField>(
     next_root_fun: NextRootFun<T>,
     poly: &mut Poly<T>,
@@ -45,6 +48,9 @@ pub fn deflate<T: RealScalar + RealField>(
 /// Find all roots of a polynomial using a modified Halley's method.
 ///
 /// This implementation is based on [Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
+///
+/// # Errors
+#[doc = errors_no_converge!()]
 #[inline]
 pub fn halley_deflate<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
@@ -64,6 +70,9 @@ pub fn halley_deflate<T: RealScalar + RealField>(
 /// roots. So only use this approach for specific purposes, namely:
 /// - You know its not going to get stuck and you want a slight performance improvement
 /// - You are benchmarking your custom root finder against a classical Newton-Raphson approach.
+///
+/// # Errors
+#[doc = errors_no_converge!()]
 #[inline]
 pub fn naive_deflate<T: RealScalar + RealField>(
     poly: &mut Poly<T>,
@@ -82,6 +91,9 @@ pub fn naive_deflate<T: RealScalar + RealField>(
 /// itself.
 ///
 /// This implementation was based on [Henrik Vestermark 2023](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
+///
+/// # Errors
+#[doc = errors_no_converge!()]
 #[inline]
 pub fn newton_deflate<T: RealScalar + RealField>(
     poly: &mut Poly<T>,

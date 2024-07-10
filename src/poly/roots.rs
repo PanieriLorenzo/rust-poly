@@ -22,14 +22,7 @@ pub enum Error<T> {
     Other(#[from] anyhow::Error),
 }
 
-impl<T> Error<T> {
-    pub(crate) fn map_no_converge<U>(self, mut f: impl FnMut(T) -> U) -> Error<U> {
-        match self {
-            Self::NoConverge(t) => Error::NoConverge(f(t)),
-            Self::Other(o) => Error::Other(o),
-        }
-    }
-}
+// TODO: make a type that contains results with some extra info and an `.unpack_roots` method.
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 

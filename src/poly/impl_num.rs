@@ -8,7 +8,10 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 extern crate nalgebra as na;
 
-use crate::{Poly, RealScalar, __util::linalg::convolve_1d};
+use crate::{
+    Poly, RealScalar,
+    __util::{casting::usize_to_u32, linalg::convolve_1d},
+};
 
 impl<T: RealScalar> Zero for Poly<T> {
     fn zero() -> Self {
@@ -59,23 +62,29 @@ impl<T: RealScalar> Poly<T> {
 
         let expected_degree = self.degree_raw() - other.degree_raw();
 
-        let den_c = other.as_slice().last().unwrap();
+        let den_c = other
+            .as_slice()
+            .last()
+            .expect("polynomials should always have at least one coefficient");
         let den_k = other.degree_raw();
         let mut this = self;
-        let mut res = Self::zero();
+        let mut div = Self::zero();
         'for_else: {
             // TODO: this should fail faster, what's the upper bound?
             for _ in 0..u32::MAX {
                 if this.degree_raw() < other.degree_raw() {
                     break 'for_else;
                 }
-                let num_c = this.as_slice().last().unwrap();
+                let num_c = this
+                    .as_slice()
+                    .last()
+                    .expect("polynomials should always have at least one coefficient");
                 let num_k = this.degree_raw();
                 let c = num_c / den_c;
                 let k = num_k - den_k;
-                let new_term = Self::term(c, k as u32);
+                let new_term = Self::term(c, usize_to_u32(k));
                 this = this.clone() - new_term.clone() * other;
-                res = res + new_term;
+                div = div + new_term;
             }
             // else: did not converge
             return None;
@@ -83,8 +92,8 @@ impl<T: RealScalar> Poly<T> {
         let rem = this;
 
         // sanity check: result has the expected degree
-        debug_assert_eq!(res.degree_raw(), expected_degree);
-        Some((res, rem))
+        debug_assert_eq!(div.degree_raw(), expected_degree);
+        Some((div, rem))
     }
 }
 
@@ -113,7 +122,7 @@ impl<T: RealScalar> Add<Self> for Poly<T> {
             .zip_longest(shortest.iter())
             .for_each(|p| {
                 if let itertools::EitherOrBoth::Both(l, r) = p {
-                    *l = *l + r;
+                    *l += r;
                 }
             });
         Self(longest).normalize()
@@ -204,7 +213,7 @@ impl<T: RealScalar> Mul<&Complex<T>> for Poly<T> {
 
     fn mul(self, rhs: &Complex<T>) -> Self::Output {
         let mut lhs = self;
-        lhs.0.apply(|c| *c = *c * rhs);
+        lhs.0.apply(|c| *c *= rhs);
         lhs.normalize()
     }
 }
@@ -244,7 +253,7 @@ impl<T: RealScalar> Sub<Self> for Poly<T> {
             .zip_longest(shortest.iter())
             .for_each(|p| {
                 if let itertools::EitherOrBoth::Both(l, r) = p {
-                    *l = *l - r;
+                    *l -= r;
                 }
             });
         Self(longest).normalize()
@@ -332,7 +341,7 @@ impl<T: RealScalar> Div<&Complex<T>> for Poly<T> {
 
     fn div(self, rhs: &Complex<T>) -> Self::Output {
         let mut lhs = self;
-        lhs.0.apply(|c| *c = *c / rhs);
+        lhs.0.apply(|c| *c /= rhs);
         lhs.normalize()
     }
 }
