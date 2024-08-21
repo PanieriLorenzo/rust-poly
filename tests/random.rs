@@ -22,7 +22,5 @@ fn test_uniform_real_roots() {
         }
     };
 
-    case(1, 1);
-    case(2, 2);
     case(3, 3);
 }

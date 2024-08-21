@@ -289,7 +289,6 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
         if x.is_one() {
             return self;
         }
-        // end
 
         (0..self.len_raw())
             .map(|i| Self::new(&[self.0[i]]) * x.clone().pow_usize(i))

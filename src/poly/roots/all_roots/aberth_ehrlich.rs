@@ -10,13 +10,20 @@ use crate::{
     Poly, RealScalar,
 };
 
-/// TODO: document this
+/// Find all roots using Aberth Ehrlich method.
+///
+/// # Caveats
+/// This method performs poorly around zero roots, so you should remove them
+/// first (zero roots are trivial to factor out).
 ///
 /// # Errors
 #[doc = errors_no_converge!()]
 ///
 /// # Panics
 /// If the provided guesses are not unique, i.e. if two or more are the same.
+///
+/// If the number of provided guesses is wrong, there must be exactly one guess
+/// per root, i.e. as many guesses as the degree of the polynomial.
 ///
 #[doc = panic_t_from_f64!()]
 pub fn aberth_ehrlich<T: RealScalar + RealField>(
@@ -26,38 +33,7 @@ pub fn aberth_ehrlich<T: RealScalar + RealField>(
     initial_guesses: &[Complex<T>],
 ) -> roots::Result<T> {
     debug_assert!(poly.is_normalized());
-
-    let epsilon = epsilon.unwrap_or(T::tiny_safe());
-    let trivial_roots = poly.trivial_roots(epsilon).0;
-
-    debug_assert!(poly.is_normalized());
-    if poly.degree_raw() == 0 {
-        return Ok(trivial_roots);
-    }
-
-    poly.make_monic();
-
-    // fill remaining initial guesses
-    // TODO: this should be factored out to a separate function
-    let initial_guesses = {
-        let mut complete_initial_guesses = Vec::with_capacity(poly.degree_raw());
-        for z in initial_guesses {
-            complete_initial_guesses.push(*z);
-        }
-        let remaining_guesses_delta = poly.degree_raw() - complete_initial_guesses.len();
-        let mut remaining_guesses = vec![Complex::zero(); remaining_guesses_delta];
-        initial_guesses_circle(
-            poly,
-            T::from_f64(0.5).expect("overflow"),
-            1,
-            T::from_f64(0.5).expect("overflow"),
-            &mut remaining_guesses,
-        );
-        for z in remaining_guesses.drain(..) {
-            complete_initial_guesses.push(z);
-        }
-        complete_initial_guesses
-    };
+    debug_assert!(initial_guesses.len() == poly.degree_raw());
 
     let n = poly.degree_raw();
     for i in 0..n {
@@ -71,6 +47,14 @@ pub fn aberth_ehrlich<T: RealScalar + RealField>(
             );
         }
     }
+
+    let epsilon = epsilon.unwrap_or(T::tiny_safe());
+
+    if poly.degree_raw() == 0 {
+        return Ok(vec![]);
+    }
+
+    poly.make_monic();
 
     let mut points = Vec::from(&initial_guesses[..n]);
     let mut alphas_buff = vec![Complex::<T>::zero(); n];

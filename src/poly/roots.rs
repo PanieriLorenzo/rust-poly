@@ -38,16 +38,47 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
         debug_assert!(self.is_normalized());
-        let roots = aberth_ehrlich(&mut self.clone(), Some(epsilon), Some(max_iter), &[])?;
 
-        // don't bother refining small polys
-        if roots.len() <= 2 {
-            return Ok(roots);
+        let mut this = self.clone();
+
+        let mut roots = this.zero_roots(epsilon);
+
+        match this.degree_raw() {
+            1 => {
+                roots.extend(this.linear_roots());
+                return Ok(roots);
+            }
+            2 => {
+                roots.extend(this.quadratic_roots());
+                return Ok(roots);
+            }
+            _ => {}
         }
+
+        this.make_monic();
+
+        let initial_guesses = {
+            let mut guesses = vec![Complex::<T>::zero(); this.degree_raw()];
+            initial_guesses_circle(
+                &this,
+                T::from_f64(0.5).expect("overflow"),
+                1,
+                T::from_f64(0.5).expect("overflow"),
+                &mut guesses,
+            );
+            guesses
+        };
+
+        roots.extend(aberth_ehrlich(
+            &mut this,
+            Some(epsilon),
+            Some(max_iter),
+            &initial_guesses,
+        )?);
 
         // further polishing of roots
         newton_parallel(
-            &mut self.clone(),
+            &mut this,
             Some(epsilon),
             Some(max_iter),
             roots.len(),
@@ -58,6 +89,24 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
 
 // private
 impl<T: RealScalar + RealField + Float> Poly<T> {
+    fn zero_roots(&mut self, epsilon: T) -> Vec<Complex<T>> {
+        debug_assert!(self.is_normalized());
+
+        let mut roots = vec![];
+        for _ in 0..self.degree_raw() {
+            if self.eval(Complex::zero()).norm() < epsilon {
+                roots.push(Complex::zero());
+                // deflating zero roots can be accomplished simply by shifting
+                *self = self.shift_down(1);
+            } else {
+                break;
+            }
+        }
+
+        roots
+    }
+
+    #[deprecated]
     fn trivial_roots(&mut self, epsilon: T) -> (Vec<Complex<T>>, u128) {
         let mut eval_counter = 0;
         debug_assert!(self.is_normalized());
@@ -75,8 +124,8 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
         }
 
         match self.degree_raw() {
-            1 => roots.extend(self.linear()),
-            2 => roots.extend(self.quadratic()),
+            1 => roots.extend(self.linear_roots()),
+            2 => roots.extend(self.quadratic_roots()),
             _ => {}
         }
 
@@ -85,7 +134,7 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
         (roots, eval_counter)
     }
 
-    fn linear(&mut self) -> Vec<Complex<T>> {
+    fn linear_roots(&mut self) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
         debug_assert_eq!(self.degree_raw(), 1);
 
@@ -104,14 +153,14 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
     }
 
     /// Quadratic formula
-    fn quadratic(&mut self) -> Vec<Complex<T>> {
+    fn quadratic_roots(&mut self) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
         debug_assert_eq!(self.degree_raw(), 2);
 
         // trimming trailing almost zeros to avoid overflow
         self.trim();
         if self.degree_raw() == 1 {
-            return self.linear();
+            return self.linear_roots();
         }
         if self.degree_raw() == 0 {
             return vec![];
