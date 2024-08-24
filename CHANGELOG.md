@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2024-08-24
+
+### 🚀 Features
+
+- [**breaking**] Redid `Poly::roots` entirely, now it's much more stable and efficient
+- [**breaking**] Made the `Poly::from` trait impls less ambiguous
+- [**breaking**] Changed how zero polynomials are represented
+- [**breaking**] `eval_point` renamed to `eval`, `eval` renamed to `eval_multiple`
+- [**breaking**] Changed `eval_multiple` to have an output buffer
+- [**breaking**] Use a slice for indexing instead of re-inventing the wheel (removed `Get` trait)
+- [**breaking**] Custom error type for root finders
+- [**breaking**] Assert that testing api is not used in production
+- New procedural root finder API (in the `roots` module)
+    - `halley` root finder
+    - `newton` root finder
+    - `naive` root finder (Newton without variable stepsize and local-minimum detection)
+    - `aberth_ehrlich` root finder
+    - `parallel` root finder (runs `newton` or `halley` in parallel)
+    - `initial_guess_circle`
+- Relax bounds on `T` for `Poly<T>`
+- Removed dependency `duplicate`
+- Added `diff` and `integral`
+- `translate` method to move polynomial on x and y axes
+- Added `legendre` polynomials
+- Impl `std::fmt::Display` for `Poly`
+- Added `shift_up` and `shift_down` methods for changing degrees of polynomial
+- `SafeConstants` trait for better numeric precision
+- Improve precision of `eval` (at the expense of some speed)
+- Added `from_real_iterator` and `from_complex_iterator`
+
+### 🐛 Bug Fixes
+
+- Potential bug in `poly!` macro, making nested complex numbers by accident
+- Removed debug print from `bessel`
+- `Poly::div_rem` was completely wrong
+- `normalize` converted constant 0 to zero polynomial
+- `diff` produced a zero polynomial instead of a constant zero on constant polynomials
+- Math error in `Poly::companion` (closes #3)
+- Roots accidentally required `na::Scalar` instead of `crate::Scalar`
+- Root finders use exact solutions for linear and quadratic polynomials
+- `poly` macro now works without having to import `num::Zero`
+- `div_rem` stuck in endless loop if divisor is 1
+- Multiple bugs preventing trivial polynomial roots to be found
+- Removed old test relying on `plotters`, now that we use `plotly` instead
+- Over 60 lints and warnings
+- Cargo clippy fixes
+
+### 📚 Documentation
+
+- Moved dev docs from `README.md` to `DEVELOPMENT.md`
+- Clarified behavior of zero polynomial to the power of zero
+- Many others
+
+### ⚡ Performance
+
+- Added criterion benchmarking
+- Made `eval` faster
+- Various micro optimizations
+
 ## [0.2.0] - 2024-05-04
 
 ### 🚀 Features
