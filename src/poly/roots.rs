@@ -76,6 +76,10 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
             &initial_guesses,
         )?);
 
+        // TODO: handle cases with high multiplicity with some sort of multiplicity
+        //       heuristic, in which the multiple roots are averaged and the unique
+        //       factors are taken out, the entire process is repeated on the remainder
+
         // further polishing of roots
         newton_parallel(
             &mut this,

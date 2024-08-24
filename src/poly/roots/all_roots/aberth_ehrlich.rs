@@ -2,7 +2,7 @@ use na::RealField;
 
 use crate::{
     num::{Complex, One, Zero},
-    roots::{self, initial_guess::initial_guesses_circle},
+    roots::{self},
     util::{
         self,
         doc_macros::{errors_no_converge, panic_t_from_f64},
