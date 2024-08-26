@@ -2,7 +2,7 @@
 
 pub mod aberth_ehrlich;
 pub use aberth_ehrlich::aberth_ehrlich;
-use na::{Complex, RealField};
+use num::Complex;
 
 use crate::{util::doc_macros::errors_no_converge, Poly, RealScalar};
 
@@ -12,7 +12,7 @@ use super::{halley, naive, newton, single_root::NextRootFun};
 ///
 /// # Errors
 /// Passes through any errors returned by the passed closure `next_root_fun`.
-pub fn deflate<T: RealScalar + RealField>(
+pub fn deflate<T: RealScalar>(
     next_root_fun: NextRootFun<T>,
     poly: &mut Poly<T>,
     epsilon: Option<T>,
@@ -52,7 +52,7 @@ pub fn deflate<T: RealScalar + RealField>(
 /// # Errors
 #[doc = errors_no_converge!()]
 #[inline]
-pub fn halley_deflate<T: RealScalar + RealField>(
+pub fn halley_deflate<T: RealScalar>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -74,7 +74,7 @@ pub fn halley_deflate<T: RealScalar + RealField>(
 /// # Errors
 #[doc = errors_no_converge!()]
 #[inline]
-pub fn naive_deflate<T: RealScalar + RealField>(
+pub fn naive_deflate<T: RealScalar>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -95,7 +95,7 @@ pub fn naive_deflate<T: RealScalar + RealField>(
 /// # Errors
 #[doc = errors_no_converge!()]
 #[inline]
-pub fn newton_deflate<T: RealScalar + RealField>(
+pub fn newton_deflate<T: RealScalar>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,

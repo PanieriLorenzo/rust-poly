@@ -4,7 +4,10 @@ use num::{
     traits::{Float, MulAdd, MulAddAssign},
     Complex, FromPrimitive, Num,
 };
-use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
+use std::{
+    fmt::Display,
+    ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign},
+};
 
 // pub trait ComplexScalar: Scalar {
 //     type ComponentScalar;
@@ -36,6 +39,7 @@ pub trait RealScalar:
     + RemAssign
     + MulAdd<Output = Self>
     + MulAddAssign
+    + Display
 {
 }
 impl<
@@ -55,7 +59,8 @@ impl<
             + RemAssign
             + MulAdd<Output = Self>
             + MulAddAssign
-            + 'static,
+            + 'static
+            + Display,
     > RealScalar for T
 {
 }

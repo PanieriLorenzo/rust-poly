@@ -11,7 +11,6 @@ use crate::{
     },
     Poly, RealScalar,
 };
-use na::RealField;
 
 /// Find a single root
 ///
@@ -29,7 +28,7 @@ use na::RealField;
 // TODO: remove this when there's a better alternative
 #[allow(clippy::type_complexity)]
 #[allow(clippy::similar_names)]
-pub fn halley<T: RealScalar + RealField>(
+pub fn halley<T: RealScalar>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,

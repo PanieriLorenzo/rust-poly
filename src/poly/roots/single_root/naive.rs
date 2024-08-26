@@ -9,7 +9,6 @@ use crate::{
     },
     Poly, RealScalar,
 };
-use na::RealField;
 
 /// Find a single root using naive Newton's method
 ///
@@ -25,7 +24,7 @@ use na::RealField;
 #[allow(clippy::similar_names)]
 #[allow(clippy::items_after_statements)]
 #[allow(clippy::type_complexity)]
-pub fn naive<T: RealScalar + RealField>(
+pub fn naive<T: RealScalar>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,

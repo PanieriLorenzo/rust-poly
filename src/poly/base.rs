@@ -1,13 +1,12 @@
 use itertools::Itertools;
-use na::Complex;
-use num::{FromPrimitive, One, ToPrimitive, Zero};
+use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
 
 use crate::{scalar::SafeConstants, util::big_float::F128, Poly, RealScalar};
 
 impl<T: RealScalar> Poly<T> {
     /// Applies a closure to each coefficient in-place
     pub(crate) fn apply(&mut self, f: impl FnMut(&mut Complex<T>)) {
-        self.0.apply(f);
+        self.0.iter_mut().for_each(f);
     }
 
     /// The length of the polynomial without checking pre-conditions
@@ -43,7 +42,7 @@ impl<T: RealScalar> Poly<T> {
         if n == 1 {
             return true;
         }
-        !self.0.index(n - 1).is_zero()
+        !self.0[n - 1].is_zero()
     }
 
     pub(crate) fn normalize(self) -> Self {
@@ -60,7 +59,7 @@ impl<T: RealScalar> Poly<T> {
             }
             end -= 1;
         }
-        let ret = Self(na::DVector::from_column_slice(&self.0.as_slice()[0..end]));
+        let ret = Self(self.0.as_slice()[0..end].to_owned());
 
         // post-condition: polynomial is now normalized
         debug_assert!(ret.is_normalized());
@@ -212,7 +211,6 @@ impl<T: RealScalar> Poly<T> {
 
 #[cfg(test)]
 mod test {
-    use na::DVector;
     use num::{complex::Complex64, Zero};
 
     use crate::Poly;
@@ -220,14 +218,14 @@ mod test {
     /// This was a bug
     #[test]
     fn normalize0() {
-        let p = Poly(DVector::from_column_slice(&[Complex64::zero()]));
+        let p = Poly(vec![Complex64::zero()]);
         assert_eq!(p.normalize().0.as_slice(), &[Complex64::zero()]);
     }
 
     /// This was a bug
     #[test]
     fn is_normalized0() {
-        let p = Poly(DVector::from_column_slice(&[Complex64::zero()]));
+        let p = Poly(vec![Complex64::zero()]);
         assert!(p.is_normalized());
     }
 

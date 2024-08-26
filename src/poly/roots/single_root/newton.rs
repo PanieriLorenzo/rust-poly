@@ -10,7 +10,6 @@ use crate::{
     },
     Poly, RealScalar,
 };
-use na::RealField;
 use num::One;
 
 /// Find a single root using Newton's method
@@ -23,7 +22,7 @@ use num::One;
 #[allow(clippy::similar_names)]
 #[allow(clippy::items_after_statements)]
 #[allow(clippy::type_complexity)]
-pub fn newton<T: RealScalar + RealField>(
+pub fn newton<T: RealScalar>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,

@@ -1,19 +1,18 @@
-use nalgebra::DVector;
 use num::{Complex, Zero};
 
 use crate::RealScalar;
 
 pub(crate) fn convolve_1d<T: RealScalar>(
-    input: &DVector<Complex<T>>,
-    kernel: &DVector<Complex<T>>,
-) -> DVector<Complex<T>> {
+    input: &[Complex<T>],
+    kernel: &[Complex<T>],
+) -> Vec<Complex<T>> {
     let input_len = input.len();
     let kernel_len = kernel.len();
 
     debug_assert!(input_len + kernel_len > 0);
     let output_len = input_len + kernel_len - 1;
 
-    let mut output: DVector<Complex<T>> = DVector::<Complex<T>>::zeros(output_len);
+    let mut output = vec![Complex::zero(); output_len];
 
     for i in 0..output_len {
         let mut sum = Complex::<T>::zero();

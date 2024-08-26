@@ -1,5 +1,3 @@
-use na::RealField;
-
 use crate::{
     num::{Complex, One, Zero},
     roots::{self},
@@ -26,7 +24,7 @@ use crate::{
 /// per root, i.e. as many guesses as the degree of the polynomial.
 ///
 #[doc = panic_t_from_f64!()]
-pub fn aberth_ehrlich<T: RealScalar + RealField>(
+pub fn aberth_ehrlich<T: RealScalar>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,

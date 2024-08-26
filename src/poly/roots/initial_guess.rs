@@ -146,7 +146,7 @@ fn upper_bound<T: RealScalar>(poly: &Poly<T>) -> T {
     let max_term = coeffs_iter
         .zip(coeffs_iter_shifted)
         .map(|(num, denom)| num / denom)
-        .map(na::Complex::norm)
+        .map(Complex::norm)
         .reduce(|acc, z| if z > acc { z } else { acc })
         .expect("infallible");
     next_last.norm() + max_term

@@ -158,7 +158,7 @@ fn line_search_decelerate<T: RealScalar>(
 #[cfg(test)]
 mod test {
 
-    use na::Complex;
+    use num::Complex;
 
     use crate::roots::initial_guess::initial_guess_smallest;
 

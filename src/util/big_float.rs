@@ -508,6 +508,12 @@ fn u128_widen_mul(a: u128, b: u128) -> (u128, u128) {
     (*x.low(), *x.high())
 }
 
+impl std::fmt::Display for F128 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::F128;

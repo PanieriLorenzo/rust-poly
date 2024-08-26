@@ -1,6 +1,5 @@
 use crate::{util::complex::c_neg, Poly, RealScalar};
-use na::{Complex, RealField};
-use num::{Float, FromPrimitive, One, Zero};
+use num::{Complex, Float, FromPrimitive, One, Zero};
 
 mod single_root;
 pub use single_root::{halley, naive, newton};
@@ -25,7 +24,7 @@ pub enum Error<T> {
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
-impl<T: RealScalar + RealField + Float> Poly<T> {
+impl<T: RealScalar + Float> Poly<T> {
     /// A convenient way of finding roots, with a pre-configured root finder.
     /// Should work well for most real polynomials of low degree.
     ///
@@ -40,7 +39,7 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
 
         let mut this = self.clone();
 
-        let mut roots = this.zero_roots(epsilon);
+        let mut roots: Vec<Complex<T>> = this.zero_roots(epsilon);
 
         match this.degree_raw() {
             1 => {
@@ -91,7 +90,7 @@ impl<T: RealScalar + RealField + Float> Poly<T> {
 }
 
 // private
-impl<T: RealScalar + RealField + Float> Poly<T> {
+impl<T: RealScalar + Float> Poly<T> {
     fn zero_roots(&mut self, epsilon: T) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
 

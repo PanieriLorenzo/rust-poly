@@ -11,8 +11,6 @@
 #![warn(clippy::unnecessary_safety_doc)]
 #![warn(clippy::unwrap_used)]
 
-extern crate nalgebra as na;
-
 pub use num;
 
 /// A more convenient way to write `Complex::new(...)`.
@@ -117,8 +115,7 @@ pub type Poly64 = Poly<f64>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::na::Complex;
-    use num::{One, Zero};
+    use num::{Complex, One, Zero};
 
     #[test]
     fn macro_complex() {

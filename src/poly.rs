@@ -19,7 +19,7 @@ pub mod roots;
 mod special_funcs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Poly<T: RealScalar>(pub(crate) na::DVector<Complex<T>>);
+pub struct Poly<T: RealScalar>(pub(crate) Vec<Complex<T>>);
 
 impl<T: RealScalar> Poly<T> {
     /// # Examples
@@ -49,7 +49,7 @@ impl<T: RealScalar> Poly<T> {
 
 impl<T: RealScalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {
-        Self(na::DVector::from_row_slice(coeffs)).normalize()
+        Self(coeffs.to_owned()).normalize()
     }
 
     /// Linear function as a polynomial.
@@ -252,10 +252,11 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
             return Self::one();
         }
 
-        let mut roots: na::DVector<Complex<T>> = na::DVector::from_column_slice(roots);
+        let mut roots = roots.to_owned();
         complex_sort_mut(roots.as_mut_slice());
 
         roots
+            .into_iter()
             .map(|e| Self::line(c_neg(e), Complex::<T>::one()))
             .fold(Self::one(), |acc, x| acc * x)
             .normalize()

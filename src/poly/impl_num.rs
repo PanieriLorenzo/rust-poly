@@ -6,8 +6,6 @@ use itertools::Itertools;
 use num::{traits::CheckedRem, CheckedDiv, Complex, One, Zero};
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
-extern crate nalgebra as na;
-
 use crate::{
     util::{casting::usize_to_u32, linalg::convolve_1d},
     Poly, RealScalar,
@@ -99,7 +97,7 @@ impl<T: RealScalar> Poly<T> {
 
 impl<T: RealScalar> One for Poly<T> {
     fn one() -> Self {
-        Self(na::DVector::from_vec(vec![Complex::<T>::one()]))
+        Self(vec![Complex::<T>::one()])
     }
 }
 
@@ -213,7 +211,7 @@ impl<T: RealScalar> Mul<&Complex<T>> for Poly<T> {
 
     fn mul(self, rhs: &Complex<T>) -> Self::Output {
         let mut lhs = self;
-        lhs.0.apply(|c| *c *= rhs);
+        lhs.0.iter_mut().for_each(|c| *c *= rhs);
         lhs.normalize()
     }
 }
@@ -341,7 +339,7 @@ impl<T: RealScalar> Div<&Complex<T>> for Poly<T> {
 
     fn div(self, rhs: &Complex<T>) -> Self::Output {
         let mut lhs = self;
-        lhs.0.apply(|c| *c /= rhs);
+        lhs.0.iter_mut().for_each(|c| *c /= rhs);
         lhs.normalize()
     }
 }

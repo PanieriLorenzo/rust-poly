@@ -7,7 +7,6 @@ use crate::{
     util::doc_macros::{errors_no_converge, panic_t_from_f64},
     Poly, RealScalar,
 };
-use na::RealField;
 use num::Zero;
 
 /// Run multiple single-root root finders in parallel.
@@ -17,7 +16,7 @@ use num::Zero;
 ///
 /// # Panics
 #[doc = panic_t_from_f64!()]
-pub fn parallel<T: RealScalar + RealField>(
+pub fn parallel<T: RealScalar>(
     next_root_fun: NextRootFun<T>,
     poly: &mut Poly<T>,
     epsilon: Option<T>,
@@ -59,7 +58,7 @@ pub fn parallel<T: RealScalar + RealField>(
 /// # Errors
 #[doc = errors_no_converge!()]
 #[inline]
-pub fn naive_parallel<T: RealScalar + RealField>(
+pub fn naive_parallel<T: RealScalar>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -74,7 +73,7 @@ pub fn naive_parallel<T: RealScalar + RealField>(
 /// # Errors
 #[doc = errors_no_converge!()]
 #[inline]
-pub fn newton_parallel<T: RealScalar + RealField>(
+pub fn newton_parallel<T: RealScalar>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
@@ -89,7 +88,7 @@ pub fn newton_parallel<T: RealScalar + RealField>(
 /// # Errors
 #[doc = errors_no_converge!()]
 #[inline]
-pub fn halley_parallel<T: RealScalar + RealField>(
+pub fn halley_parallel<T: RealScalar>(
     poly: &mut Poly<T>,
     epsilon: Option<T>,
     max_iter: Option<usize>,
