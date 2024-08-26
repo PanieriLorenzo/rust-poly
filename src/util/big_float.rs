@@ -10,7 +10,10 @@ use num::{
 };
 use softfloat::F64;
 
-use crate::scalar::{Rational, SafeConstants};
+use crate::{
+    scalar::{Rational, SafeConstants},
+    RealScalar,
+};
 
 /// TODO: document that this is taken from softfloat crate
 pub mod add;

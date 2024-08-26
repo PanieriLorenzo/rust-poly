@@ -201,8 +201,8 @@ pub(crate) fn div(a: F, b: F) -> F {
                 // no overflow occurred earlier: ((rep_t)x_UQ0_hw * b_UQ1_hw >> HW) is
                 // expected to be strictly positive because b_UQ1_hw has its highest bit set
                 // and x_UQ0_hw should be rather large (it converges to 1/2 < 1/b_hw <= 1).
-                let corr_uq1_hw: u32 = 0_u64
-                    .wrapping_sub(((x_uq0_hw as u64).wrapping_mul(b_uq1_hw as u64)) >> hw)
+                let corr_uq1_hw: u32 = 0_u128
+                    .wrapping_sub(((x_uq0_hw as u128).wrapping_mul(b_uq1_hw as u128)) >> hw)
                     as u32;
                 // dbg!(corr_uq1_hw);
 

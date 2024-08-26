@@ -22,5 +22,5 @@ fn test_uniform_real_roots() {
         }
     };
 
-    case(3, 3);
+    case(3, 4);
 }

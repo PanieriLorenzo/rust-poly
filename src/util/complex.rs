@@ -2,9 +2,11 @@
 
 use std::cmp::Ordering;
 
-use num::{Complex, One, Zero};
+use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
 
 use crate::RealScalar;
+
+use super::big_float::F128;
 
 /// cast complex to primitive
 pub(crate) fn c_to_f64<T: RealScalar>(z: Complex<T>) -> Complex<f64> {
@@ -20,6 +22,19 @@ pub(crate) fn c_from_f64<T: RealScalar>(z: Complex<f64>) -> Complex<T> {
         T::from_f64(z.re).expect("overflow"),
         T::from_f64(z.im).expect("overflow"),
     )
+}
+
+pub(crate) fn c_to_f128<T: RealScalar>(z: Complex<T>) -> Complex<F128> {
+    let z = c_to_f64(z);
+    let re = F128::from_f64(z.re).expect("overflow");
+    let im = F128::from_f64(z.im).expect("overflow");
+    Complex::new(re, im)
+}
+
+pub(crate) fn c_from_f128<T: RealScalar>(z: Complex<F128>) -> Complex<T> {
+    let re = z.re.to_f64().expect("overflow");
+    let im = z.im.to_f64().expect("overflow");
+    c_from_f64(Complex::new(re, im))
 }
 
 // neg operator for Complex, as it does not implement std::ops::Neg

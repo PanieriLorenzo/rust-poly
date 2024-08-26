@@ -1,7 +1,11 @@
 use crate::{
-    util::complex::{c_neg, c_sqrt},
+    util::{
+        big_float::F128,
+        complex::{c_from_f128, c_neg, c_sqrt, c_to_f128, c_to_f64},
+    },
     Poly, RealScalar,
 };
+use itertools::Itertools;
 use num::{Complex, Float, FromPrimitive, One, Zero};
 
 mod single_root;
@@ -82,13 +86,24 @@ impl<T: RealScalar> Poly<T> {
         //       factors are taken out, the entire process is repeated on the remainder
 
         // further polishing of roots
-        newton_parallel(
-            &mut this,
-            Some(epsilon),
-            Some(max_iter),
-            roots.len(),
-            &roots,
-        )
+        {
+            let mut this = this.cast_to_f128();
+            let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
+            newton_parallel(
+                &mut this,
+                Some(F128::from_f64(epsilon.to_f64().expect("overflow")).expect("overflow")),
+                Some(max_iter),
+                roots.len(),
+                &roots,
+            )
+            .map(|v| v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
+            .map_err(|e| match e {
+                Error::NoConverge(v) => {
+                    Error::NoConverge(v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
+                }
+                Error::Other(o) => Error::Other(o),
+            })
+        }
     }
 }
 

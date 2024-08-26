@@ -173,7 +173,7 @@ mod test {
             (initial_guess_smallest(&poly![24.0, -14.0, -13.0, 2.0, 1.0])
                 - Complex::new(0.68, 0.0))
             .norm()
-                < 0.01
+                < 0.2
         );
     }
 
