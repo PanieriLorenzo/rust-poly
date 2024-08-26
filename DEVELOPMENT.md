@@ -43,7 +43,7 @@ Right now, changelogs are generated with [git-cliff](https://github.com/orhun/gi
 ### Releasing a New Version
 
 ```bash
-git cliff --tag v0.3.0 --unreleased --prepend CHANGELOG.md
+git cliff --tag v0.4.0 --unreleased --prepend CHANGELOG.md
 ```
 
 ### Benchmarking

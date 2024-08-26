@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2024-08-26
+
+### 🚀 Features
+
+- [**breaking**] Removed dependency on `nalgebra` and related methods
+- [**breaking**] Relaxed trait bounds for `RealScalar` to allow non-floats
+- [**breaking**] Use f128 in `roots` for higher precision
+
+### 🚜 Refactor
+
+- Use `f128` type internally for higher precision
+
 ## [0.3.0] - 2024-08-24
 
 ### 🚀 Features
