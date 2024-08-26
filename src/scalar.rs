@@ -1,7 +1,7 @@
 //! Traits for the coefficients of polynomials
 
+use f128::f128;
 use num::{
-    complex::ComplexFloat,
     traits::{bounds::UpperBounded, Float, MulAdd, MulAddAssign},
     Complex, FromPrimitive, Num, ToPrimitive,
 };
@@ -182,6 +182,7 @@ macro_rules! safe_constants_float_impl {
 
 safe_constants_float_impl!(f32);
 safe_constants_float_impl!(f64);
+safe_constants_float_impl!(f128);
 
 impl<T: SafeConstants> SafeConstants for Complex<T> {
     fn tiny_safe() -> Self {

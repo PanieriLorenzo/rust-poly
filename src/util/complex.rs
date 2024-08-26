@@ -6,7 +6,7 @@ use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
 
 use crate::RealScalar;
 
-use super::big_float::F128;
+use f128::f128;
 
 /// cast complex to primitive
 pub(crate) fn c_to_f64<T: RealScalar>(z: Complex<T>) -> Complex<f64> {
@@ -24,16 +24,16 @@ pub(crate) fn c_from_f64<T: RealScalar>(z: Complex<f64>) -> Complex<T> {
     )
 }
 
-pub(crate) fn c_to_f128<T: RealScalar>(z: Complex<T>) -> Complex<F128> {
+pub(crate) fn c_to_f128<T: RealScalar>(z: Complex<T>) -> Complex<f128> {
     let z = c_to_f64(z);
-    let re = F128::from_f64(z.re).expect("overflow");
-    let im = F128::from_f64(z.im).expect("overflow");
+    let re = f128::from(z.re);
+    let im = f128::from(z.im);
     Complex::new(re, im)
 }
 
-pub(crate) fn c_from_f128<T: RealScalar>(z: Complex<F128>) -> Complex<T> {
-    let re = z.re.to_f64().expect("overflow");
-    let im = z.im.to_f64().expect("overflow");
+pub(crate) fn c_from_f128<T: RealScalar>(z: Complex<f128>) -> Complex<T> {
+    let re: f64 = z.re.into();
+    let im: f64 = z.im.into();
     c_from_f64(Complex::new(re, im))
 }
 

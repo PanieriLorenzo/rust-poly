@@ -1,10 +1,8 @@
 use crate::{
-    util::{
-        big_float::F128,
-        complex::{c_from_f128, c_neg, c_sqrt, c_to_f128, c_to_f64},
-    },
+    util::complex::{c_from_f128, c_neg, c_sqrt, c_to_f128, c_to_f64},
     Poly, RealScalar,
 };
+use f128::f128;
 use itertools::Itertools;
 use num::{Complex, Float, FromPrimitive, One, Zero};
 
@@ -91,7 +89,7 @@ impl<T: RealScalar> Poly<T> {
             let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
             newton_parallel(
                 &mut this,
-                Some(F128::from_f64(epsilon.to_f64().expect("overflow")).expect("overflow")),
+                Some(f128::from(epsilon.to_f64().expect("overflow"))),
                 Some(max_iter),
                 roots.len(),
                 &roots,

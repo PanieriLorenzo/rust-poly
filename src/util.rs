@@ -1,6 +1,5 @@
 //! Internal utilities, not part of the API
 
-pub(crate) mod big_float;
 pub(crate) mod casting;
 pub(crate) mod complex;
 pub(crate) mod doc_macros;
