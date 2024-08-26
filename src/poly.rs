@@ -345,7 +345,7 @@ impl<T: RealScalar> Poly<T> {
             // 4. the range of the index [0, n - 2] is a subset of [0, n - 1],
             //    therefore the index is in bounds. QED
             let c = (unsafe { self.0.get_unchecked(n - i - 1) }).clone();
-            eval = eval.mul_add(x.clone(), c);
+            eval = eval * x.clone() + c;
         }
         eval
     }

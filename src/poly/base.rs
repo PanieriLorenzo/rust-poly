@@ -152,7 +152,7 @@ impl<T: RealScalar> Poly<T> {
         let bwd = self.clone().deflate_upward(r);
         // TODO: in order to drop the Bounded trait bound, this should be
         //       done without explicit reference to max value
-        let mut ra = T::max_value();
+        let mut ra = T::upper_bound();
         let mut ua;
         let mut k = 0;
         for i in 0..n {

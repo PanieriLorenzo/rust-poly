@@ -511,7 +511,11 @@ impl UpperBounded for F128 {
     }
 }
 
-impl Rational for F128 {}
+impl Rational for F128 {
+    fn upper_bound() -> Self {
+        todo!()
+    }
+}
 
 fn u128_widen_mul(a: u128, b: u128) -> (u128, u128) {
     // TODO: open a PR to make wrappping_mul const

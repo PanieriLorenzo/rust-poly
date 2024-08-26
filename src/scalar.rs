@@ -15,17 +15,37 @@ pub trait Rational: std::ops::Div<Output = Self> + num::One + ToPrimitive + From
     fn recip(self) -> Self {
         Self::one() / self
     }
+
+    fn upper_bound() -> Self;
 }
 
 impl Rational for f32 {
     fn recip(self) -> Self {
         f32::recip(self)
     }
+
+    fn upper_bound() -> Self {
+        <f32 as Float>::max_value()
+    }
 }
 
 impl Rational for f64 {
     fn recip(self) -> Self {
         f64::recip(self)
+    }
+
+    fn upper_bound() -> Self {
+        <f64 as Float>::max_value()
+    }
+}
+
+impl Rational for f128 {
+    fn recip(self) -> Self {
+        Float::recip(self)
+    }
+
+    fn upper_bound() -> Self {
+        <f128 as Float>::max_value()
     }
 }
 
@@ -57,12 +77,12 @@ pub trait RealScalar:
     + MulAssign
     + DivAssign
     + RemAssign
-    + MulAdd<Output = Self>
-    + MulAddAssign
+    //+ MulAdd<Output = Self>
+    //+ MulAddAssign
     + Display
     + PartialEq
     + PartialOrd
-    + UpperBounded
+    //+ UpperBounded
     + Rational
 {
 }
@@ -81,12 +101,12 @@ impl<
             + MulAssign
             + DivAssign
             + RemAssign
-            + MulAdd<Output = Self>
-            + MulAddAssign
+            //+ MulAdd<Output = Self>
+            //+ MulAddAssign
             + 'static
             + PartialEq
             + PartialOrd
-            + UpperBounded
+            //+ UpperBounded
             + Rational
             + Display,
     > RealScalar for T
