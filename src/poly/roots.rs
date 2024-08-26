@@ -8,7 +8,6 @@ mod all_roots;
 pub use all_roots::{aberth_ehrlich, deflate, halley_deflate, naive_deflate, newton_deflate};
 mod many_roots;
 pub use many_roots::{halley_parallel, naive_parallel, newton_parallel, parallel};
-
 mod initial_guess;
 pub use initial_guess::{initial_guess_smallest, initial_guesses_circle, initial_guesses_random};
 

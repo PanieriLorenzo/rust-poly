@@ -1,7 +1,8 @@
+use itertools::Itertools;
 use na::Complex;
-use num::{One, Zero};
+use num::{FromPrimitive, One, ToPrimitive, Zero};
 
-use crate::{scalar::SafeConstants, Poly, RealScalar};
+use crate::{scalar::SafeConstants, util::big_float::F128, Poly, RealScalar};
 
 impl<T: RealScalar> Poly<T> {
     /// Applies a closure to each coefficient in-place
@@ -179,6 +180,33 @@ impl<T: RealScalar> Poly<T> {
         }
 
         *self = self.shift_down(1).normalize();
+    }
+
+    pub(crate) fn cast_to_f128(self) -> Poly<F128> {
+        Poly::from_complex_vec(
+            self.iter()
+                .map(|z| {
+                    let re =
+                        F128::from_f64(z.re.to_f64().expect("infallible")).expect("infallible");
+                    let im =
+                        F128::from_f64(z.im.to_f64().expect("infallible")).expect("infallible");
+                    Complex::new(re, im)
+                })
+                .collect_vec(),
+        )
+    }
+
+    pub(crate) fn cast_from_f128(other: Poly<F128>) -> Self {
+        Poly::from_complex_vec(
+            other
+                .iter()
+                .map(|z| {
+                    let re = T::from_f64(z.re.to_f64().expect("infallible")).expect("infallible");
+                    let im = T::from_f64(z.im.to_f64().expect("infallible")).expect("infallible");
+                    Complex::new(re, im)
+                })
+                .collect_vec(),
+        )
     }
 }
 

@@ -22,6 +22,8 @@ num = "0.4.1"
 thiserror = "1.0.61"
 fastrand = "2.1.0"
 log = "0.4.21"
+ethnum = "1.5.0"
+softfloat = "1.0.0"
 
 
 [dev-dependencies]
