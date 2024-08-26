@@ -1,10 +1,10 @@
 use crate::{
-    util::complex::{c_from_f128, c_neg, c_sqrt, c_to_f128, c_to_f64},
+    util::complex::{c_from_f128, c_neg, c_sqrt, c_to_f128},
     Poly, RealScalar,
 };
 use f128::f128;
 use itertools::Itertools;
-use num::{Complex, Float, FromPrimitive, One, Zero};
+use num::{Complex, FromPrimitive, One, Zero};
 
 mod single_root;
 pub use single_root::{halley, naive, newton};

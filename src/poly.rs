@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use num::{traits::MulAdd, Complex, One, Zero};
+use num::{Complex, One, Zero};
 
 use crate::{
     util::{

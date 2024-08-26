@@ -51,23 +51,23 @@ pub(crate) fn c_min<T: RealScalar>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
     }
 }
 
-/// arg using ToPrimitive
+/// arg using `ToPrimitive`
 pub(crate) fn c_arg<T: RealScalar>(z: Complex<T>) -> T {
     let z = c_to_f64(z);
     T::from_f64(z.im.atan2(z.re)).expect("overflow")
 }
 
-/// exp using ToPrimitive
+/// exp using `ToPrimitive`
 pub(crate) fn c_exp<T: RealScalar>(z: Complex<T>) -> Complex<T> {
     c_from_f64(c_to_f64(z).exp())
 }
 
-/// powf using ToPrimitive
+/// powf using `ToPrimitive`
 pub(crate) fn c_powf<T: RealScalar>(z: Complex<T>, e: T) -> Complex<T> {
     c_from_f64(c_to_f64(z).powf(e.to_f64().expect("overflow")))
 }
 
-/// sqrt using ToPrimitive
+/// sqrt using `ToPrimitive`
 pub(crate) fn c_sqrt<T: RealScalar>(z: Complex<T>) -> Complex<T> {
     c_from_f64(c_to_f64(z).sqrt())
 }
@@ -104,8 +104,8 @@ mod test {
     fn c_to_f64() {
         let src: Complex<f32> = Complex::new(-12.34, 56.78);
         let dst = super::c_to_f64(src);
-        assert_eq!(src.re as f64, dst.re);
-        assert_eq!(src.im as f64, dst.im);
+        assert_eq!(f64::from(src.re), dst.re);
+        assert_eq!(f64::from(src.im), dst.im);
     }
 
     #[test]

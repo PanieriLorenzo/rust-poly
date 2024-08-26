@@ -2,7 +2,7 @@
 
 use f128::f128;
 use num::{
-    traits::{bounds::UpperBounded, Float, MulAdd, MulAddAssign},
+    traits::{Float},
     Complex, FromPrimitive, Num, ToPrimitive,
 };
 use std::{
@@ -10,7 +10,7 @@ use std::{
     ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign},
 };
 
-/// A rational number, less restrictive than num::Float
+/// A rational number, less restrictive than `num::Float`
 pub trait Rational: std::ops::Div<Output = Self> + num::One + ToPrimitive + FromPrimitive {
     fn recip(self) -> Self {
         Self::one() / self
