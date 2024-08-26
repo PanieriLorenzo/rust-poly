@@ -1,10 +1,7 @@
 //! Traits for the coefficients of polynomials
 
 use f128::f128;
-use num::{
-    traits::{Float},
-    Complex, FromPrimitive, Num, ToPrimitive,
-};
+use num::{traits::Float, Complex, FromPrimitive, Num, ToPrimitive};
 use std::{
     fmt::Display,
     ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign},
