@@ -1,4 +1,4 @@
-use crate::{num::Complex, Poly, RealScalar};
+use crate::{num::Complex, scalar::Rational, Poly, RealScalar};
 
 mod naive;
 pub use naive::naive;
@@ -24,13 +24,13 @@ fn stopping_criterion_garwick<T: RealScalar>(
     z_old: Complex<T>,
     z_old_old: Complex<T>,
 ) -> bool {
-    let delta_z = (z - z_old).norm();
-    let delta_z_old = (z_old - z_old_old).norm();
-    let z_norm = z_old.norm();
+    let delta_z = (z - z_old.clone()).norm_sqr();
+    let delta_z_old = (z_old.clone() - z_old_old).norm_sqr();
+    let z_norm = z_old.norm_sqr();
     let em3 = T::from_f64(1E-3).expect("overflow");
     let em4 = T::from_f64(1E-4).expect("overflow");
     let em7 = T::from_f64(1E-7).expect("overflow");
-    (z_norm < em4 && delta_z <= em7 || z_norm >= em4 && delta_z / z_norm <= em3)
+    (z_norm < em4 && delta_z <= em7 || z_norm >= em4 && delta_z.clone() / z_norm <= em3)
         && delta_z >= delta_z_old
 }
 
@@ -82,8 +82,8 @@ fn multiplicity_lagouanelle<T: RealScalar>(
     pdx: Complex<T>,
     pddx: Complex<T>,
 ) -> Complex<T> {
-    let pdx_2 = pdx * pdx;
-    pdx_2 / (pdx_2 - px * pddx)
+    let pdx_2 = pdx.clone() * pdx;
+    pdx_2.clone() / (pdx_2 - px * pddx)
 }
 
 /// Speed up convergence using Madsen 1973
@@ -94,15 +94,15 @@ fn line_search_accelerate<T: RealScalar>(
 ) -> (Complex<T>, u128) {
     let mut eval_count = 0;
 
-    let mut guess_best = guess - delta;
-    let mut px_best_norm = poly.eval(guess_best).norm();
+    let mut guess_best = guess.clone() - delta.clone();
+    let mut px_best_norm = poly.eval(guess_best.clone()).norm_sqr();
     eval_count += 1;
     for p in 2..=poly.degree_raw() {
         let step_size = T::from_usize(p).expect("overflow");
-        let guess_new = guess - delta.scale(step_size);
-        let px_new = poly.eval(guess_new);
+        let guess_new = guess.clone() - delta.clone().scale(step_size.clone());
+        let px_new = poly.eval(guess_new.clone());
         eval_count += 1;
-        let px_new_norm = px_new.norm();
+        let px_new_norm = px_new.norm_sqr();
 
         if px_new_norm >= px_best_norm {
             // stop searching as soon as it stops improving
@@ -126,23 +126,26 @@ fn line_search_decelerate<T: RealScalar>(
 ) -> (Complex<T>, u128) {
     // arbitrary constants
     const MAX_STEPS: u32 = 2;
-    const ROTATION_RADIANS: f64 = 0.643_501_108_793_284_4 /* atan(0.75) */;
     // TODO: when const trait methods are supported, this should be
     //       made fully const.
-    let rotation = Complex::from_polar(T::one(), T::from_f64(ROTATION_RADIANS).expect("overflow"));
+    // a rotation of about 53 degrees
+    let rotation = Complex::new(
+        T::from_f64(0.6).expect("overflow"),
+        T::from_f64(0.8).expect("overflow"),
+    );
 
     let mut eval_count = 0;
 
-    let mut delta_best = delta;
-    let mut px_best_norm = poly.eval(guess - delta_best).norm();
+    let mut delta_best = delta.clone();
+    let mut px_best_norm = poly.eval(guess.clone() - delta_best.clone()).norm_sqr();
     eval_count += 1;
     for p in 1..=MAX_STEPS {
         let step_size = T::from_i32(2i32.pow(p)).expect("overflow").recip();
-        let delta_new = delta.scale(step_size);
-        let guess_new = guess - delta_new;
-        let px_new = poly.eval(guess_new);
+        let delta_new = delta.scale(step_size.clone());
+        let guess_new = guess.clone() - delta_new.clone();
+        let px_new = poly.eval(guess_new.clone());
         eval_count += 1;
-        let px_new_norm = px_new.norm();
+        let px_new_norm = px_new.norm_sqr();
         if px_new_norm >= px_best_norm {
             // stop searching as soon as it stops improving
             return (guess_new, eval_count);

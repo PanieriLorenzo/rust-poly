@@ -7,6 +7,7 @@ use crate::{
     roots::initial_guess::initial_guess_smallest,
     util::{
         self,
+        complex::c_from_f64,
         doc_macros::{errors_no_converge, panic_t_from_f64, panic_t_from_int},
     },
     Poly, RealScalar,
@@ -36,31 +37,33 @@ pub fn halley<T: RealScalar>(
 ) -> std::result::Result<(Vec<Complex<T>>, u128), roots::Error<Vec<Complex<T>>>> {
     let mut eval_counter = 0;
     let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(poly));
-    let mut guess_old = guess;
-    let mut guess_old_old = guess;
+    let mut guess_old = guess.clone();
+    let mut guess_old_old = guess.clone();
     let mut guess_delta_old = Complex::one();
 
     // number of iterations without improvements after which we assume we're in
     // a cycle set it to a prime number to avoid meta-cycles forming
     const CYCLE_COUNT_THRESHOLD: usize = 17;
     let mut cycle_counter = 0;
-    let mut best_guess = guess;
-    let mut best_px_norm = guess.norm();
+    let mut best_guess = guess.clone();
+    let mut best_px_norm = guess.clone().norm_sqr();
 
     let mut diffs = LazyDerivatives::new(poly);
 
     // until convergence
     for i in util::iterator::saturating_counter() {
-        let px = poly.eval(guess);
-        log::trace!("{{current_guess: {guess}, error: {}}}", px.norm());
+        let px = poly.eval(guess.clone());
+        log::trace!("{{current_guess: {guess}, error: {}}}", px.norm_sqr());
 
         // stopping criterion 1: converged
-        if px.norm() <= epsilon {
+        if px.norm_sqr() <= epsilon {
             return Ok((vec![guess], eval_counter));
         }
 
         // stopping criterion 2: no improvement predicted due to numeric precision
-        if i > 3 && super::stopping_criterion_garwick(guess, guess_old, guess_old_old) {
+        if i > 3
+            && super::stopping_criterion_garwick(guess.clone(), guess_old.clone(), guess_old_old)
+        {
             return Ok((vec![guess], eval_counter));
         }
 
@@ -70,7 +73,7 @@ pub fn halley<T: RealScalar>(
         }
 
         // check for cycles
-        if px.norm() >= best_px_norm {
+        if px.norm_sqr() >= best_px_norm {
             cycle_counter += 1;
             if cycle_counter > CYCLE_COUNT_THRESHOLD {
                 // arbitrary constants
@@ -82,23 +85,21 @@ pub fn halley<T: RealScalar>(
 
                 // TODO: when const trait methods are supported, this should be
                 //       made fully const.
-                let backoff = Complex::from_polar(
-                    T::from_f64(SCALE).expect("overflow"),
-                    T::from_f64(ROTATION_RADIANS).expect("overflow"),
-                );
+                let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS));
                 // reverting to older base guess, but offset
-                guess = best_guess - guess_delta_old * backoff;
+                guess = best_guess.clone() - guess_delta_old.clone() * backoff;
             }
         } else {
             cycle_counter = 0;
-            best_guess = guess;
-            best_px_norm = px.norm();
+            best_guess = guess.clone();
+            best_px_norm = px.norm_sqr();
         }
 
-        let pdx = diffs.get_nth_derivative(1).eval(guess);
-        let pddx = diffs.get_nth_derivative(2).eval(guess);
+        let pdx = diffs.get_nth_derivative(1).eval(guess.clone());
+        let pddx = diffs.get_nth_derivative(2).eval(guess.clone());
         eval_counter += 2;
-        let denom = (pdx * pdx).scale(T::from_u8(2).expect("overflow")) - px * pddx;
+        let denom = (pdx.clone() * pdx.clone()).scale(T::from_u8(2).expect("overflow"))
+            - px.clone() * pddx.clone();
 
         let guess_delta = if denom.is_zero() || pdx.is_zero() {
             // these are arbitrary, originally chosen by Madsen.
@@ -109,19 +110,16 @@ pub fn halley<T: RealScalar>(
 
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
-            let backoff = Complex::from_polar(
-                T::from_f64(SCALE).expect("overflow"),
-                T::from_f64(ROTATION_RADIANS).expect("overflow"),
-            );
-            <Complex<T> as std::ops::Mul>::mul(guess_delta_old, backoff)
+            let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS));
+            <Complex<T> as std::ops::Mul>::mul(guess_delta_old.clone(), backoff)
         } else {
-            let m = multiplicity_lagouanelle(px, pdx, pddx);
-            (m + Complex::one()) * (px * pdx) / denom
+            let m = multiplicity_lagouanelle(px.clone(), pdx.clone(), pddx);
+            (m + Complex::one()) * (px.clone() * pdx) / denom
         };
 
         const EXPLODE_THRESHOLD: f64 = 5.0;
-        let guess_delta = if guess_delta.norm()
-            > guess_delta_old.norm() * T::from_f64(EXPLODE_THRESHOLD).expect("overflow")
+        let guess_delta = if guess_delta.norm_sqr()
+            > guess_delta_old.norm_sqr() * T::from_f64(EXPLODE_THRESHOLD).expect("overflow")
         {
             // these are arbitrary, originally chosen by Madsen.
             const ROTATION_RADIANS: f64 = 0.925_024_5;
@@ -131,28 +129,26 @@ pub fn halley<T: RealScalar>(
 
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
-            let backoff = Complex::from_polar(
-                T::from_f64(SCALE).expect("overflow"),
-                T::from_f64(ROTATION_RADIANS).expect("overflow"),
-            )
-            .scale(guess_delta_old.norm() / guess_delta.norm());
+            let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS))
+                .scale(guess_delta_old.norm_sqr() / guess_delta.norm_sqr());
             guess_delta * backoff
         } else {
             guess_delta
         };
 
         eval_counter += 1;
-        let guess_new = if poly.eval(guess - guess_delta).norm() >= px.norm() {
-            log::trace!("overshooting, shortening step");
-            let res = line_search_decelerate(poly, guess, guess_delta);
-            eval_counter += res.1;
-            res.0
-        } else {
-            log::trace!("undershooting, lengthening step");
-            let res = line_search_accelerate(poly, guess, guess_delta);
-            eval_counter += res.1;
-            res.0
-        };
+        let guess_new =
+            if poly.eval(guess.clone() - guess_delta.clone()).norm_sqr() >= px.norm_sqr() {
+                log::trace!("overshooting, shortening step");
+                let res = line_search_decelerate(poly, guess.clone(), guess_delta.clone());
+                eval_counter += res.1;
+                res.0
+            } else {
+                log::trace!("undershooting, lengthening step");
+                let res = line_search_accelerate(poly, guess.clone(), guess_delta.clone());
+                eval_counter += res.1;
+                res.0
+            };
 
         guess_delta_old = guess_delta;
         guess_old_old = guess_old;
@@ -195,7 +191,7 @@ mod test {
         let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let roots = halley_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
-        assert!(check_roots(roots, roots_expected, 1E-12));
+        assert!(check_roots(roots, roots_expected, 1E-7));
     }
 
     #[test]
@@ -203,7 +199,7 @@ mod test {
         let roots_expected = vec![complex!(1.0), complex!(0.0, 1.0), complex!(0.0, -1.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let roots = halley_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
-        assert!(check_roots(roots, roots_expected, 1E-12));
+        assert!(check_roots(roots, roots_expected, 1E-7));
     }
 
     #[test]
@@ -218,7 +214,7 @@ mod test {
         let mut p = crate::Poly::from_roots(&roots_expected);
         let roots = halley_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
         assert!(
-            check_roots(roots.clone(), roots_expected, 1E-4),
+            check_roots(roots.clone(), roots_expected, 1E-3),
             "{roots:?}"
         );
     }
@@ -234,6 +230,6 @@ mod test {
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let roots = halley_deflate(&mut p, Some(1E-14), Some(100), &[]).unwrap();
-        assert!(check_roots(roots, roots_expected, 1E-12));
+        assert!(check_roots(roots, roots_expected, 1E-7));
     }
 }

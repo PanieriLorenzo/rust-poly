@@ -1,3 +1,4 @@
+use crate::scalar::Rational;
 use itertools::Itertools;
 use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
 
@@ -16,7 +17,7 @@ impl<T: RealScalar> Poly<T> {
 
     /// Scale a polynomial in-place
     pub(crate) fn scale(&mut self, factor: Complex<T>) {
-        self.apply(|z| *z *= factor);
+        self.apply(|z| *z *= factor.clone());
     }
 
     /// Moving version of `scale`
@@ -68,7 +69,7 @@ impl<T: RealScalar> Poly<T> {
 
     /// The last coefficient
     pub(crate) fn last(&self) -> Complex<T> {
-        self.0[self.len_raw() - 1]
+        self.0[self.len_raw() - 1].clone()
     }
 
     pub(crate) fn is_monic(&self) -> bool {
@@ -86,7 +87,7 @@ impl<T: RealScalar> Poly<T> {
             // already monic
             return;
         }
-        self.apply(|x| *x /= last_coeff);
+        self.apply(|x| *x /= last_coeff.clone());
     }
 
     /// Make sure trailing almost-zero coefficients are removed
@@ -108,8 +109,8 @@ impl<T: RealScalar> Poly<T> {
         let mut z0 = Complex::<T>::zero();
         // FIXME: I think this does exactly one wasted iteration at the end
         for j in 0..self.len_raw() {
-            z0 = z0 * r + *self.coeffs_descending(j);
-            *self.coeffs_descending_mut(j) = z0;
+            z0 = z0.clone() * r.clone() + self.coeffs_descending(j).clone();
+            *self.coeffs_descending_mut(j) = z0.clone();
         }
         self.shift_down(1).normalize()
     }
@@ -127,13 +128,13 @@ impl<T: RealScalar> Poly<T> {
         let mut z0 = Complex::zero();
         if r != z0 {
             let mut i = n - 1;
-            let mut t = *self.coeffs_descending(n);
+            let mut t = self.coeffs_descending(n).clone();
             let mut s;
             loop {
                 s = t;
-                t = *self.coeffs_descending(i);
-                z0 = (z0 - s) / r;
-                *self.coeffs_descending_mut(i) = z0;
+                t = self.coeffs_descending(i).clone();
+                z0 = (z0.clone() - s) / r.clone();
+                *self.coeffs_descending_mut(i) = z0.clone();
                 i -= 1;
                 if i == 0 {
                     break;
@@ -147,7 +148,7 @@ impl<T: RealScalar> Poly<T> {
     /// of forward deflation and backward deflation
     pub(crate) fn deflate_composite(&mut self, r: Complex<T>) {
         let n = self.degree_raw();
-        let fwd = self.clone().deflate_downward(r);
+        let fwd = self.clone().deflate_downward(r.clone());
         let bwd = self.clone().deflate_upward(r);
         // TODO: in order to drop the Bounded trait bound, this should be
         //       done without explicit reference to max value
@@ -155,9 +156,9 @@ impl<T: RealScalar> Poly<T> {
         let mut ua;
         let mut k = 0;
         for i in 0..n {
-            ua = fwd.coeffs_descending(i).norm() + bwd.coeffs_descending(i).norm();
+            ua = fwd.coeffs_descending(i).norm_sqr() + bwd.coeffs_descending(i).norm_sqr();
             if !ua.is_zero() {
-                ua = (fwd.coeffs_descending(i) - bwd.coeffs_descending(i)).norm() / ua;
+                ua = (fwd.coeffs_descending(i) - bwd.coeffs_descending(i)).norm_sqr() / ua;
                 if ua < ra {
                     ra = ua;
                     k = i;
@@ -166,7 +167,7 @@ impl<T: RealScalar> Poly<T> {
         }
         let mut i = k.saturating_sub(1);
         loop {
-            *self.coeffs_descending_mut(i) = *fwd.coeffs_descending(i);
+            *self.coeffs_descending_mut(i) = fwd.coeffs_descending(i).clone();
             if i == 0 {
                 break;
             }
@@ -175,7 +176,7 @@ impl<T: RealScalar> Poly<T> {
         *self.coeffs_descending_mut(k) = (fwd.coeffs_descending(k) + bwd.coeffs_descending(k))
             .scale(T::from_u8(2).expect("should fit").recip());
         for i in (k + 1)..n {
-            *self.coeffs_descending_mut(i) = *bwd.coeffs_descending(i);
+            *self.coeffs_descending_mut(i) = bwd.coeffs_descending(i).clone();
         }
 
         *self = self.shift_down(1).normalize();

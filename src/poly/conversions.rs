@@ -50,7 +50,7 @@ impl<T: RealScalar> Poly<T> {
 
     #[must_use]
     pub fn from_real_slice(value: &[T]) -> Self {
-        Self::from_real_iterator(value.iter().copied(), value.len())
+        Self::from_real_iterator(value.iter().cloned(), value.len())
     }
 
     #[allow(clippy::needless_pass_by_value)]

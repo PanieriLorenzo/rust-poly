@@ -74,7 +74,7 @@ impl<T: RealScalar + FromPrimitive> Poly<T> {
     #[must_use]
     pub fn reverse_bessel(n: usize) -> Option<Self> {
         let p = Self::bessel(n)?;
-        let v: Vec<_> = p.iter().copied().rev().collect();
+        let v: Vec<_> = p.iter().cloned().rev().collect();
         Some(Self::from_complex_vec(v))
     }
 }
@@ -101,8 +101,11 @@ impl<T: RealScalar> Poly<T> {
             let p2 = &memo[i - 2];
             let ns = T::from_usize(i).expect("overflow");
             memo.push(
-                poly![T::zero(), T::from_usize(2 * i - 1).expect("overflow") / ns] * p1
-                    + poly![(T::one() - ns) / ns] * p2,
+                poly![
+                    T::zero(),
+                    T::from_usize(2 * i - 1).expect("overflow") / ns.clone()
+                ] * p1
+                    + poly![(T::one() - ns.clone()) / ns] * p2,
             );
         }
         memo.last().expect("infallible").clone()

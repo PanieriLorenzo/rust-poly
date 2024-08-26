@@ -87,8 +87,8 @@ impl<T: RealScalar> Poly<T> {
     /// assert_eq!(Poly::line_from_points(p1, p2).eval_point(Complex::one()), Complex::zero());
     /// ```
     pub fn line_from_points(p1: (Complex<T>, Complex<T>), p2: (Complex<T>, Complex<T>)) -> Self {
-        let slope = (p2.1 - p1.1) / (p2.0 - p1.0);
-        let offset = p1.1 - slope * p1.0;
+        let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
+        let offset = p1.1.clone() - slope.clone() * p1.0;
         Self::line(offset, slope)
     }
 
@@ -208,7 +208,7 @@ impl<T: RealScalar> Poly<T> {
         if degree as usize >= self.len_raw() {
             return None;
         }
-        Some(Self::term(self.as_slice()[degree as usize], degree))
+        Some(Self::term(self.as_slice()[degree as usize].clone(), degree))
     }
 
     /// Iterate over the terms of a polynomial
@@ -292,7 +292,7 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
         }
 
         (0..self.len_raw())
-            .map(|i| Self::new(&[self.0[i]]) * x.clone().pow_usize(i))
+            .map(|i| Self::new(&[self.0[i].clone()]) * x.clone().pow_usize(i))
             .sum()
     }
 }
@@ -304,7 +304,7 @@ impl<T: RealScalar> Poly<T> {
 
         // TODO: parallelize this loop
         for (y, x) in out.iter_mut().zip(points) {
-            *y = self.eval(*x);
+            *y = self.eval(x.clone());
         }
     }
 
@@ -344,8 +344,8 @@ impl<T: RealScalar> Poly<T> {
             //             <=> [0, n - 2]   reversing bounds is equivalent
             // 4. the range of the index [0, n - 2] is a subset of [0, n - 1],
             //    therefore the index is in bounds. QED
-            let c = *unsafe { self.0.get_unchecked(n - i - 1) };
-            eval = eval.mul_add(x, c);
+            let c = (unsafe { self.0.get_unchecked(n - i - 1) }).clone();
+            eval = eval.mul_add(x.clone(), c);
         }
         eval
     }
@@ -379,7 +379,7 @@ impl<T: RealScalar> Poly<T> {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
 
-        self.as_slice().iter().all(|c| c.norm() <= *tolerance)
+        self.as_slice().iter().all(|c| c.norm_sqr() <= *tolerance)
     }
 }
 

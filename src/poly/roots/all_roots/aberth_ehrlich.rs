@@ -40,7 +40,7 @@ pub fn aberth_ehrlich<T: RealScalar>(
                 continue;
             }
             assert!(
-                (initial_guesses[i] - initial_guesses[j]).norm() > T::zero(),
+                (initial_guesses[i].clone() - initial_guesses[j].clone()).norm_sqr() > T::zero(),
                 "initial guesses must be distinct"
             );
         }
@@ -68,7 +68,7 @@ pub fn aberth_ehrlich<T: RealScalar>(
 
         // alphas become deltas in-place
         for (a, b) in alphas_buff.iter_mut().zip(betas_buff.iter()) {
-            *a /= Complex::<T>::one() - *a * b;
+            *a /= Complex::<T>::one() - a.clone() * b;
         }
         let deltas_buff = &mut alphas_buff;
 
@@ -77,7 +77,7 @@ pub fn aberth_ehrlich<T: RealScalar>(
         }
 
         // stopping criteria
-        if deltas_buff.iter().all(|d| d.norm() <= epsilon) {
+        if deltas_buff.iter().all(|d| d.norm_sqr() <= epsilon) {
             return Ok(points);
         }
     }
@@ -95,7 +95,7 @@ fn alphas<T: RealScalar>(poly: &Poly<T>, points: &[Complex<T>], out: &mut [Compl
     // TODO: division by zero
     poly.eval_multiple(points, out);
     for (y, x) in out.iter_mut().zip(points) {
-        *y /= p_diff.eval(*x);
+        *y /= p_diff.eval(x.clone());
     }
 }
 
@@ -112,7 +112,7 @@ fn betas<T: RealScalar>(points: &[Complex<T>], out: &mut [Complex<T>]) {
             if i == j {
                 continue;
             }
-            out[i] += Complex::<T>::one() / (points[i] - points[j]);
+            out[i] += Complex::<T>::one() / (points[i].clone() - points[j].clone());
         }
     }
 }
@@ -187,7 +187,7 @@ mod test {
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 5];
         initial_guesses_random(p.clone(), 1, &mut guesses);
-        let roots = aberth_ehrlich(&mut p, Some(1E-5), Some(100), &guesses).unwrap();
+        let roots = aberth_ehrlich(&mut p, Some(1E-8), Some(100), &guesses).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-4),
             "{roots:?}"
@@ -211,7 +211,7 @@ mod test {
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 10];
         initial_guesses_circle(&p, 0.5, 1, 0.5, &mut guesses);
-        let roots = aberth_ehrlich(&mut p, Some(1E-5), Some(100), &guesses).unwrap();
+        let roots = aberth_ehrlich(&mut p, Some(1E-8), Some(100), &guesses).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-4),
             "{roots:?}"

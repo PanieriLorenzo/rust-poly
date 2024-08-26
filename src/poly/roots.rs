@@ -1,4 +1,7 @@
-use crate::{util::complex::c_neg, Poly, RealScalar};
+use crate::{
+    util::complex::{c_neg, c_sqrt},
+    Poly, RealScalar,
+};
 use num::{Complex, Float, FromPrimitive, One, Zero};
 
 mod single_root;
@@ -24,7 +27,7 @@ pub enum Error<T> {
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
-impl<T: RealScalar + Float> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     /// A convenient way of finding roots, with a pre-configured root finder.
     /// Should work well for most real polynomials of low degree.
     ///
@@ -39,7 +42,7 @@ impl<T: RealScalar + Float> Poly<T> {
 
         let mut this = self.clone();
 
-        let mut roots: Vec<Complex<T>> = this.zero_roots(epsilon);
+        let mut roots: Vec<Complex<T>> = this.zero_roots(epsilon.clone());
 
         match this.degree_raw() {
             1 => {
@@ -69,7 +72,7 @@ impl<T: RealScalar + Float> Poly<T> {
 
         roots.extend(aberth_ehrlich(
             &mut this,
-            Some(epsilon),
+            Some(epsilon.clone()),
             Some(max_iter),
             &initial_guesses,
         )?);
@@ -90,13 +93,13 @@ impl<T: RealScalar + Float> Poly<T> {
 }
 
 // private
-impl<T: RealScalar + Float> Poly<T> {
+impl<T: RealScalar> Poly<T> {
     fn zero_roots(&mut self, epsilon: T) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
 
         let mut roots = vec![];
         for _ in 0..self.degree_raw() {
-            if self.eval(Complex::zero()).norm() < epsilon {
+            if self.eval(Complex::zero()).norm_sqr() < epsilon {
                 roots.push(Complex::zero());
                 // deflating zero roots can be accomplished simply by shifting
                 *self = self.shift_down(1);
@@ -115,7 +118,7 @@ impl<T: RealScalar + Float> Poly<T> {
 
         let mut roots = vec![];
         for _ in 0..self.degree_raw() {
-            if self.eval(Complex::zero()).norm() < epsilon {
+            if self.eval(Complex::zero()).norm_sqr() < epsilon {
                 eval_counter += 1;
                 roots.push(Complex::zero());
                 // deflating zero roots can be accomplished simply by shifting
@@ -145,8 +148,8 @@ impl<T: RealScalar + Float> Poly<T> {
             return vec![];
         }
 
-        let a = self.0[1];
-        let b = self.0[0];
+        let a = self.0[1].clone();
+        let b = self.0[0].clone();
 
         // we found all the roots
         *self = Self::one();
@@ -168,17 +171,17 @@ impl<T: RealScalar + Float> Poly<T> {
             return vec![];
         }
 
-        let a = self.0[2];
-        let b = self.0[1];
-        let c = self.0[0];
+        let a = self.0[2].clone();
+        let b = self.0[1].clone();
+        let c = self.0[0].clone();
         let four = Complex::<T>::from_u8(4).expect("overflow");
         let two = Complex::<T>::from_u8(2).expect("overflow");
 
         // TODO: switch to different formula when b^2 and 4c are very close due
         //       to loss of precision
-        let plus_minus_term = (b * b - four * a * c).sqrt();
-        let x1 = (plus_minus_term - b) / (two * a);
-        let x2 = (c_neg(b) - plus_minus_term) / (two * a);
+        let plus_minus_term = c_sqrt(b.clone() * b.clone() - four * a.clone() * c);
+        let x1 = (plus_minus_term.clone() - b.clone()) / (two.clone() * a.clone());
+        let x2 = (c_neg(b.clone()) - plus_minus_term) / (two * a);
 
         // we found all the roots
         *self = Self::one();

@@ -29,7 +29,7 @@ pub fn parallel<T: RealScalar>(
     let initial_guesses = {
         let mut complete_initial_guesses = Vec::with_capacity(num);
         for z in initial_guesses {
-            complete_initial_guesses.push(*z);
+            complete_initial_guesses.push(z.clone());
         }
         let remaining_guesses_delta = num - complete_initial_guesses.len();
         let mut remaining_guesses = vec![Complex::zero(); remaining_guesses_delta];
@@ -48,7 +48,15 @@ pub fn parallel<T: RealScalar>(
 
     let mut roots = vec![];
     for z in initial_guesses {
-        roots.extend(next_root_fun(poly, epsilon.unwrap_or(T::zero()), max_iter, Some(z))?.0);
+        roots.extend(
+            next_root_fun(
+                poly,
+                epsilon.clone().unwrap_or(T::zero()),
+                max_iter,
+                Some(z),
+            )?
+            .0,
+        );
     }
     Ok(roots)
 }

@@ -4,9 +4,10 @@ use itertools::Itertools;
 
 use crate::{
     num::{Complex, Float, Zero},
+    scalar::Rational,
     util::{
         casting::usize_to_f64,
-        complex::{c_min, c_neg},
+        complex::{c_arg, c_exp, c_from_f64, c_min, c_neg, c_powf},
         doc_macros::{panic_t_from_f64, panic_t_from_int},
     },
     Poly, RealScalar,
@@ -23,38 +24,37 @@ pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
     debug_assert!(poly.is_normalized());
     debug_assert!(poly.len_raw() >= 2);
 
-    let small = Float::recip(T::from_u16(1_000).expect("overflow"));
+    let small = Rational::recip(T::from_u16(1_000).expect("overflow"));
     let p_diff = poly.clone().diff();
     let mut pz = poly.eval(Complex::zero());
     let mut pdz = p_diff.eval(Complex::zero());
 
     // avoid divide by zero
-    if pdz.norm() < small {
-        pz += small;
+    if pdz.norm_sqr() < small {
+        pz += small.clone();
         pdz += small;
     }
 
-    let theta = (c_neg(pz) / pdz).arg();
+    let theta = c_arg(c_neg(pz) / pdz);
     let mut iter_coeffs = poly.0.iter();
     let a0 = iter_coeffs.next().expect("infallible");
 
     let mut guess = iter_coeffs
         .zip(1..)
         .map(|(ak, k)| {
-            Complex::i()
-                .scale(theta)
-                .exp()
-                .scale((a0 / ak).norm())
-                .powf(T::one() / T::from_usize(k).expect("overflow"))
+            c_powf(
+                c_exp(Complex::i().scale(theta.clone())).scale((a0 / ak).norm_sqr()),
+                T::one() / T::from_usize(k).expect("overflow"),
+            )
         })
         .reduce(c_min)
         .expect("infallible")
-        .scale(Float::recip(T::from_u8(2).expect("overflow")));
+        .scale(Rational::recip(T::from_u8(2).expect("overflow")));
 
     if guess.im.is_zero() {
         // add a small constant because some methods can't converge to
         // complex roots if the initial guess is real
-        guess += Complex::i().scale(Float::recip(T::from_u16(1_000).expect("overflow")));
+        guess += Complex::i().scale(Rational::recip(T::from_u16(1_000).expect("overflow")));
     }
     guess
 }
@@ -70,9 +70,9 @@ pub fn initial_guesses_random<T: RealScalar>(mut poly: Poly<T>, seed: u64, out: 
     let high = upper_bound(&poly).to_f64().expect("overflow");
     let span = high - low;
     for y in out {
-        let radius = T::from_f64(rng.f64().mul_add(span, low)).expect("overflow");
-        let angle = T::from_f64(rng.f64() * std::f64::consts::TAU).expect("overflow");
-        *y = Complex::from_polar(radius, angle);
+        let radius = rng.f64().mul_add(span, low);
+        let angle = rng.f64() * std::f64::consts::TAU;
+        *y = c_from_f64(Complex::from_polar(radius, angle));
     }
 }
 
@@ -110,17 +110,21 @@ pub fn initial_guesses_circle<T: RealScalar>(
     let angle_increment = std::f64::consts::TAU / (usize_to_f64(n_odd));
     let low = lower_bound(poly);
     let high = upper_bound(poly);
-    let span = high - low;
-    let radius = high * bias + low * (T::one() - bias);
+    let span = high.clone() - low.clone();
+    let radius = high * bias.clone() + low.clone() * (T::one() - bias);
     let mut angle_accumulator = 0.0;
     for y in out {
         let angle = T::from_f64(angle_accumulator).expect("overflow")
             + T::from_f64(rng.f64().mul_add(angle_increment, -(angle_increment / 2.0)))
                 .expect("overflow")
-                * perturbation;
-        let radius = radius * (T::one() - perturbation)
-            + (T::from_f64(rng.f64()).expect("overflow") * span + low) * perturbation;
-        *y = Complex::from_polar(radius, angle);
+                * perturbation.clone();
+        let radius = radius.clone() * (T::one() - perturbation.clone())
+            + (T::from_f64(rng.f64()).expect("overflow") * span.clone() + low.clone())
+                * perturbation.clone();
+        *y = c_from_f64(Complex::from_polar(
+            radius.to_f64().expect("overflow"),
+            angle.to_f64().expect("overflow"),
+        ));
         angle_accumulator += angle_increment;
     }
 }
@@ -140,21 +144,21 @@ fn upper_bound<T: RealScalar>(poly: &Poly<T>) -> T {
 
     let n = poly.len_raw();
 
-    let next_last = poly.0[poly.len_raw() - 2];
+    let next_last = poly.0[poly.len_raw() - 2].clone();
     let coeffs_iter = poly.0.iter().take(n - 2);
     let coeffs_iter_shifted = poly.0.iter().skip(1).take(n - 2);
     let max_term = coeffs_iter
         .zip(coeffs_iter_shifted)
         .map(|(num, denom)| num / denom)
-        .map(Complex::norm)
+        .map(|z| Complex::norm_sqr(&z))
         .reduce(|acc, z| if z > acc { z } else { acc })
         .expect("infallible");
-    next_last.norm() + max_term
+    next_last.norm_sqr() + max_term
 }
 
 /// The radius of a disk containing none of the roots
 fn lower_bound<T: RealScalar>(poly: &Poly<T>) -> T {
-    let mut this = Poly::from_complex_vec(poly.0.iter().copied().rev().collect_vec());
+    let mut this = Poly::from_complex_vec(poly.0.iter().cloned().rev().collect_vec());
     this.make_monic();
     upper_bound(&this).recip()
 }
@@ -166,7 +170,7 @@ fn lower_bound<T: RealScalar>(poly: &Poly<T>) -> T {
 /// [From Wiki Books](https://web.archive.org/web/20240617105108/https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python)
 #[allow(unused)]
 fn cross_2d<T: RealScalar>(o: (T, T), a: (T, T), b: (T, T)) -> T {
-    (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0)
+    (a.0 - o.0.clone()) * (b.1 - o.1.clone()) - (a.1 - o.1) * (b.0 - o.0)
 }
 
 /// Extract upper envelope of the convex hull of a set of points
@@ -182,14 +186,18 @@ fn upper_convex_envelope<T: RealScalar>(points: &mut [(T, T)]) -> Vec<(T, T)> {
         },
     );
 
-    let mut upper = vec![];
+    let mut upper: Vec<(T, T)> = vec![];
     for p in points.iter_mut().rev() {
         while upper.len() >= 2
-            && cross_2d(upper[upper.len() - 2], upper[upper.len() - 1], *p) <= T::zero()
+            && cross_2d(
+                upper[upper.len() - 2].clone(),
+                upper[upper.len() - 1].clone(),
+                p.clone(),
+            ) <= T::zero()
         {
             upper.pop();
         }
-        upper.push(*p);
+        upper.push(p.clone());
     }
     upper
 }

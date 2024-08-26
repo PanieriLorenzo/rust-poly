@@ -5,12 +5,12 @@ use std::ops::{
 use anyhow::bail;
 use ethnum::u256;
 use num::{
-    traits::{MulAdd, MulAddAssign},
+    traits::{bounds::UpperBounded, MulAdd, MulAddAssign},
     Float, FromPrimitive, Num, NumCast, One, ToPrimitive, Zero,
 };
 use softfloat::F64;
 
-use crate::scalar::SafeConstants;
+use crate::scalar::{Rational, SafeConstants};
 
 /// TODO: document that this is taken from softfloat crate
 pub mod add;
@@ -501,6 +501,14 @@ impl SafeConstants for F128 {
         self.abs() > Self::large_safe()
     }
 }
+
+impl UpperBounded for F128 {
+    fn max_value() -> Self {
+        Self::MAX
+    }
+}
+
+impl Rational for F128 {}
 
 fn u128_widen_mul(a: u128, b: u128) -> (u128, u128) {
     // TODO: open a PR to make wrappping_mul const

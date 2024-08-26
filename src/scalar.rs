@@ -1,13 +1,33 @@
 //! Traits for the coefficients of polynomials
 
 use num::{
-    traits::{Float, MulAdd, MulAddAssign},
-    Complex, FromPrimitive, Num,
+    complex::ComplexFloat,
+    traits::{bounds::UpperBounded, Float, MulAdd, MulAddAssign},
+    Complex, FromPrimitive, Num, ToPrimitive,
 };
 use std::{
     fmt::Display,
     ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign},
 };
+
+/// A rational number, less restrictive than num::Float
+pub trait Rational: std::ops::Div<Output = Self> + num::One + ToPrimitive + FromPrimitive {
+    fn recip(self) -> Self {
+        Self::one() / self
+    }
+}
+
+impl Rational for f32 {
+    fn recip(self) -> Self {
+        f32::recip(self)
+    }
+}
+
+impl Rational for f64 {
+    fn recip(self) -> Self {
+        f64::recip(self)
+    }
+}
 
 // pub trait ComplexScalar: Scalar {
 //     type ComponentScalar;
@@ -27,8 +47,8 @@ pub trait RealScalar:
     + PartialEq
     + std::fmt::Debug
     + Num
-    + Float
     + FromPrimitive
+    + ToPrimitive
     + SafeConstants
     + std::ops::Neg<Output = Self>
     + 'static
@@ -40,6 +60,10 @@ pub trait RealScalar:
     + MulAdd<Output = Self>
     + MulAddAssign
     + Display
+    + PartialEq
+    + PartialOrd
+    + UpperBounded
+    + Rational
 {
 }
 impl<
@@ -48,8 +72,8 @@ impl<
             + PartialOrd
             + std::fmt::Debug
             + Num
-            + Float
             + FromPrimitive
+            + ToPrimitive
             + SafeConstants
             + std::ops::Neg<Output = Self>
             + AddAssign
@@ -60,6 +84,10 @@ impl<
             + MulAdd<Output = Self>
             + MulAddAssign
             + 'static
+            + PartialEq
+            + PartialOrd
+            + UpperBounded
+            + Rational
             + Display,
     > RealScalar for T
 {
