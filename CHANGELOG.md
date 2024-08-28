@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2024-08-28
+
+### 🚀 Features
+
+- Added `conj` method to compute the conjugate polynomial
+
+### 🐛 Bug Fixes
+
+- [**breaking**] Parallel not re-using given initial guesses
+
 ## [0.4.0] - 2024-08-26
 
 ### 🚀 Features
