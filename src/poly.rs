@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use itertools::Itertools;
 use num::{Complex, One, Zero};
 
 use crate::{
@@ -188,6 +189,15 @@ impl<T: RealScalar> Poly<T> {
             res = res * self.clone();
         }
         res.normalize()
+    }
+
+    /// Compute the conjugate polynomial, that is a polynomial where every
+    /// coefficient is conjugated.
+    ///
+    /// To evaluate a conjugate polynomial, you must evaluate it at the conjugate
+    /// of the input, i.e. `poly.conj().eval(z.conj())`
+    pub fn conj(&self) -> Self {
+        Self(self.0.iter().cloned().map(|z| z.conj()).collect_vec()).normalize()
     }
 
     /// Get the nth term of the polynomial as a new polynomial
@@ -416,5 +426,12 @@ mod test {
             p.to_string(),
             "2 + 4.5*x^1 + (5+i)*x^2 + (6+i1.5)*x^3 + (7+i2)*x^4".to_string()
         );
+    }
+
+    #[test]
+    fn conj() {
+        let p = poly![(1.0, -1.0), (2.0, 2.0), (3.0, -3.0)];
+        let q = poly![(1.0, 1.0), (2.0, -2.0), (3.0, 3.0)];
+        assert_eq!(p.conj(), q);
     }
 }
