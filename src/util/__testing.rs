@@ -49,7 +49,6 @@ pub struct RandStreamR64 {
 impl RandStreamR64 {
     #[must_use]
     pub fn new(seed: u64, min: f64, max: f64) -> Self {
-        assert_not_prod!();
         assert!(min <= max, "minimum should be smaller or equal to maximum");
         let real_stream = RandStreamF64::new(seed);
         Self {
@@ -84,7 +83,6 @@ pub struct RandStreamC64Cartesian {
 impl RandStreamC64Cartesian {
     #[must_use]
     pub fn new(seed: u64, min_re: f64, max_re: f64, min_im: f64, max_im: f64) -> Self {
-        assert_not_prod!();
         assert!(
             min_re <= max_re && min_im <= max_im,
             "minimum should be smaller or equal to maximum"
@@ -127,7 +125,6 @@ impl RandStreamC64Polar {
         min_angle: f64,
         max_angle: f64,
     ) -> Self {
-        assert_not_prod!();
         assert!(
             0.0 <= min_angle && max_angle <= 1.0,
             "angles should be specified in the range [0,1]"
@@ -171,7 +168,6 @@ pub struct RandStreamConjugate64<I: Iterator<Item = Complex<f64>>> {
 
 impl<I: Iterator<Item = Complex<f64>>> RandStreamConjugate64<I> {
     pub const fn new(upstream: I) -> Self {
-        assert_not_prod!();
         Self { upstream }
     }
 }
@@ -192,7 +188,6 @@ pub struct PolyStream<T: RealScalar> {
 
 impl<T: RealScalar> PolyStream<T> {
     pub fn new(max_degree: usize, root_stream: impl Iterator<Item = Complex<T>> + 'static) -> Self {
-        assert_not_prod!();
         Self {
             max_degree,
             root_stream: Box::new(root_stream),
@@ -227,7 +222,6 @@ fn binary_coeffs_inner(max_len: usize) -> Box<dyn Iterator<Item = Vec<f64>>> {
 }
 
 pub fn binary_coeffs(min_degree: usize, max_degree: usize) -> impl Iterator<Item = Poly<f64>> {
-    assert_not_prod!();
     binary_coeffs_inner(max_degree + 1)
         .map(Poly64::from_real_vec)
         .filter(move |p| p.degree_raw() >= min_degree)
@@ -239,7 +233,6 @@ pub fn test_case_roots(
     mut scale_stream: impl Iterator<Item = Complex64>,
     degree: usize,
 ) -> (Poly64, Vec<Complex64>) {
-    assert_not_prod!();
     let roots = roots_stream.take(degree).collect_vec();
     let poly = Poly64::from_roots(&roots)
         .scaled(scale_stream.next().expect("rng stream should be infinite"));
@@ -253,7 +246,6 @@ pub fn test_case_conj_roots(
     mut scale_stream: impl Iterator<Item = Complex64>,
     degree: usize,
 ) -> (Poly64, Vec<Complex64>) {
-    assert_not_prod!();
     let roots_stream = RandStreamConjugate64::new(roots_stream);
     let roots = roots_stream
         .take((degree + 1) / 2)
@@ -270,7 +262,6 @@ pub fn test_case_multiple_roots(
     degree: usize,
     multiplicity: usize,
 ) -> (Poly64, Vec<Complex64>) {
-    assert_not_prod!();
     let mut roots = roots_stream.take(degree - multiplicity).collect_vec();
     let first_root = roots[0];
     for _ in 0..multiplicity {
@@ -284,7 +275,6 @@ pub fn test_case_multiple_roots(
 /// Check that all roots have been found
 #[must_use]
 pub fn check_roots(roots1: Vec<Complex64>, mut roots2: Vec<Complex64>, tol: f64) -> bool {
-    assert_not_prod!();
     if roots1.len() != roots2.len() {
         return false;
     }

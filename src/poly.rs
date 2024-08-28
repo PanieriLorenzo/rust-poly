@@ -196,6 +196,7 @@ impl<T: RealScalar> Poly<T> {
     ///
     /// To evaluate a conjugate polynomial, you must evaluate it at the conjugate
     /// of the input, i.e. `poly.conj().eval(z.conj())`
+    #[must_use]
     pub fn conj(&self) -> Self {
         Self(self.0.iter().cloned().map(|z| z.conj()).collect_vec()).normalize()
     }

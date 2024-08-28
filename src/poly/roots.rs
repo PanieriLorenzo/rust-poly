@@ -91,7 +91,6 @@ impl<T: RealScalar> Poly<T> {
                 &mut this,
                 Some(f128::from(epsilon.to_f64().expect("overflow"))),
                 Some(max_iter),
-                roots.len(),
                 &roots,
             )
             .map(|v| v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
