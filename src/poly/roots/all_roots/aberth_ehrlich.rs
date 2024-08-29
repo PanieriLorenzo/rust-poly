@@ -76,6 +76,8 @@ pub fn aberth_ehrlich<T: RealScalar>(
             *y -= d;
         }
 
+        log::trace!("{points:?}");
+
         // stopping criteria
         if deltas_buff.iter().all(|d| d.norm_sqr() <= epsilon) {
             return Ok(points);

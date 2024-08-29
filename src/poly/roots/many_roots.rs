@@ -27,6 +27,7 @@ pub fn parallel<T: RealScalar>(
 
     let mut roots = vec![];
     for z in initial_guesses {
+        log::trace!("next root");
         roots.extend(
             next_root_fun(
                 poly,

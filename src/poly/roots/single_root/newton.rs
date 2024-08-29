@@ -27,8 +27,11 @@ pub fn newton<T: RealScalar>(
     poly: &Poly<T>,
     epsilon: T,
     max_iter: Option<usize>,
+    //min_iter: Option<usize>,
     initial_guess: Option<Complex<T>>,
 ) -> std::result::Result<(Vec<Complex<T>>, u128), roots::Error<Vec<Complex<T>>>> {
+    log::trace!("starting with arguments: {{poly: \"{poly}\", epsilon: {epsilon}, max_iter: \"{max_iter:?}\", initial_guess: \"{initial_guess:?}\"}}");
+
     let mut eval_counter = 0;
     let mut guess = initial_guess.unwrap_or_else(|| initial_guess_smallest(poly));
     let mut guess_old = guess.clone();
@@ -49,8 +52,11 @@ pub fn newton<T: RealScalar>(
         let px = poly.eval(guess.clone());
         eval_counter += 1;
 
+        log::trace!("best_guess: \"{best_guess:?}\"");
+
         // stopping criterion 1: converged
         if px.norm_sqr() <= epsilon {
+            log::trace!("stopping because target precision reached");
             return Ok((vec![best_guess], eval_counter));
         }
 
@@ -62,6 +68,7 @@ pub fn newton<T: RealScalar>(
                 guess_old_old.clone(),
             )
         {
+            log::trace!("stopping because garwick heuristic says no improvement is possible");
             return Ok((vec![best_guess], eval_counter));
         }
 
