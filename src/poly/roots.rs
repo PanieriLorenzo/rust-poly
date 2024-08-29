@@ -2,6 +2,7 @@ use crate::{
     util::complex::{c_from_f128, c_neg, c_sqrt, c_to_f128},
     Poly, RealScalar,
 };
+use anyhow::anyhow;
 use f128::f128;
 use itertools::Itertools;
 use num::{Complex, FromPrimitive, One, Zero};
@@ -62,7 +63,11 @@ pub enum InitialGuessMode<T> {
         im_min: T,
         im_max: T,
     },
-    RandomAnnulus {},
+    RandomAnnulus {
+        bias: T,
+        perturbation: T,
+        seed: u64,
+    },
     Hull {},
     GridSearch {},
 }
@@ -90,7 +95,11 @@ impl<T: RealScalar> Poly<T> {
             epsilon * T::from_f64(2.0).expect("overflow"),
             MultiplesHandlingMode::Off,
             &[],
-            InitialGuessMode::RandomAnnulus {},
+            InitialGuessMode::RandomAnnulus {
+                bias: T::from_f64(0.5).expect("overflow"),
+                perturbation: T::from_f64(0.5).expect("overflow"),
+                seed: 1,
+            },
         )
     }
 
@@ -125,17 +134,49 @@ impl<T: RealScalar> Poly<T> {
 
         this.make_monic();
 
-        let initial_guesses = {
-            let mut guesses = vec![Complex::<T>::zero(); this.degree_raw()];
-            initial_guesses_circle(
-                &this,
-                T::from_f64(0.5).expect("overflow"),
-                1,
-                T::from_f64(0.5).expect("overflow"),
-                &mut guesses,
-            );
-            guesses
-        };
+        debug_assert!(this.is_normalized());
+        let mut initial_guesses = Vec::with_capacity(this.degree_raw());
+        for guess in initial_guess_pool.iter().cloned() {
+            initial_guesses.push(guess);
+        }
+
+        // fill remaining guesses with zeros and prepare to replace with computed
+        // initial guesses
+        let delta = this.degree_raw() - initial_guesses.len();
+        for _ in 0..delta {
+            initial_guesses.push(Complex::<T>::zero());
+        }
+        let mut remaining_guesses_view =
+            &mut initial_guesses[initial_guess_pool.len()..this.degree_raw()];
+
+        match initial_guess_mode {
+            InitialGuessMode::GuessPoolOnly => {
+                if initial_guess_pool.len() < this.degree_raw() {
+                    return Err(Error::Other(anyhow!("not enough initial guesses, you must provide one guess per root when using GuessPoolOnly")));
+                }
+            }
+            InitialGuessMode::RandomUniform {
+                re_min,
+                re_max,
+                im_min,
+                im_max,
+            } => todo!(),
+            InitialGuessMode::RandomAnnulus {
+                bias,
+                perturbation,
+                seed,
+            } => {
+                initial_guesses_circle(
+                    &this,
+                    bias,
+                    seed,
+                    perturbation,
+                    &mut remaining_guesses_view,
+                );
+            }
+            InitialGuessMode::Hull {} => todo!(),
+            InitialGuessMode::GridSearch {} => todo!(),
+        }
 
         log::trace!("{initial_guesses:?}");
 
