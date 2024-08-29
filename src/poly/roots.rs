@@ -29,6 +29,44 @@ pub enum Error<T> {
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
+pub enum PolishingMode<T> {
+    None,
+    StandardPrecision {
+        epsilon: T,
+        min_iter: usize,
+        max_iter: usize,
+    },
+    #[cfg(target_arch = "x86_64")]
+    HighPrecision {
+        epsilon: T,
+        min_iter: usize,
+        max_iter: usize,
+    },
+}
+
+pub enum MultiplesHandlingMode {
+    Off,
+    BroadcastBest,
+    BroadcastAverage,
+    BroadcastMedian,
+    KeepBest,
+    KeepAverage,
+    KeepMedian,
+}
+
+pub enum InitialGuessMode<T> {
+    GuessPoolOnly,
+    RandomUniform {
+        re_min: T,
+        re_max: T,
+        im_min: T,
+        im_max: T,
+    },
+    RandomAnnulus {},
+    Hull {},
+    GridSearch {},
+}
+
 impl<T: RealScalar> Poly<T> {
     /// A convenient way of finding roots, with a pre-configured root finder.
     /// Should work well for most real polynomials of low degree.
@@ -40,6 +78,33 @@ impl<T: RealScalar> Poly<T> {
     /// - Some other edge-case was encountered which could not be handled (please
     ///   report this, as we can make this solver more robust!)
     pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
+        self.roots_expert(
+            epsilon.clone(),
+            max_iter,
+            0,
+            PolishingMode::StandardPrecision {
+                epsilon: epsilon.clone(),
+                min_iter: 0,
+                max_iter,
+            },
+            epsilon * T::from_f64(2.0).expect("overflow"),
+            MultiplesHandlingMode::Off,
+            &[],
+            InitialGuessMode::RandomAnnulus {},
+        )
+    }
+
+    pub fn roots_expert(
+        &self,
+        epsilon: T,
+        max_iter: usize,
+        min_iter: usize,
+        polishing_mode: PolishingMode<T>,
+        multiples_detection_epsilon: T,
+        multiples_handling_mode: MultiplesHandlingMode,
+        initial_guess_pool: &[Complex<T>],
+        initial_guess_mode: InitialGuessMode<T>,
+    ) -> Result<T> {
         debug_assert!(self.is_normalized());
 
         let mut this = self.clone();
@@ -72,6 +137,8 @@ impl<T: RealScalar> Poly<T> {
             guesses
         };
 
+        log::trace!("{initial_guesses:?}");
+
         roots.extend(aberth_ehrlich(
             &mut this,
             Some(epsilon.clone()),
@@ -84,22 +151,36 @@ impl<T: RealScalar> Poly<T> {
         //       factors are taken out, the entire process is repeated on the remainder
 
         // further polishing of roots
-        {
-            let mut this = this.cast_to_f128();
-            let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
-            newton_parallel(
-                &mut this,
-                Some(f128::from(epsilon.to_f64().expect("overflow"))),
-                Some(max_iter),
-                &roots,
-            )
-            .map(|v| v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
-            .map_err(|e| match e {
-                Error::NoConverge(v) => {
-                    Error::NoConverge(v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
-                }
-                Error::Other(o) => Error::Other(o),
-            })
+        match polishing_mode {
+            PolishingMode::None => Ok(roots),
+            PolishingMode::StandardPrecision {
+                epsilon,
+                min_iter,
+                max_iter,
+            } => newton_parallel(&mut this, Some(epsilon), Some(max_iter), &roots),
+
+            #[cfg(target_arch = "x86_64")]
+            PolishingMode::HighPrecision {
+                epsilon,
+                min_iter,
+                max_iter,
+            } => {
+                let mut this = this.cast_to_f128();
+                let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
+                newton_parallel(
+                    &mut this,
+                    Some(f128::from(epsilon.to_f64().expect("overflow"))),
+                    Some(max_iter),
+                    &roots,
+                )
+                .map(|v| v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
+                .map_err(|e| match e {
+                    Error::NoConverge(v) => {
+                        Error::NoConverge(v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
+                    }
+                    Error::Other(o) => Error::Other(o),
+                })
+            }
         }
     }
 }
