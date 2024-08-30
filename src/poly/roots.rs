@@ -76,7 +76,7 @@ impl<T: RealScalar> Poly<T> {
     /// A convenient way of finding roots, with a pre-configured root finder.
     /// Should work well for most real polynomials of low degree.
     ///
-    /// Use a root finder if you need more control over performance or accuracy.
+    /// Use [`Poly::roots_expert`] if you need more control over performance or accuracy.
     ///
     /// # Errors
     /// - Solver did not converge within `max_iter` iterations
@@ -103,14 +103,25 @@ impl<T: RealScalar> Poly<T> {
         )
     }
 
+    /// Highly configurable root finder.
+    ///
+    /// [`Poly::roots`] will often be good enough, but you may know something
+    /// about the polynomial you are factoring that allows you to tweak the
+    /// settings.
+    ///
+    /// # Errors
+    /// - Solver did not converge within `max_iter` iterations
+    /// - Some other edge-case was encountered which could not be handled (please
+    ///   report this, as we can make this solver more robust!)
+    /// - The combination of parameters that was provided is invalid
     pub fn roots_expert(
         &self,
         epsilon: T,
         max_iter: usize,
-        min_iter: usize,
+        _min_iter: usize,
         polishing_mode: PolishingMode<T>,
-        multiples_detection_epsilon: T,
-        multiples_handling_mode: MultiplesHandlingMode,
+        _multiples_detection_epsilon: T,
+        _multiples_handling_mode: MultiplesHandlingMode,
         initial_guess_pool: &[Complex<T>],
         initial_guess_mode: InitialGuessMode<T>,
     ) -> Result<T> {
