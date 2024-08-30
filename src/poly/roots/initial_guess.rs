@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use itertools::Itertools;
 
 use crate::{
-    num::{Complex, Float, Zero},
+    num::{Complex, Zero},
     scalar::Rational,
     util::{
         casting::usize_to_f64,

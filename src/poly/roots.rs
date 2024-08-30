@@ -245,34 +245,6 @@ impl<T: RealScalar> Poly<T> {
         roots
     }
 
-    #[deprecated]
-    fn trivial_roots(&mut self, epsilon: T) -> (Vec<Complex<T>>, u128) {
-        let mut eval_counter = 0;
-        debug_assert!(self.is_normalized());
-
-        let mut roots = vec![];
-        for _ in 0..self.degree_raw() {
-            if self.eval(Complex::zero()).norm_sqr() < epsilon {
-                eval_counter += 1;
-                roots.push(Complex::zero());
-                // deflating zero roots can be accomplished simply by shifting
-                *self = self.shift_down(1);
-            } else {
-                break;
-            }
-        }
-
-        match self.degree_raw() {
-            1 => roots.extend(self.linear_roots()),
-            2 => roots.extend(self.quadratic_roots()),
-            _ => {}
-        }
-
-        // post-condition: polynomials of degree 1 or 2 have been reduced
-        debug_assert!(self.degree_raw() != 1 && self.degree_raw() != 2);
-        (roots, eval_counter)
-    }
-
     fn linear_roots(&mut self) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
         debug_assert_eq!(self.degree_raw(), 1);

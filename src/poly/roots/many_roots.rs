@@ -3,11 +3,9 @@
 use super::{halley, naive, newton, single_root::NextRootFun};
 use crate::{
     num::Complex,
-    roots::initial_guesses_circle,
     util::doc_macros::{errors_no_converge, panic_t_from_f64},
     Poly, RealScalar,
 };
-use num::Zero;
 
 /// Run multiple single-root root finders in parallel.
 ///

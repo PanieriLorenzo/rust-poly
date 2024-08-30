@@ -19,27 +19,32 @@ pub fn deflate<T: RealScalar>(
     max_iter: Option<usize>,
     initial_guesses: &[Complex<T>],
 ) -> super::Result<T> {
-    let mut eval_counter = 0;
+    debug_assert!(poly.is_normalized());
     let epsilon = epsilon.unwrap_or(T::tiny_safe());
     let mut roots = vec![];
     let mut initial_guesses = initial_guesses.iter().cloned();
 
     // until we've found all roots
     loop {
-        let trivial_roots = poly.trivial_roots(epsilon.clone());
-        eval_counter += trivial_roots.1;
-        roots.extend(trivial_roots.0.iter().cloned());
+        let trivial_roots = {
+            let mut roots = poly.zero_roots(epsilon.clone());
+            match poly.degree_raw() {
+                1 => roots.extend(poly.linear_roots()),
+                2 => roots.extend(poly.quadratic_roots()),
+                _ => {}
+            }
+            roots
+        };
+        roots.extend(trivial_roots.iter().cloned());
 
         debug_assert!(poly.is_normalized());
         if poly.degree_raw() == 0 {
-            log::debug!("{{evaluations: {eval_counter}}}");
             return Ok(roots);
         }
 
         let next_guess = initial_guesses.next();
-        let (next_roots, num_evals) = next_root_fun(poly, epsilon.clone(), max_iter, next_guess)?;
+        let (next_roots, _) = next_root_fun(poly, epsilon.clone(), max_iter, next_guess)?;
         let root = next_roots[0].clone();
-        eval_counter += num_evals;
         roots.push(root.clone());
         poly.deflate_composite(root);
     }

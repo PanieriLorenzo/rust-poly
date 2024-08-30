@@ -1,7 +1,6 @@
-use crate::scalar::Rational;
 use f128::f128;
 use itertools::Itertools;
-use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
+use num::{Complex, One, Zero};
 
 use crate::{scalar::SafeConstants, Poly, RealScalar};
 
