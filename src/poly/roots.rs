@@ -14,7 +14,7 @@ pub use all_roots::{aberth_ehrlich, deflate, halley_deflate, naive_deflate, newt
 mod many_roots;
 pub use many_roots::{halley_parallel, naive_parallel, newton_parallel, parallel};
 mod initial_guess;
-pub use initial_guess::{initial_guess_smallest, initial_guesses_circle, initial_guesses_random};
+pub use initial_guess::{initial_guess_smallest, initial_guesses_circle};
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
@@ -57,17 +57,7 @@ pub enum MultiplesHandlingMode {
 
 pub enum InitialGuessMode<T> {
     GuessPoolOnly,
-    RandomUniform {
-        re_min: T,
-        re_max: T,
-        im_min: T,
-        im_max: T,
-    },
-    RandomAnnulus {
-        bias: T,
-        perturbation: T,
-        seed: u64,
-    },
+    RandomAnnulus { bias: T, perturbation: T, seed: u64 },
     Hull {},
     GridSearch {},
 }
@@ -166,12 +156,6 @@ impl<T: RealScalar> Poly<T> {
                     return Err(Error::Other(anyhow!("not enough initial guesses, you must provide one guess per root when using GuessPoolOnly")));
                 }
             }
-            InitialGuessMode::RandomUniform {
-                re_min,
-                re_max,
-                im_min,
-                im_max,
-            } => todo!(),
             InitialGuessMode::RandomAnnulus {
                 bias,
                 perturbation,

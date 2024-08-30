@@ -10,11 +10,7 @@ use plotly::{
     common::{Marker, MarkerSymbol, Mode},
     Plot, Scatter,
 };
-use rust_poly::{
-    complex,
-    roots::{initial_guesses_circle, initial_guesses_random},
-    Poly64,
-};
+use rust_poly::{complex, roots::initial_guesses_circle, Poly64};
 
 fn main() {
     const DEGREE: usize = 100;
@@ -84,7 +80,7 @@ fn example_random<const DEGREE: usize>(
     location: &str,
 ) {
     let mut guesses = [complex!(0.0); DEGREE];
-    initial_guesses_random(p.clone(), 1, &mut guesses);
+    initial_guesses_circle(&p, 0.5, 1, 0.5, &mut guesses);
     plot(roots_re, roots_im, &guesses, location);
 }
 

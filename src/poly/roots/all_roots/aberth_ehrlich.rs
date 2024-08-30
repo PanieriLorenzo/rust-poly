@@ -124,10 +124,7 @@ mod test {
     use num::{complex::Complex64, Zero};
 
     use super::aberth_ehrlich;
-    use crate::{
-        roots::initial_guess::{initial_guesses_circle, initial_guesses_random},
-        util::__testing::check_roots,
-    };
+    use crate::{roots::initial_guess::initial_guesses_circle, util::__testing::check_roots};
 
     // #[test]
     // pub fn degree_0() {
@@ -162,7 +159,7 @@ mod test {
         let roots_expected = vec![complex!(1.0), complex!(2.0), complex!(3.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 3];
-        initial_guesses_random(p.clone(), 1, &mut guesses);
+        initial_guesses_circle(&p, 0.5, 1, 0.5, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-14), Some(100), &guesses).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
@@ -172,7 +169,7 @@ mod test {
         let roots_expected = vec![complex!(1.0), complex!(0.0, 1.0), complex!(0.0, -1.0)];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 3];
-        initial_guesses_random(p.clone(), 1, &mut guesses);
+        initial_guesses_circle(&p, 0.5, 1, 0.5, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-14), Some(100), &guesses).unwrap();
         assert!(check_roots(roots, roots_expected, 1E-12));
     }
@@ -188,7 +185,7 @@ mod test {
         ];
         let mut p = crate::Poly::from_roots(&roots_expected);
         let mut guesses = [Complex64::zero(); 5];
-        initial_guesses_random(p.clone(), 1, &mut guesses);
+        initial_guesses_circle(&p, 0.5, 1, 0.5, &mut guesses);
         let roots = aberth_ehrlich(&mut p, Some(1E-8), Some(100), &guesses).unwrap();
         assert!(
             check_roots(roots.clone(), roots_expected, 1E-4),

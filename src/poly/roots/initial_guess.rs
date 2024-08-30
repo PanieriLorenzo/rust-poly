@@ -59,23 +59,6 @@ pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
     guess
 }
 
-/// TODO: doc
-///
-/// # Panics
-#[doc = panic_t_from_f64!()]
-pub fn initial_guesses_random<T: RealScalar>(mut poly: Poly<T>, seed: u64, out: &mut [Complex<T>]) {
-    poly.make_monic();
-    let mut rng = fastrand::Rng::with_seed(seed);
-    let low = lower_bound(&poly).to_f64().expect("overflow");
-    let high = upper_bound(&poly).to_f64().expect("overflow");
-    let span = high - low;
-    for y in out {
-        let radius = rng.f64().mul_add(span, low);
-        let angle = rng.f64() * std::f64::consts::TAU;
-        *y = c_from_f64(Complex::from_polar(radius, angle));
-    }
-}
-
 /// Equidistant points around a circle.
 ///
 /// The bias parameter controls the radius of the circle. A bias of 0 means the
