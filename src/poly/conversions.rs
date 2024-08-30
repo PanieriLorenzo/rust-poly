@@ -50,7 +50,7 @@ impl<T: RealScalar> Poly<T> {
 
     #[must_use]
     pub fn from_real_slice(value: &[T]) -> Self {
-        Self::from_real_iterator(value.iter().cloned(), value.len())
+        Self::from_real_iterator(value.iter().cloned())
     }
 
     #[allow(clippy::needless_pass_by_value)]
@@ -60,14 +60,14 @@ impl<T: RealScalar> Poly<T> {
     }
 
     #[must_use]
-    pub fn from_real_iterator(coeffs: impl Iterator<Item = T>, len: usize) -> Self {
-        let res = Self::from_complex_iterator(coeffs.map(|x| Complex::from(x)), len);
+    pub fn from_real_iterator(coeffs: impl Iterator<Item = T>) -> Self {
+        let res = Self::from_complex_iterator(coeffs.map(|x| Complex::from(x)));
         debug_assert!(res.is_normalized());
         res
     }
 
     #[must_use]
-    pub fn from_complex_iterator(coeffs: impl Iterator<Item = Complex<T>>, len: usize) -> Self {
+    pub fn from_complex_iterator(coeffs: impl Iterator<Item = Complex<T>>) -> Self {
         Self(coeffs.collect_vec()).normalize()
     }
 }
