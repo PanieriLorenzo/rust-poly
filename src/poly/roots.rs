@@ -1,5 +1,8 @@
 use crate::{
-    util::complex::{c_from_f128, c_neg, c_sqrt, c_to_f128},
+    util::{
+        complex::{c_from_f128, c_neg, c_sqrt, c_to_f128},
+        vec::slice_mean,
+    },
     Poly, RealScalar,
 };
 use anyhow::anyhow;
@@ -30,6 +33,9 @@ pub enum Error<T> {
 
 pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>>;
 
+// TODO: use everywhere
+pub type Roots<T> = Vec<Complex<T>>;
+
 pub enum PolishingMode<T> {
     None,
     StandardPrecision {
@@ -45,14 +51,12 @@ pub enum PolishingMode<T> {
     },
 }
 
-pub enum MultiplesHandlingMode {
-    Off,
-    BroadcastBest,
-    BroadcastAverage,
-    BroadcastMedian,
-    KeepBest,
-    KeepAverage,
-    KeepMedian,
+pub enum MultiplesHandlingMode<T> {
+    None,
+    BroadcastBest { detection_epsilon: T },
+    BroadcastAverage { detection_epsilon: T },
+    KeepBest { detection_epsilon: T },
+    KeepAverage { detection_epsilon: T },
 }
 
 pub enum InitialGuessMode<T> {
@@ -82,8 +86,10 @@ impl<T: RealScalar> Poly<T> {
                 min_iter: 0,
                 max_iter,
             },
-            epsilon * T::from_f64(2.0).expect("overflow"),
-            MultiplesHandlingMode::Off,
+            MultiplesHandlingMode::BroadcastBest {
+                // TODO: tune ratio
+                detection_epsilon: epsilon * T::from_f64(1.5).expect("overflow"),
+            },
             &[],
             InitialGuessMode::RandomAnnulus {
                 bias: T::from_f64(0.5).expect("overflow"),
@@ -110,8 +116,7 @@ impl<T: RealScalar> Poly<T> {
         max_iter: usize,
         _min_iter: usize,
         polishing_mode: PolishingMode<T>,
-        _multiples_detection_epsilon: T,
-        _multiples_handling_mode: MultiplesHandlingMode,
+        multiples_handling_mode: MultiplesHandlingMode<T>,
         initial_guess_pool: &[Complex<T>],
         initial_guess_mode: InitialGuessMode<T>,
     ) -> Result<T> {
@@ -182,12 +187,8 @@ impl<T: RealScalar> Poly<T> {
             &initial_guesses,
         )?);
 
-        // TODO: handle cases with high multiplicity with some sort of multiplicity
-        //       heuristic, in which the multiple roots are averaged and the unique
-        //       factors are taken out, the entire process is repeated on the remainder
-
         // further polishing of roots
-        match polishing_mode {
+        let roots: Roots<T> = match polishing_mode {
             PolishingMode::None => Ok(roots),
             PolishingMode::StandardPrecision {
                 epsilon,
@@ -201,7 +202,7 @@ impl<T: RealScalar> Poly<T> {
                 min_iter,
                 max_iter,
             } => {
-                let mut this = this.cast_to_f128();
+                let mut this = this.clone().cast_to_f128();
                 let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
                 newton_parallel(
                     &mut this,
@@ -217,6 +218,22 @@ impl<T: RealScalar> Poly<T> {
                     Error::Other(o) => Error::Other(o),
                 })
             }
+        }?;
+
+        match multiples_handling_mode {
+            MultiplesHandlingMode::None => Ok(roots),
+            MultiplesHandlingMode::BroadcastBest { detection_epsilon } => Ok(best_multiples(
+                &this,
+                group_multiples(roots, detection_epsilon),
+                true,
+            )),
+            MultiplesHandlingMode::BroadcastAverage { detection_epsilon } => todo!(),
+            MultiplesHandlingMode::KeepBest { detection_epsilon } => Ok(best_multiples(
+                &this,
+                group_multiples(roots, detection_epsilon),
+                false,
+            )),
+            MultiplesHandlingMode::KeepAverage { detection_epsilon } => todo!(),
         }
     }
 }
@@ -289,6 +306,82 @@ impl<T: RealScalar> Poly<T> {
 
         vec![x1, x2]
     }
+}
+
+/// Find roots that are within a given tolerance from each other and group them
+fn group_multiples<T: RealScalar>(roots: Roots<T>, epsilon: T) -> Vec<Roots<T>> {
+    // groups with their respective mean
+    let mut groups: Vec<(Roots<T>, Complex<T>)> = vec![];
+
+    let mut roots = roots;
+
+    while roots.len() > 0 {
+        // now for each root we find a group whose median is within tolerance,
+        // if we don't find any we add a new group with the one root
+        // if we do, we add the point, update the mean
+        'roots_loop: for root in roots.drain(..) {
+            for group in &mut groups {
+                if (group.1.clone() - root.clone()).norm_sqr() <= epsilon {
+                    group.0.push(root.clone());
+                    group.1 = slice_mean(&group.0);
+                    continue 'roots_loop;
+                }
+            }
+            groups.push((vec![root.clone()], root));
+        }
+
+        // now we loop through all the groups and through each element in each group
+        // and remove any elements that now lay outside of the tolerance
+        for group in &mut groups {
+            // hijacking retain to avoid having to write a loop where we delete
+            // things from the collection we're iterating from.
+            group.0.retain(|r| {
+                if (r.clone() - group.1.clone()).norm_sqr() <= epsilon {
+                    true
+                } else {
+                    roots.push(r.clone());
+                    false
+                }
+            })
+        }
+
+        // finally we prune empty groups
+        groups.retain(|g| g.0.len() > 0);
+    }
+
+    groups.into_iter().map(|(r, _)| r).collect_vec()
+}
+
+fn best_multiples<T: RealScalar>(
+    poly: &Poly<T>,
+    groups: Vec<Roots<T>>,
+    do_broadcast: bool,
+) -> Roots<T> {
+    // find the best root in each group
+    groups
+        .into_iter()
+        .map(|group| {
+            let len = group.len();
+            let best = group
+                .into_iter()
+                .map(|root| (root.clone(), poly.eval(root).norm_sqr()))
+                .reduce(|(a_root, a_eval), (b_root, b_eval)| {
+                    if a_eval < b_eval {
+                        (a_root, a_eval)
+                    } else {
+                        (b_root, b_eval)
+                    }
+                })
+                .expect("empty groups not allowed")
+                .0;
+            if do_broadcast {
+                vec![best; len]
+            } else {
+                vec![best]
+            }
+        })
+        .flatten()
+        .collect_vec()
 }
 
 #[cfg(test)]

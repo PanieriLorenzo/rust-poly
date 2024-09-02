@@ -4,9 +4,13 @@ use std::cmp::Ordering;
 
 use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
 
+use itertools::Itertools;
+
 use crate::RealScalar;
 
 use f128::f128;
+
+use super::vec::slice_mean;
 
 /// cast complex to primitive
 pub(crate) fn c_to_f64<T: RealScalar>(z: Complex<T>) -> Complex<f64> {
@@ -94,6 +98,11 @@ pub(crate) fn complex_fmt<T: std::fmt::Display + Zero + One + PartialEq>(c: &Com
     } else {
         format!("({r}+i{i})")
     }
+}
+
+pub fn complex_mean<T: RealScalar>(v: &[Complex<T>]) -> Complex<T> {
+    let (res, ims): (Vec<_>, Vec<_>) = v.iter().map(|z| (z.re.clone(), z.im.clone())).unzip();
+    Complex::new(slice_mean(&res), slice_mean(&ims))
 }
 
 #[cfg(test)]

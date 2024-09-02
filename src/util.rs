@@ -7,6 +7,7 @@ pub(crate) mod float;
 pub(crate) mod iterator;
 pub(crate) mod linalg;
 pub(crate) mod luts;
+pub(crate) mod vec;
 
 // re-exported by crate root
 #[doc(hidden)]
