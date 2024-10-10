@@ -53,6 +53,13 @@ impl<T: RealScalar> Poly<T> {
         Self(coeffs.to_owned()).normalize()
     }
 
+    /// Complex constant as a polynomial of degree zero
+    #[inline(always)]
+    #[must_use]
+    pub fn constant(c: Complex<T>) -> Self {
+        Self::new(&[c])
+    }
+
     /// Linear function as a polynomial.
     ///
     /// # Examples
