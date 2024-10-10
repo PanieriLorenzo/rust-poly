@@ -62,8 +62,8 @@ pub enum MultiplesHandlingMode<T> {
 pub enum InitialGuessMode<T> {
     GuessPoolOnly,
     RandomAnnulus { bias: T, perturbation: T, seed: u64 },
-    Hull {},
-    GridSearch {},
+    // TODO: Hull {},
+    // TODO: GridSearch {},
 }
 
 impl<T: RealScalar> Poly<T> {
@@ -173,9 +173,8 @@ impl<T: RealScalar> Poly<T> {
                     perturbation,
                     &mut remaining_guesses_view,
                 );
-            }
-            InitialGuessMode::Hull {} => todo!(),
-            InitialGuessMode::GridSearch {} => todo!(),
+            } // TODO: InitialGuessMode::Hull {} => todo!(),
+              // TODO: InitialGuessMode::GridSearch {} => todo!(),
         }
 
         log::trace!("{initial_guesses:?}");
@@ -227,13 +226,21 @@ impl<T: RealScalar> Poly<T> {
                 group_multiples(roots, detection_epsilon),
                 true,
             )),
-            MultiplesHandlingMode::BroadcastAverage { detection_epsilon } => todo!(),
+            MultiplesHandlingMode::BroadcastAverage { detection_epsilon } => Ok(average_multiples(
+                &this,
+                group_multiples(roots, detection_epsilon),
+                true,
+            )),
             MultiplesHandlingMode::KeepBest { detection_epsilon } => Ok(best_multiples(
                 &this,
                 group_multiples(roots, detection_epsilon),
                 false,
             )),
-            MultiplesHandlingMode::KeepAverage { detection_epsilon } => todo!(),
+            MultiplesHandlingMode::KeepAverage { detection_epsilon } => Ok(average_multiples(
+                &this,
+                group_multiples(roots, detection_epsilon),
+                false,
+            )),
         }
     }
 }
@@ -378,6 +385,29 @@ fn best_multiples<T: RealScalar>(
                 vec![best; len]
             } else {
                 vec![best]
+            }
+        })
+        .flatten()
+        .collect_vec()
+}
+
+fn average_multiples<T: RealScalar>(
+    poly: &Poly<T>,
+    groups: Vec<Roots<T>>,
+    do_broadcast: bool,
+) -> Roots<T> {
+    groups
+        .into_iter()
+        .map(|group| {
+            let len_usize = group.len();
+            debug_assert!(len_usize > 0);
+            let len = T::from_usize(len_usize).expect("infallible");
+            let sum: Complex<T> = group.into_iter().sum();
+            let avg = sum / len;
+            if do_broadcast {
+                vec![avg; len_usize]
+            } else {
+                vec![avg]
             }
         })
         .flatten()
