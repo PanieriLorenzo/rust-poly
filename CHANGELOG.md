@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2] - 2024-10-11
+
+### 🚀 Features
+
+- Added `roots_expert` method with more customization
+- [**breaking**] Changed signature of `from_xxx_iterator` constructors so they don't take a length parameter
+- [**breaking**] Removed `initial_guesses_random` use `initial_guesses_circle` instead
+- Added multiples handling to `roots` and `roots_expert`
+- `Poly::constant` method for conveniently casting a constant to a polynomial
+
+### 🚜 Refactor
+
+- Removed deprecated internal `trivial_roots`
+- Removed unused vec utils
+
+### 📚 Documentation
+
+- Updated `roots` and `roots_expert` docs
+
+### ⚙️ Miscellaneous Tasks
+
+- Updated dependencies
+
 ## [0.4.1] - 2024-08-28
 
 ### 🚀 Features
