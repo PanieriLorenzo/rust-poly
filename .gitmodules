@@ -1,0 +1,3 @@
+[submodule "fpcore/FPBench"]
+	path = fpcore/FPBench
+	url = git@github.com:FPBench/FPBench.git

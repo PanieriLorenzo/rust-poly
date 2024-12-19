@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 
 use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
 
-use itertools::Itertools;
 
 use crate::RealScalar;
 

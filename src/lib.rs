@@ -109,6 +109,8 @@ pub use poly::{roots, Poly};
 pub(crate) mod util;
 pub use util::__testing;
 
+pub(crate) mod base;
+
 pub type Poly32 = Poly<f32>;
 pub type Poly64 = Poly<f64>;
 

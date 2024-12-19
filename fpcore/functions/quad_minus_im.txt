@@ -1,0 +1,20 @@
+# unoptimized
+(FPCore (im_sqrt_delta ib re_sqrt_delta ra ia rb) :precision binary64 :name "im_quad_minus" (/ (- (* ia (+ rb re_sqrt_delta)) (* ra (+ ib im_sqrt_delta))) (* 2 (+ (* ia ia) (* ra ra)))))
+
+# optimized
+# 50.4% -> 80.4%
+(FPCore (im_sqrt_delta ib re_sqrt_delta ra ia rb)
+ :precision binary64
+ (let* ((t_0 (* -0.5 (+ im_sqrt_delta ib)))
+        (t_1 (/ (fma (+ re_sqrt_delta rb) 0.5 (* t_0 (/ ra ia))) ia))
+        (t_2 (fma ra ra (* ia ia))))
+   (if (<= ia -1.02e+136)
+     t_1
+     (if (<= ia -4.8e-78)
+       (fma
+        (/ (+ im_sqrt_delta ib) t_2)
+        (* (- ra) 0.5)
+        (* (* (+ re_sqrt_delta rb) 0.5) (/ ia t_2)))
+       (if (<= ia 9.5e+102)
+         (/ (fma (+ re_sqrt_delta rb) (* (/ ia ra) 0.5) t_0) ra)
+         t_1)))))

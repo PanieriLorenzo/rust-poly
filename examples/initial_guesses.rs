@@ -80,7 +80,7 @@ fn example_random<const DEGREE: usize>(
     location: &str,
 ) {
     let mut guesses = [complex!(0.0); DEGREE];
-    initial_guesses_circle(&p, 0.5, 1, 0.5, &mut guesses);
+    initial_guesses_circle(p, 0.5, 1, 0.5, &mut guesses);
     plot(roots_re, roots_im, &guesses, location);
 }
 

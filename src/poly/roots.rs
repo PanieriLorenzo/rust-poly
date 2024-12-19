@@ -152,7 +152,7 @@ impl<T: RealScalar> Poly<T> {
         for _ in 0..delta {
             initial_guesses.push(Complex::<T>::zero());
         }
-        let mut remaining_guesses_view =
+        let remaining_guesses_view =
             &mut initial_guesses[initial_guess_pool.len()..this.degree_raw()];
 
         match initial_guess_mode {
@@ -171,7 +171,7 @@ impl<T: RealScalar> Poly<T> {
                     bias,
                     seed,
                     perturbation,
-                    &mut remaining_guesses_view,
+                    remaining_guesses_view,
                 );
             } // TODO: InitialGuessMode::Hull {} => todo!(),
               // TODO: InitialGuessMode::GridSearch {} => todo!(),
@@ -322,7 +322,7 @@ fn group_multiples<T: RealScalar>(roots: Roots<T>, epsilon: T) -> Vec<Roots<T>> 
 
     let mut roots = roots;
 
-    while roots.len() > 0 {
+    while !roots.is_empty() {
         // now for each root we find a group whose median is within tolerance,
         // if we don't find any we add a new group with the one root
         // if we do, we add the point, update the mean
@@ -349,11 +349,11 @@ fn group_multiples<T: RealScalar>(roots: Roots<T>, epsilon: T) -> Vec<Roots<T>> 
                     roots.push(r.clone());
                     false
                 }
-            })
+            });
         }
 
         // finally we prune empty groups
-        groups.retain(|g| g.0.len() > 0);
+        groups.retain(|g| !g.0.is_empty());
     }
 
     groups.into_iter().map(|(r, _)| r).collect_vec()
@@ -367,7 +367,7 @@ fn best_multiples<T: RealScalar>(
     // find the best root in each group
     groups
         .into_iter()
-        .map(|group| {
+        .flat_map(|group| {
             let len = group.len();
             let best = group
                 .into_iter()
@@ -387,7 +387,6 @@ fn best_multiples<T: RealScalar>(
                 vec![best]
             }
         })
-        .flatten()
         .collect_vec()
 }
 
@@ -398,7 +397,7 @@ fn average_multiples<T: RealScalar>(
 ) -> Roots<T> {
     groups
         .into_iter()
-        .map(|group| {
+        .flat_map(|group| {
             let len_usize = group.len();
             debug_assert!(len_usize > 0);
             let len = T::from_usize(len_usize).expect("infallible");
@@ -410,7 +409,6 @@ fn average_multiples<T: RealScalar>(
                 vec![avg]
             }
         })
-        .flatten()
         .collect_vec()
 }
 
