@@ -166,13 +166,7 @@ impl<T: RealScalar> Poly<T> {
                 perturbation,
                 seed,
             } => {
-                initial_guesses_circle(
-                    &this,
-                    bias,
-                    seed,
-                    perturbation,
-                    remaining_guesses_view,
-                );
+                initial_guesses_circle(&this, bias, seed, perturbation, remaining_guesses_view);
             } // TODO: InitialGuessMode::Hull {} => todo!(),
               // TODO: InitialGuessMode::GridSearch {} => todo!(),
         }

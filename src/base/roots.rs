@@ -8,7 +8,7 @@ use num::complex::Complex64;
 /// - Assuming all variables are within [-1e100, 1e100]
 /// - Accuracy 100% -> 100% (no change)
 /// - Speed 1.3x
-/// - FPCore output: `(fma (- rb ib) (+ ib rb) (* (fma (- ra) rc (* ia ic)) 4.0)))`
+/// - `FPCore` output: `(fma (- rb ib) (+ ib rb) (* (fma (- ra) rc (* ia ic)) 4.0)))`
 ///
 /// ## Reproduce
 /// ```racket
@@ -30,7 +30,7 @@ fn quad_discriminant_re(ra: f64, ia: f64, rb: f64, ib: f64, rc: f64, ic: f64) ->
 /// - Assuming all variables are within [-1e100, 1e100]
 /// - Accuracy 100% -> 100% (no change)
 /// - Speed 1.3x
-/// - FPCore output: `(fma (* 2.0 rb) ib (* (fma rc ia (* ra ic)) -4.0)))`
+/// - `FPCore` output: `(fma (* 2.0 rb) ib (* (fma rc ia (* ra ic)) -4.0)))`
 ///
 /// ## Reproduce
 /// ```racket
@@ -47,9 +47,8 @@ fn quad_discriminant_im(ra: f64, ia: f64, rb: f64, ib: f64, rc: f64, ic: f64) ->
 
 /// See `fpcore/functions/re_quad_plus.txt`
 fn quad_plus_re(ra: f64, ia: f64, rb: f64, ib: f64, re_sqrt_delta: f64, im_sqrt_delta: f64) -> f64 {
-    let mut t_0: f64 =
-        -0.5f64 * (f64::mul_add(((rb - re_sqrt_delta) / ia), ra, (ib - im_sqrt_delta)) / ia);
-    let mut tmp: f64;
+    let t_0: f64 = -0.5f64 * (f64::mul_add((rb - re_sqrt_delta) / ia, ra, ib - im_sqrt_delta) / ia);
+    let tmp: f64;
     if ia <= -5900000.0f64 {
         tmp = t_0;
     } else if ia <= -6.6e-81f64 {
@@ -57,9 +56,9 @@ fn quad_plus_re(ra: f64, ia: f64, rb: f64, ib: f64, re_sqrt_delta: f64, im_sqrt_
             / (-2.0f64 * ((ia * ia) + (ra * ra)));
     } else if ia <= 1.6e+102f64 {
         tmp = f64::mul_add(
-            (((ib - im_sqrt_delta) * ia) / ra),
+            ((ib - im_sqrt_delta) * ia) / ra,
             -0.5f64,
-            ((re_sqrt_delta - rb) * 0.5f64),
+            (re_sqrt_delta - rb) * 0.5f64,
         ) / ra;
     } else {
         tmp = t_0;
@@ -69,12 +68,12 @@ fn quad_plus_re(ra: f64, ia: f64, rb: f64, ib: f64, re_sqrt_delta: f64, im_sqrt_
 
 /// See: `fpcore/functions/quad_plus_im.txt`
 fn quad_plus_im(ra: f64, ia: f64, rb: f64, ib: f64, re_sqrt_delta: f64, im_sqrt_delta: f64) -> f64 {
-    let mut t_0: f64 = f64::mul_add(
-        (ib - im_sqrt_delta),
-        ((ra / ia) * -0.5f64),
-        (0.5f64 * (rb - re_sqrt_delta)),
+    let t_0: f64 = f64::mul_add(
+        ib - im_sqrt_delta,
+        (ra / ia) * -0.5f64,
+        0.5f64 * (rb - re_sqrt_delta),
     ) / ia;
-    let mut tmp: f64;
+    let tmp: f64;
     if ia <= -1.66e+33f64 {
         tmp = t_0;
     } else if ia <= -2.65e-79f64 {
@@ -82,9 +81,9 @@ fn quad_plus_im(ra: f64, ia: f64, rb: f64, ib: f64, re_sqrt_delta: f64, im_sqrt_
             / (2.0f64 * ((ia * ia) + (ra * ra)));
     } else if ia <= 9e+101f64 {
         tmp = f64::mul_add(
-            (((rb - re_sqrt_delta) * ia) / ra),
+            ((rb - re_sqrt_delta) * ia) / ra,
             -0.5f64,
-            ((ib - im_sqrt_delta) * 0.5f64),
+            (ib - im_sqrt_delta) * 0.5f64,
         ) / -ra;
     } else {
         tmp = t_0;
@@ -100,20 +99,20 @@ fn quad_minus_re(
     re_sqrt_delta: f64,
     im_sqrt_delta: f64,
 ) -> f64 {
-    let mut tmp: f64;
+    let tmp: f64;
     if ia <= -5900000.0f64 {
-        tmp = -0.5f64 * (f64::mul_add(((re_sqrt_delta + rb) / ia), ra, (im_sqrt_delta + ib)) / ia);
+        tmp = -0.5f64 * (f64::mul_add((re_sqrt_delta + rb) / ia, ra, im_sqrt_delta + ib) / ia);
     } else if ia <= -6.6e-81f64 {
         tmp = ((ia * (ib + im_sqrt_delta)) + (ra * (rb + re_sqrt_delta)))
             / (-2.0f64 * ((ia * ia) + (ra * ra)));
     } else if ia <= 9.5e+102f64 {
-        tmp = (-0.5f64 / ra) * f64::mul_add((ib + im_sqrt_delta), (ia / ra), (rb + re_sqrt_delta));
+        tmp = (-0.5f64 / ra) * f64::mul_add(ib + im_sqrt_delta, ia / ra, rb + re_sqrt_delta);
     } else {
         tmp = -0.5f64
             * f64::mul_add(
-                (ra / ia),
-                ((rb + re_sqrt_delta) / ia),
-                ((ib + im_sqrt_delta) / ia),
+                ra / ia,
+                (rb + re_sqrt_delta) / ia,
+                (ib + im_sqrt_delta) / ia,
             );
     }
     tmp
@@ -127,20 +126,20 @@ fn quad_minus_im(
     re_sqrt_delta: f64,
     im_sqrt_delta: f64,
 ) -> f64 {
-    let mut t_0: f64 = -0.5f64 * (im_sqrt_delta + ib);
-    let mut t_1: f64 = f64::mul_add((re_sqrt_delta + rb), 0.5f64, (t_0 * (ra / ia))) / ia;
-    let mut t_2: f64 = f64::mul_add(ra, ra, (ia * ia));
-    let mut tmp: f64;
+    let t_0: f64 = -0.5f64 * (im_sqrt_delta + ib);
+    let t_1: f64 = f64::mul_add(re_sqrt_delta + rb, 0.5f64, t_0 * (ra / ia)) / ia;
+    let t_2: f64 = f64::mul_add(ra, ra, ia * ia);
+    let tmp: f64;
     if ia <= -1.02e+136f64 {
         tmp = t_1;
     } else if ia <= -4.8e-78f64 {
         tmp = f64::mul_add(
-            ((im_sqrt_delta + ib) / t_2),
-            (-ra * 0.5f64),
-            (((re_sqrt_delta + rb) * 0.5f64) * (ia / t_2)),
+            (im_sqrt_delta + ib) / t_2,
+            -ra * 0.5f64,
+            ((re_sqrt_delta + rb) * 0.5f64) * (ia / t_2),
         );
     } else if ia <= 9.5e+102f64 {
-        tmp = f64::mul_add((re_sqrt_delta + rb), ((ia / ra) * 0.5f64), t_0) / ra;
+        tmp = f64::mul_add(re_sqrt_delta + rb, (ia / ra) * 0.5f64, t_0) / ra;
     } else {
         tmp = t_1;
     }
