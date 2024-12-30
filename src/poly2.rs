@@ -1,5 +1,7 @@
 //! The new API, will replace the [`poly`] module.
 
+use std::borrow::Borrow;
+
 use crate::{
     num::{One, Zero},
     util::doc_macros::panic_absurd_size,
@@ -17,11 +19,7 @@ pub mod poly_base;
 /// implementing [`crate::num::Zero`]. A zero polynomial behaves like the neutral
 /// element of addition over polynomials. A zero polynomial has degree -1 by
 /// convention.
-pub trait Poly<T>: Zero + One {
-    /// The owned version of this polynomial. May be `Self` for representations
-    /// that are already owned.
-    type OwnedRepr;
-
+pub trait Poly<T>: Zero + One + ToOwned {
     /// Return the degree as `usize`.
     ///
     /// Note that unlike [`Poly::degree`], this will saturate at 0 for zero
@@ -52,14 +50,14 @@ pub trait Poly<T>: Zero + One {
     /// case undefined. We believe this to be more useful as it naturally arises
     /// in integer exponentiation when defined as repeated multiplication.
     #[must_use]
-    fn pow(&self, pow: u32) -> Self::OwnedRepr {
+    fn pow(&self, pow: u32) -> Self::Owned {
         self.pow_usize(pow as usize)
     }
 
     /// Same as [`Poly::pow`], but takes a `usize` exponent.
-    fn pow_usize(&self, pow: usize) -> Self::OwnedRepr;
+    fn pow_usize(&self, pow: usize) -> Self::Owned;
 
-    fn terms(&self) -> impl Iterator<Item = Self::OwnedRepr>;
+    fn terms(&self) -> impl Iterator<Item = Self::Owned>;
 
     /// Return an iterator over the coefficients in ascending order of degree
     fn coeffs<'a>(&'a self) -> impl Iterator<Item = &'a T>
@@ -67,7 +65,7 @@ pub trait Poly<T>: Zero + One {
         T: 'a;
 
     /// Polynomial composition.
-    fn compose(&self, other: &Self) -> Self::OwnedRepr;
+    fn compose(&self, other: &Self) -> Self::Owned;
 
     fn eval(&self, x: T) -> T;
 
