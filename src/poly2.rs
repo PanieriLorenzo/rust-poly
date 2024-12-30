@@ -61,6 +61,11 @@ pub trait Poly<T>: Zero + One {
 
     fn terms(&self) -> impl Iterator<Item = Self::OwnedRepr>;
 
+    /// Return an iterator over the coefficients in ascending order of degree
+    fn coeffs<'a>(&'a self) -> impl Iterator<Item = &'a T>
+    where
+        T: 'a;
+
     /// Polynomial composition.
     fn compose(&self, other: &Self) -> Self::OwnedRepr;
 

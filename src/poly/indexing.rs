@@ -13,15 +13,6 @@ impl<T: RealScalar> Poly<T> {
 }
 
 impl<T: RealScalar> Poly<T> {
-    /// Return a slice containing the coefficients in ascending order of degree
-    ///
-    /// This is an alias for [`Poly::as_slice`] for API consistency.
-    #[inline]
-    #[must_use]
-    pub fn coeffs(&self) -> &[Complex<T>] {
-        self.as_slice()
-    }
-
     /// Return a mutable slice containing the coefficient in ascending order of degree
     ///
     /// This is an alias for [`Poly::as_mut_slice()`] for API consistency.

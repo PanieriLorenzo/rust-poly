@@ -153,6 +153,15 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
         }
         eval
     }
+
+    #[inline]
+    #[must_use]
+    fn coeffs<'a>(&'a self) -> impl Iterator<Item = &'a Complex<T>>
+    where
+        T: 'a,
+    {
+        self.0.iter()
+    }
 }
 
 impl<T: RealScalar> Poly<T> {
