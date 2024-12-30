@@ -1,6 +1,9 @@
 //! The new API, will replace the [`poly`] module.
 
-use crate::{num::Zero, util::doc_macros::panic_absurd_size};
+use crate::{
+    num::{One, Zero},
+    util::doc_macros::panic_absurd_size,
+};
 
 pub mod aliases;
 pub mod poly_base;
@@ -14,7 +17,7 @@ pub mod poly_base;
 /// implementing [`crate::num::Zero`]. A zero polynomial behaves like the neutral
 /// element of addition over polynomials. A zero polynomial has degree -1 by
 /// convention.
-pub trait Poly<T>: Zero {
+pub trait Poly<T>: Zero + One {
     /// The owned version of this polynomial. May be `Self` for representations
     /// that are already owned.
     type OwnedRepr;
@@ -57,4 +60,7 @@ pub trait Poly<T>: Zero {
     fn pow_usize(&self, pow: usize) -> Self::OwnedRepr;
 
     fn terms(&self) -> impl Iterator<Item = Self::OwnedRepr>;
+
+    /// Polynomial composition.
+    fn compose(&self, other: &Self) -> Self::OwnedRepr;
 }

@@ -77,6 +77,40 @@ impl<T: RealScalar> Poly2<T> for Poly<T> {
             .expect("terms are within range len_raw, this should never fail")
         })
     }
+
+    /// Compose two polynomials, returning a new polynomial.
+    ///
+    /// Substitute the given polynomial `x` into `self` and expand the
+    /// result into a new polynomial.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_poly::{Poly, poly};
+    /// use num::{One, Complex};
+    ///
+    /// let f = poly![1.0, 2.0];
+    /// let g = Poly::one();
+    ///
+    /// assert_eq!(f.clone().compose(g), f);
+    #[must_use]
+    fn compose(&self, other: &Self) -> Self {
+        // invariant: polynomials are normalized
+        debug_assert!(self.is_normalized());
+        debug_assert!(other.is_normalized());
+
+        if self.is_one() {
+            return other.clone();
+        }
+
+        if other.is_one() {
+            return self.clone();
+        }
+
+        (0..self.len_raw())
+            .map(|i| Self::new(&[self.0[i].clone()]) * other.clone().pow_usize(i))
+            .sum()
+    }
 }
 
 impl<T: RealScalar> Poly<T> {
@@ -241,40 +275,6 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
             .fold(Self::one(), |acc, x| acc * x)
             .normalize()
     }
-
-    /// Compose two polynomials, returning a new polynomial.
-    ///
-    /// Substitute the given polynomial `x` into `self` and expand the
-    /// result into a new polynomial.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_poly::{Poly, poly};
-    /// use num::{One, Complex};
-    ///
-    /// let f = poly![1.0, 2.0];
-    /// let g = Poly::one();
-    ///
-    /// assert_eq!(f.clone().compose(g), f);
-    #[must_use]
-    pub fn compose(self, x: Self) -> Self {
-        // invariant: polynomials are normalized
-        debug_assert!(self.is_normalized());
-        debug_assert!(x.is_normalized());
-
-        if self.is_one() {
-            return x;
-        }
-
-        if x.is_one() {
-            return self;
-        }
-
-        (0..self.len_raw())
-            .map(|i| Self::new(&[self.0[i].clone()]) * x.clone().pow_usize(i))
-            .sum()
-    }
 }
 
 impl<T: RealScalar> Poly<T> {
@@ -338,7 +338,7 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
     /// 4D space.
     #[must_use]
     pub fn translate(mut self, x: Complex<T>, y: Complex<T>) -> Self {
-        self = self.compose(Self::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
+        self = self.compose(&Self::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
         self.0[0] += y;
         self
     }
