@@ -15,6 +15,10 @@ pub mod poly_base;
 /// element of addition over polynomials. A zero polynomial has degree -1 by
 /// convention.
 pub trait Poly<T>: Zero {
+    /// The owned version of this polynomial. May be `Self` for representations
+    /// that are already owned.
+    type OwnedRepr;
+
     /// Return the degree as `usize`.
     ///
     /// Note that unlike [`Poly::degree`], this will saturate at 0 for zero
