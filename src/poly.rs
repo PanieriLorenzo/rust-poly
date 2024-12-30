@@ -8,7 +8,7 @@ use crate::{
         complex::{c_neg, complex_fmt, complex_sort_mut},
         doc_macros::panic_absurd_size,
     },
-    RealScalar,
+    Poly2, RealScalar,
 };
 
 mod base;
@@ -22,12 +22,38 @@ mod special_funcs;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: RealScalar>(pub(crate) Vec<Complex<T>>);
 
-impl<T: RealScalar> crate::poly2::Poly<T> for Poly<T> {
+impl<T: RealScalar> Poly2<T> for Poly<T> {
     type OwnedRepr = Self;
 
     fn degree_usize(&self) -> usize {
         debug_assert!(self.is_normalized());
         self.degree_raw()
+    }
+
+    /// Same as [`Poly::pow`], but takes a `usize` exponent.
+    #[must_use]
+    fn pow_usize(&self, pow: usize) -> Self {
+        // invariant: poly is normalized
+        debug_assert!(self.is_normalized());
+
+        if pow == 0 {
+            return Self::one();
+        }
+
+        if pow == 1 {
+            return self.clone();
+        }
+
+        if self.is_zero() {
+            return Self::zero();
+        }
+
+        // TODO: divide and conquer with powers of 2
+        let mut res = self.clone();
+        for _ in 2..=pow {
+            res = res * self.clone();
+        }
+        res.normalize()
     }
 }
 
@@ -132,50 +158,6 @@ impl<T: RealScalar> Poly<T> {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-
-    /// Raises a polynomial to an integer power.
-    ///
-    /// # Caveats
-    /// We adopt the convention that $0^0=1$, even though some authors leave this
-    /// case undefined. We believe this to be more useful as it naturally arises
-    /// in integer exponentiation when defined as repeated multiplication (as we
-    /// implement it).
-    /// ```
-    /// use rust_poly::{poly, Poly};
-    /// use num::Complex;
-    ///
-    /// assert_eq!(poly![1.0, 2.0, 3.0].pow(2), poly![1.0, 4.0, 10.0, 12.0, 9.0]);
-    /// ```
-    #[must_use]
-    pub fn pow(self, pow: u32) -> Self {
-        self.pow_usize(pow as usize)
-    }
-
-    /// Same as [`Poly::pow`], but takes a `usize` exponent.
-    #[must_use]
-    pub fn pow_usize(self, pow: usize) -> Self {
-        // invariant: poly is normalized
-        debug_assert!(self.is_normalized());
-
-        if pow == 0 {
-            return Self::one();
-        }
-
-        if pow == 1 {
-            return self;
-        }
-
-        if self.is_zero() {
-            return self;
-        }
-
-        // TODO: divide and conquer with powers of 2
-        let mut res = self.clone();
-        for _ in 2..=pow {
-            res = res * self.clone();
-        }
-        res.normalize()
     }
 
     /// Compute the conjugate polynomial, that is a polynomial where every
@@ -398,6 +380,16 @@ impl<T: RealScalar + Display> Display for Poly<T> {
 
 #[cfg(test)]
 mod test {
+    use crate::{poly, Poly2};
+
+    #[test]
+    fn pow() {
+        assert_eq!(
+            poly![1.0, 2.0, 3.0].pow(2),
+            poly![1.0, 4.0, 10.0, 12.0, 9.0]
+        );
+    }
+
     #[test]
     fn translate() {
         let p = poly![1.0, 2.0, 3.0];

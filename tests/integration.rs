@@ -1,4 +1,4 @@
-use rust_poly::{complex, num::CheckedDiv, poly, Poly64};
+use rust_poly::{complex, num::CheckedDiv, poly, Poly2, Poly64};
 
 /// Check that zero polynomials behave as expected
 #[test]

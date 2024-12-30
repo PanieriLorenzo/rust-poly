@@ -41,4 +41,18 @@ pub trait Poly<T>: Zero {
             .try_into()
             .expect("usize did not fit into i64")
     }
+
+    /// Raises a polynomial to an integer power.
+    ///
+    /// # Caveats
+    /// We adopt the convention that $0^0=1$, even though some authors leave this
+    /// case undefined. We believe this to be more useful as it naturally arises
+    /// in integer exponentiation when defined as repeated multiplication.
+    #[must_use]
+    fn pow(&self, pow: u32) -> Self::OwnedRepr {
+        self.pow_usize(pow as usize)
+    }
+
+    /// Same as [`Poly::pow`], but takes a `usize` exponent.
+    fn pow_usize(&self, pow: usize) -> Self::OwnedRepr;
 }
