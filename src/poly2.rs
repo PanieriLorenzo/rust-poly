@@ -55,4 +55,6 @@ pub trait Poly<T>: Zero {
 
     /// Same as [`Poly::pow`], but takes a `usize` exponent.
     fn pow_usize(&self, pow: usize) -> Self::OwnedRepr;
+
+    fn terms(&self) -> impl Iterator<Item = Self::OwnedRepr>;
 }

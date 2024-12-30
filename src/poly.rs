@@ -55,6 +55,28 @@ impl<T: RealScalar> Poly2<T> for Poly<T> {
         }
         res.normalize()
     }
+
+    /// Iterate over the terms of a polynomial
+    ///
+    /// ```
+    /// # use rust_poly::{poly, Poly, Poly2};
+    ///
+    /// let p = poly![1.0, 2.0, 3.0];
+    /// assert_eq!(p, p.terms().sum::<Poly<_>>());
+    /// ```
+    ///
+    /// # Panics
+    /// On polynomials with a degree higher than `u32::MAX`
+    fn terms(&self) -> impl Iterator<Item = Self> {
+        debug_assert!(self.is_normalized());
+        (0..self.len_raw()).map(|i| {
+            self.get_term(
+                i.try_into()
+                    .expect("degrees above u32::MAX are not supported"),
+            )
+            .expect("terms are within range len_raw, this should never fail")
+        })
+    }
 }
 
 impl<T: RealScalar> Poly<T> {
@@ -189,28 +211,6 @@ impl<T: RealScalar> Poly<T> {
             return None;
         }
         Some(Self::term(self.as_slice()[degree as usize].clone(), degree))
-    }
-
-    /// Iterate over the terms of a polynomial
-    ///
-    /// ```
-    /// # use rust_poly::{poly, Poly};
-    ///
-    /// let p = poly![1.0, 2.0, 3.0];
-    /// assert_eq!(p, p.terms().sum::<Poly<_>>());
-    /// ```
-    ///
-    /// # Panics
-    /// On polynomials with a degree higher than `u32::MAX`
-    pub fn terms(&self) -> std::iter::Map<std::ops::Range<usize>, impl FnMut(usize) -> Self + '_> {
-        debug_assert!(self.is_normalized());
-        (0..self.len_raw()).map(|i| {
-            self.get_term(
-                i.try_into()
-                    .expect("degrees above u32::MAX are not supported"),
-            )
-            .expect("terms are within range len_raw, this should never fail")
-        })
     }
 }
 
