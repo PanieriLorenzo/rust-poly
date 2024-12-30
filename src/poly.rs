@@ -22,7 +22,7 @@ mod special_funcs;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: RealScalar>(pub(crate) Vec<Complex<T>>);
 
-impl<T: RealScalar> Poly2<T> for Poly<T> {
+impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
     type OwnedRepr = Self;
 
     fn degree_usize(&self) -> usize {
@@ -110,6 +110,48 @@ impl<T: RealScalar> Poly2<T> for Poly<T> {
         (0..self.len_raw())
             .map(|i| Self::new(&[self.0[i].clone()]) * other.clone().pow_usize(i))
             .sum()
+    }
+
+    /// Evaluate the polynomial at a single value of `x`.
+    ///
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num::Complex;
+    ///
+    /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)]);
+    /// let x = Complex::new(1.0, 0.0);
+    /// assert_eq!(p.eval_point(x), Complex::new(6.0, 0.0));
+    /// ```
+    fn eval(&self, x: Complex<T>) -> Complex<T> {
+        // use Horner's method: https://en.wikipedia.org/wiki/Horner%27s_method
+        // in theory, Estrin's method is more parallelizable, but benchmarking
+        // against fast_polynomial crate shows no significant difference, this
+        // is close to optimal in terms of performance. You may get some small
+        // speedups by dividing large polynomials into 4 or 8 evaluations and
+        // computing them in parallel using SIMD, Rayon or GPU.
+        debug_assert!(self.is_normalized());
+        let mut eval = self.last();
+
+        // inlined len_raw() to ensure safety conditions are not broken by
+        // updating len_raw() implementation
+        let n = self.0.len();
+
+        for i in 1..n {
+            // SAFETY: index n - i - 1 is always in bounds
+            // PROOF:
+            // 1. the safe bounds for the index are [0, n - 1]
+            // 2. i is always in the range [1, n - 1]
+            // 3. the range of the index n - i - 1 is given by:
+            //    n - i - 1 => n - [1, n - 1] - 1
+            //             <=> [n - 1 - 1, n - 1 - (n - 1)]
+            //             <=> [n - 2, 0]
+            //             <=> [0, n - 2]   reversing bounds is equivalent
+            // 4. the range of the index [0, n - 2] is a subset of [0, n - 1],
+            //    therefore the index is in bounds. QED
+            let c = (unsafe { self.0.get_unchecked(n - i - 1) }).clone();
+            eval = eval * x.clone() + c;
+        }
+        eval
     }
 }
 
@@ -274,60 +316,6 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
             .map(|e| Self::line(c_neg(e), Complex::<T>::one()))
             .fold(Self::one(), |acc, x| acc * x)
             .normalize()
-    }
-}
-
-impl<T: RealScalar> Poly<T> {
-    /// Evaluate the polynomial for each entry of a slice.
-    pub fn eval_multiple(&self, points: &[Complex<T>], out: &mut [Complex<T>]) {
-        debug_assert!(self.is_normalized());
-
-        // TODO: parallelize this loop
-        for (y, x) in out.iter_mut().zip(points) {
-            *y = self.eval(x.clone());
-        }
-    }
-
-    /// Evaluate the polynomial at a single value of `x`.
-    ///
-    /// ```
-    /// use rust_poly::Poly;
-    /// use num::Complex;
-    ///
-    /// let p = Poly::new(&[Complex::new(1.0, 0.0), Complex::new(2.0, 0.0), Complex::new(3.0, 0.0)]);
-    /// let x = Complex::new(1.0, 0.0);
-    /// assert_eq!(p.eval_point(x), Complex::new(6.0, 0.0));
-    /// ```
-    pub fn eval(&self, x: Complex<T>) -> Complex<T> {
-        // use Horner's method: https://en.wikipedia.org/wiki/Horner%27s_method
-        // in theory, Estrin's method is more parallelizable, but benchmarking
-        // against fast_polynomial crate shows no significant difference, this
-        // is close to optimal in terms of performance. You may get some small
-        // speedups by dividing large polynomials into 4 or 8 evaluations and
-        // computing them in parallel using SIMD, Rayon or GPU.
-        debug_assert!(self.is_normalized());
-        let mut eval = self.last();
-
-        // inlined len_raw() to ensure safety conditions are not broken by
-        // updating len_raw() implementation
-        let n = self.0.len();
-
-        for i in 1..n {
-            // SAFETY: index n - i - 1 is always in bounds
-            // PROOF:
-            // 1. the safe bounds for the index are [0, n - 1]
-            // 2. i is always in the range [1, n - 1]
-            // 3. the range of the index n - i - 1 is given by:
-            //    n - i - 1 => n - [1, n - 1] - 1
-            //             <=> [n - 1 - 1, n - 1 - (n - 1)]
-            //             <=> [n - 2, 0]
-            //             <=> [0, n - 2]   reversing bounds is equivalent
-            // 4. the range of the index [0, n - 2] is a subset of [0, n - 1],
-            //    therefore the index is in bounds. QED
-            let c = (unsafe { self.0.get_unchecked(n - i - 1) }).clone();
-            eval = eval * x.clone() + c;
-        }
-        eval
     }
 }
 

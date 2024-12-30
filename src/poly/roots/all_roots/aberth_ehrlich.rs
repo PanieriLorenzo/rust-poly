@@ -5,7 +5,7 @@ use crate::{
         self,
         doc_macros::{errors_no_converge, panic_t_from_f64},
     },
-    Poly, RealScalar,
+    Poly, Poly2, RealScalar,
 };
 
 /// Find all roots using Aberth Ehrlich method.

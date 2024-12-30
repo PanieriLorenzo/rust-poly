@@ -63,4 +63,17 @@ pub trait Poly<T>: Zero + One {
 
     /// Polynomial composition.
     fn compose(&self, other: &Self) -> Self::OwnedRepr;
+
+    fn eval(&self, x: T) -> T;
+
+    /// Evaluate the polynomial for each entry of a slice.
+    fn eval_multiple(&self, points: &[T], out: &mut [T])
+    where
+        T: Clone,
+    {
+        // TODO: parallelize this loop
+        for (y, x) in out.iter_mut().zip(points) {
+            *y = self.eval(x.clone());
+        }
+    }
 }

@@ -9,7 +9,7 @@ use crate::{
         complex::c_from_f64,
         doc_macros::{errors_no_converge, panic_t_from_f64},
     },
-    Poly, RealScalar,
+    Poly, Poly2, RealScalar,
 };
 use num::One;
 

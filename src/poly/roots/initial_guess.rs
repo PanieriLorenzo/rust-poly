@@ -10,7 +10,7 @@ use crate::{
         complex::{c_arg, c_exp, c_from_f64, c_min, c_neg, c_powf},
         doc_macros::{panic_t_from_f64, panic_t_from_int},
     },
-    Poly, RealScalar,
+    Poly, Poly2, RealScalar,
 };
 
 // TODO: initial guesses Bini (see allow(unused) functions below)

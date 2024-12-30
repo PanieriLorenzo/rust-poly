@@ -10,7 +10,7 @@ use crate::{
         complex::c_from_f64,
         doc_macros::{errors_no_converge, panic_t_from_f64, panic_t_from_int},
     },
-    Poly, RealScalar,
+    Poly, Poly2, RealScalar,
 };
 
 /// Find a single root
