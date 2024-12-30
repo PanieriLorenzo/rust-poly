@@ -111,6 +111,9 @@ pub use util::__testing;
 
 pub(crate) mod base;
 
+pub(crate) mod poly2;
+pub(crate) mod storage;
+
 pub type Poly32 = Poly<f32>;
 pub type Poly64 = Poly<f64>;
 
