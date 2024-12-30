@@ -50,6 +50,7 @@ impl<T: RealScalar> Poly<T> {
 
 #[cfg(test)]
 mod test {
+    use crate::poly2::Poly;
 
     #[test]
     fn diff() {

@@ -22,6 +22,13 @@ mod special_funcs;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: RealScalar>(pub(crate) Vec<Complex<T>>);
 
+impl<T: RealScalar> crate::poly2::Poly<T> for Poly<T> {
+    fn degree_usize(&self) -> usize {
+        debug_assert!(self.is_normalized());
+        self.degree_raw()
+    }
+}
+
 impl<T: RealScalar> Poly<T> {
     /// # Examples
     /// ```
@@ -118,35 +125,6 @@ impl<T: RealScalar> Poly<T> {
     pub fn len(&self) -> usize {
         debug_assert!(self.is_normalized());
         self.len_raw()
-    }
-
-    /// Return the degree as `usize`.
-    ///
-    /// Note that unlike [`Poly::degree`], this will saturate at 0 for zero
-    /// polynomials. As the degree of zero polynomials is undefined.
-    #[must_use]
-    pub fn degree_usize(&self) -> usize {
-        debug_assert!(self.is_normalized());
-        self.degree_raw()
-    }
-
-    /// The degree of a polynomial (the maximum exponent)
-    ///
-    /// Note that this will return `-1` for zero polynomials. The degree of
-    /// zero polynomials is undefined, but we use the `-1` convention adopted
-    /// by some authors.
-    ///
-    /// # Panics
-    #[doc = panic_absurd_size!()]
-    #[must_use]
-    pub fn degree(&self) -> i64 {
-        debug_assert!(self.is_normalized());
-        if self.is_zero() {
-            return -1;
-        }
-        self.degree_raw()
-            .try_into()
-            .expect("infallible except for absurd cases")
     }
 
     #[must_use]
