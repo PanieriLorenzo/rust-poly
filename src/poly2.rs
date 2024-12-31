@@ -6,6 +6,8 @@ use num::CheckedDiv;
 
 use crate::{
     num::{One, Zero},
+    poly2,
+    storage::{BaseStore, OwnedStore, UniStore},
     util::doc_macros::panic_absurd_size,
 };
 
@@ -29,7 +31,10 @@ where
         + Div<&'b Self, Output = Self>
         + Rem<&'b Self, Output = Self>,
     Self::Owned: Zero,
+    <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned: OwnedStore<T>,
 {
+    type BackingStorage: BaseStore<T>;
+
     /// Return the degree as `usize`.
     ///
     /// Note that unlike [`Poly::degree`], this will saturate at 0 for zero
@@ -93,7 +98,7 @@ where
 }
 
 /// Univariate polynomial
-pub trait UniPoly<T>: Poly<T>
+pub trait UniPoly<T: Zero>: Poly<T>
 where
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>
         + Mul<&'b Self, Output = Self>
@@ -101,5 +106,10 @@ where
         + Div<&'b Self, Output = Self>
         + Rem<&'b Self, Output = Self>,
     Self::Owned: Zero,
+    Self::BackingStorage: UniStore,
 {
+    fn shift_up(&self, n: usize) -> Self {
+        let mut v = <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned::zeros(&[n]);
+        todo!();
+    }
 }

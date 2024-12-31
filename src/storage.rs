@@ -1,5 +1,7 @@
 //! Backing store traits
 
+use num::Zero;
+
 pub mod impl_storage;
 
 /// The base storage trait, makes no assumptions about ownership or lifetimes.
@@ -10,12 +12,36 @@ pub mod impl_storage;
 ///
 /// It is based on the design of the `ndarray` crate, but only contains what is
 /// needed for polynomials.
-pub trait BaseStore {
-    type Elem;
+pub trait BaseStore<T>: ToOwned
+where
+    Self::Owned: OwnedStore<T>,
+{
+    /// Non-owning iterator
+    fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
+    where
+        T: 'a;
 }
 
 /// Univariate storage.
 pub trait UniStore {}
 
-/// Growable storage.
-pub trait DynStore {}
+/// Owned storage.
+pub trait OwnedStore<T>: BaseStore<T, Owned = Self> {
+    fn zeros(shape: &[usize]) -> Self
+    where
+        T: Zero;
+}
+
+/// Growable storage. Implies ownership.
+pub trait DynStore<T>: OwnedStore<T> {}
+
+/// Growable uni-dimensional storage, e.g. [`Vec`].
+pub trait DynUniStore<T>: UniStore + DynStore<T> {
+    fn push(&mut self, val: T);
+
+    fn extend(&mut self, values: impl IntoIterator<Item = T>) {
+        for val in values {
+            self.push(val);
+        }
+    }
+}

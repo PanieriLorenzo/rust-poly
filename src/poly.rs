@@ -23,6 +23,8 @@ mod special_funcs;
 pub struct Poly<T: RealScalar>(pub(crate) Vec<Complex<T>>);
 
 impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
+    type BackingStorage = Vec<Complex<T>>;
+
     fn degree_usize(&self) -> usize {
         debug_assert!(self.is_normalized());
         self.degree_raw()
