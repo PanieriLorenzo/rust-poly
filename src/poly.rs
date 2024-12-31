@@ -154,13 +154,12 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
         eval
     }
 
-    #[inline]
-    #[must_use]
-    fn coeffs<'a>(&'a self) -> impl Iterator<Item = &'a Complex<T>>
-    where
-        T: 'a,
-    {
-        self.0.iter()
+    fn _as_store(&self) -> &Self::BackingStorage {
+        &self.0
+    }
+
+    fn _from_store(store: Self::BackingStorage) -> Self {
+        Self(store)
     }
 }
 

@@ -7,7 +7,7 @@ use num::CheckedDiv;
 use crate::{
     num::{One, Zero},
     poly2,
-    storage::{BaseStore, OwnedStore, UniStore},
+    storage::{BaseStore, OwnedStore, OwnedUniStore, UniStore},
     util::doc_macros::panic_absurd_size,
 };
 
@@ -34,6 +34,14 @@ where
     <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned: OwnedStore<T>,
 {
     type BackingStorage: BaseStore<T>;
+
+    /// Implementation detail
+    #[doc(hidden)]
+    fn _as_store(&self) -> &Self::BackingStorage;
+
+    /// Implementation detail
+    #[doc(hidden)]
+    fn _from_store(store: Self::BackingStorage) -> Self;
 
     /// Return the degree as `usize`.
     ///
@@ -75,9 +83,14 @@ where
     fn terms(&self) -> impl Iterator<Item = Self::Owned>;
 
     /// Return an iterator over the coefficients in ascending order of degree
+    #[inline]
+    #[must_use]
     fn coeffs<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
-        T: 'a;
+        T: 'a,
+    {
+        self._as_store().iter()
+    }
 
     /// Polynomial composition.
     fn compose(&self, other: &Self) -> Self::Owned;
@@ -98,7 +111,7 @@ where
 }
 
 /// Univariate polynomial
-pub trait UniPoly<T: Zero>: Poly<T>
+pub trait UniPoly<T>: Poly<T>
 where
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>
         + Mul<&'b Self, Output = Self>
@@ -106,10 +119,15 @@ where
         + Div<&'b Self, Output = Self>
         + Rem<&'b Self, Output = Self>,
     Self::Owned: Zero,
-    Self::BackingStorage: UniStore,
+    Self::BackingStorage: UniStore<T>,
+    <Self::BackingStorage as ToOwned>::Owned: OwnedUniStore<T>,
 {
-    fn shift_up(&self, n: usize) -> Self {
+    fn shift_up(&self, n: usize) -> Self
+    where
+        T: Zero + Clone,
+    {
         let mut v = <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned::zeros(&[n]);
+        v.extend(self.coeffs().cloned());
         todo!();
     }
 }

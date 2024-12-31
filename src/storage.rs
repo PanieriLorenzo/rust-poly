@@ -23,7 +23,11 @@ where
 }
 
 /// Univariate storage.
-pub trait UniStore {}
+pub trait UniStore<T>: BaseStore<T>
+where
+    Self::Owned: OwnedUniStore<T>,
+{
+}
 
 /// Owned storage.
 pub trait OwnedStore<T>: BaseStore<T, Owned = Self> {
@@ -32,11 +36,8 @@ pub trait OwnedStore<T>: BaseStore<T, Owned = Self> {
         T: Zero;
 }
 
-/// Growable storage. Implies ownership.
-pub trait DynStore<T>: OwnedStore<T> {}
-
 /// Growable uni-dimensional storage, e.g. [`Vec`].
-pub trait DynUniStore<T>: UniStore + DynStore<T> {
+pub trait OwnedUniStore<T>: UniStore<T> + OwnedStore<T> {
     fn push(&mut self, val: T);
 
     fn extend(&mut self, values: impl IntoIterator<Item = T>) {

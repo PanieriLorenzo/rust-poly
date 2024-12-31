@@ -1,6 +1,6 @@
 use num::Zero;
 
-use super::{BaseStore, DynStore, DynUniStore, OwnedStore, UniStore};
+use super::{BaseStore, OwnedStore, OwnedUniStore, UniStore};
 
 impl<T: Clone> BaseStore<T> for Vec<T> {
     #[inline]
@@ -13,7 +13,7 @@ impl<T: Clone> BaseStore<T> for Vec<T> {
     }
 }
 
-impl<T> UniStore for Vec<T> {}
+impl<T: Clone> UniStore<T> for Vec<T> {}
 
 impl<T: Clone> OwnedStore<T> for Vec<T> {
     fn zeros(shape: &[usize]) -> Self
@@ -25,9 +25,7 @@ impl<T: Clone> OwnedStore<T> for Vec<T> {
     }
 }
 
-impl<T: Clone> DynStore<T> for Vec<T> {}
-
-impl<T: Clone> DynUniStore<T> for Vec<T> {
+impl<T: Clone> OwnedUniStore<T> for Vec<T> {
     #[inline]
     fn push(&mut self, val: T) {
         self.push(val);
