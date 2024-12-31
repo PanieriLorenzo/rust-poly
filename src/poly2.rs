@@ -1,6 +1,8 @@
 //! The new API, will replace the [`poly`] module.
 
-use std::borrow::Borrow;
+use std::ops::{Add, Div, Mul, Rem, Sub};
+
+use num::CheckedDiv;
 
 use crate::{
     num::{One, Zero},
@@ -19,7 +21,15 @@ pub mod poly_base;
 /// implementing [`crate::num::Zero`]. A zero polynomial behaves like the neutral
 /// element of addition over polynomials. A zero polynomial has degree -1 by
 /// convention.
-pub trait Poly<T>: Zero + One + ToOwned {
+pub trait Poly<T>: Zero + One + ToOwned
+where
+    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>
+        + Mul<&'b Self, Output = Self>
+        + Sub<&'b Self, Output = Self>
+        + Div<&'b Self, Output = Self>
+        + Rem<&'b Self, Output = Self>,
+    Self::Owned: Zero,
+{
     /// Return the degree as `usize`.
     ///
     /// Note that unlike [`Poly::degree`], this will saturate at 0 for zero
@@ -69,7 +79,8 @@ pub trait Poly<T>: Zero + One + ToOwned {
 
     fn eval(&self, x: T) -> T;
 
-    /// Evaluate the polynomial for each entry of a slice.
+    /// Evaluate the polynomial for each entry of a slice. May be faster than
+    /// repeatedly calling [`Poly::eval`].
     fn eval_multiple(&self, points: &[T], out: &mut [T])
     where
         T: Clone,
