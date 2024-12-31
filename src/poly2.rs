@@ -91,3 +91,15 @@ where
         }
     }
 }
+
+/// Univariate polynomial
+pub trait UniPoly<T>: Poly<T>
+where
+    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>
+        + Mul<&'b Self, Output = Self>
+        + Sub<&'b Self, Output = Self>
+        + Div<&'b Self, Output = Self>
+        + Rem<&'b Self, Output = Self>,
+    Self::Owned: Zero,
+{
+}
