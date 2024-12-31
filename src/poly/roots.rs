@@ -1,4 +1,5 @@
 use crate::{
+    poly2::UniPoly,
     util::{
         complex::{c_from_f128, c_neg, c_sqrt, c_to_f128},
         vec::slice_mean,

@@ -184,13 +184,6 @@ mod tests {
     // TODO: test the rest of the "boring" functions
 
     #[test]
-    fn poly_line() {
-        let p = Poly::<f64>::line(Complex::<f64>::new(1.0, 0.0), Complex::<f64>::new(2.0, 0.0));
-        let e = poly!(1.0, 2.0);
-        assert_eq!(p, e);
-    }
-
-    #[test]
     fn poly_term() {
         let p = Poly64::term(complex!(2.0), 2);
         let e = poly!(0.0, 0.0, 2.0);

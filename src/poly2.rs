@@ -2,8 +2,6 @@
 
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
-use num::CheckedDiv;
-
 use crate::{
     num::Zero,
     poly2,

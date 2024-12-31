@@ -197,30 +197,6 @@ impl<T: RealScalar> Poly<T> {
         Self(coeffs.to_owned()).normalize()
     }
 
-    /// Complex constant as a polynomial of degree zero
-    #[inline(always)]
-    #[must_use]
-    pub fn constant(c: Complex<T>) -> Self {
-        Self::new(&[c])
-    }
-
-    /// Linear function as a polynomial.
-    ///
-    /// # Examples
-    /// ```
-    /// use rust_poly::Poly;
-    /// use num::Complex;
-    /// use num::{One, Zero};
-    ///
-    /// assert_eq!(Poly::line(Complex::one(), Complex::new(-1.0, 0.0)).eval_point(Complex::one()), Complex::zero());
-    /// ```
-    pub fn line(offset: Complex<T>, slope: Complex<T>) -> Self {
-        if slope.is_zero() {
-            return Self::new(&[offset]);
-        }
-        Self::new(&[offset, slope])
-    }
-
     /// Line between two points with complex coordinates.
     ///
     /// Note that the points are determined by two complex numbers, so they are
@@ -241,7 +217,7 @@ impl<T: RealScalar> Poly<T> {
     pub fn line_from_points(p1: (Complex<T>, Complex<T>), p2: (Complex<T>, Complex<T>)) -> Self {
         let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
         let offset = p1.1.clone() - slope.clone() * p1.0;
-        Self::line(offset, slope)
+        Poly::new(&[offset, slope])
     }
 
     /// Create a polynomial from a single term (coefficient + degree)
@@ -255,7 +231,7 @@ impl<T: RealScalar> Poly<T> {
     /// assert_eq!(Poly::term(Complex::one(), 3), poly![0.0, 0.0, 0.0, 1.0]);
     /// ```
     pub fn term(coeff: Complex<T>, degree: u32) -> Self {
-        Self::line(Complex::zero(), complex!(T::one())).pow(degree) * coeff
+        Self::new(&[Complex::zero(), complex!(T::one())]).pow(degree) * coeff
     }
 
     #[must_use]
@@ -324,7 +300,7 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
 
         roots
             .into_iter()
-            .map(|e| Self::line(c_neg(e), Complex::<T>::one()))
+            .map(|e| Self::new(&[c_neg(e), Complex::<T>::one()]))
             .fold(Self::one(), |acc, x| acc * x)
             .normalize()
     }
