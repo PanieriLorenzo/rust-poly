@@ -4,7 +4,7 @@ use itertools::Itertools;
 use num::{Complex, One, Zero};
 
 use crate::{
-    poly2::OwnedPoly,
+    poly2::{OwnedPoly, UniPoly},
     util::{
         complex::{c_neg, complex_fmt, complex_sort_mut},
         doc_macros::panic_absurd_size,
@@ -190,31 +190,7 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
     }
 }
 
-impl<T: RealScalar> Poly<T> {
-    /// # Examples
-    /// ```
-    /// # use rust_poly::{poly, Poly};
-    /// let p = poly![1.0, 2.0, 3.0];
-    /// assert_eq!(p.shift_up(2), poly![0.0, 0.0, 1.0, 2.0, 3.0]);
-    /// ```
-    #[must_use]
-    pub fn shift_up(&self, n: usize) -> Self {
-        let mut v = vec![Complex::<T>::zero(); n];
-        v.extend_from_slice(self.as_slice());
-        Self::from_complex_vec(v)
-    }
-
-    /// # Examples
-    /// ```
-    /// # use rust_poly::{poly, Poly};
-    /// let p = poly![1.0, 2.0, 3.0, 4.0];
-    /// assert_eq!(p.shift_down(2), poly![3.0, 4.0]);
-    /// ```
-    #[must_use]
-    pub fn shift_down(&self, n: usize) -> Self {
-        Self::from_complex_slice(&self.as_slice()[n..])
-    }
-}
+impl<T: RealScalar> UniPoly<Complex<T>> for Poly<T> {}
 
 impl<T: RealScalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {

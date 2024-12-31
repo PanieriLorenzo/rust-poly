@@ -125,12 +125,34 @@ where
     <Self::BackingStorage as ToOwned>::Owned: OwnedUniStore<T>,
     <Self::Owned as Poly<T>>::BackingStorage: OwnedUniStore<T>,
 {
+    /// # Examples
+    /// ```
+    /// # use rust_poly::{poly, Poly};
+    /// let p = poly![1.0, 2.0, 3.0];
+    /// assert_eq!(p.shift_up(2), poly![0.0, 0.0, 1.0, 2.0, 3.0]);
+    /// ```
+    #[must_use]
     fn shift_up(&self, n: usize) -> Self::Owned
     where
         T: Zero + Clone,
     {
         let mut v = <Self::Owned as Poly<T>>::BackingStorage::zeros(&[n]);
         v.extend(self.coeffs().cloned());
+        Self::Owned::_from_store(v)
+    }
+
+    /// # Examples
+    /// ```
+    /// # use rust_poly::{poly, Poly};
+    /// let p = poly![1.0, 2.0, 3.0, 4.0];
+    /// assert_eq!(p.shift_down(2), poly![3.0, 4.0]);
+    /// ```
+    #[must_use]
+    fn shift_down(&self, n: usize) -> Self::Owned
+    where
+        T: Clone,
+    {
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(self.coeffs().skip(n).cloned());
         Self::Owned::_from_store(v)
     }
 }

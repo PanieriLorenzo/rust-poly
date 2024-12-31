@@ -16,6 +16,10 @@ impl<T: Clone> BaseStore<T> for Vec<T> {
 impl<T: Clone> UniStore<T> for Vec<T> {}
 
 impl<T: Clone> OwnedStore<T> for Vec<T> {
+    fn empty() -> Self {
+        vec![]
+    }
+
     fn zeros(shape: &[usize]) -> Self
     where
         T: Zero,

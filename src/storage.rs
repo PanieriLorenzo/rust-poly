@@ -31,6 +31,8 @@ where
 
 /// Owned storage.
 pub trait OwnedStore<T>: BaseStore<T, Owned = Self> {
+    fn empty() -> Self;
+
     fn zeros(shape: &[usize]) -> Self
     where
         T: Zero;
@@ -44,5 +46,14 @@ pub trait OwnedUniStore<T>: UniStore<T> + OwnedStore<T> {
         for val in values {
             self.push(val);
         }
+    }
+
+    fn from_iter(values: impl IntoIterator<Item = T>) -> Self
+    where
+        Self: Sized,
+    {
+        let mut v = Self::empty();
+        v.extend(values);
+        v
     }
 }

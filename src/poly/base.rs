@@ -2,7 +2,7 @@ use f128::f128;
 use itertools::Itertools;
 use num::{Complex, One, Zero};
 
-use crate::{scalar::SafeConstants, OwnedPoly, Poly, Poly2, RealScalar};
+use crate::{poly2::UniPoly, scalar::SafeConstants, OwnedPoly, Poly, Poly2, RealScalar};
 
 impl<T: RealScalar> Poly<T> {
     /// Applies a closure to each coefficient in-place
