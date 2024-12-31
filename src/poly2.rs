@@ -5,7 +5,7 @@ use std::ops::{Add, Div, Mul, Rem, Sub};
 use num::CheckedDiv;
 
 use crate::{
-    num::{One, Zero},
+    num::Zero,
     poly2,
     storage::{BaseStore, OwnedStore, OwnedUniStore, UniStore},
     util::doc_macros::panic_absurd_size,
@@ -23,14 +23,16 @@ pub mod poly_base;
 /// implementing [`crate::num::Zero`]. A zero polynomial behaves like the neutral
 /// element of addition over polynomials. A zero polynomial has degree -1 by
 /// convention.
-pub trait Poly<T>: Zero + One + ToOwned
+pub trait Poly<T>:
+    ToOwned
+    + Add<Self, Output = Self::Owned>
+    + Mul<Self, Output = Self::Owned>
+    + Sub<Self, Output = Self::Owned>
+    + Div<Self, Output = Self::Owned>
+    + Rem<Self, Output = Self::Owned>
 where
-    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>
-        + Mul<&'b Self, Output = Self>
-        + Sub<&'b Self, Output = Self>
-        + Div<&'b Self, Output = Self>
-        + Rem<&'b Self, Output = Self>,
-    Self::Owned: Zero,
+    Self::Owned: OwnedPoly<T>,
+    Self: Sized,
     <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned: OwnedStore<T>,
 {
     type BackingStorage: BaseStore<T>;
@@ -42,6 +44,14 @@ where
     /// Implementation detail
     #[doc(hidden)]
     fn _from_store(store: Self::BackingStorage) -> Self;
+
+    fn zero() -> Self::Owned;
+
+    fn one() -> Self::Owned;
+
+    fn is_zero(&self) -> bool;
+
+    fn is_one(&self) -> bool;
 
     /// Return the degree as `usize`.
     ///
@@ -113,21 +123,20 @@ where
 /// Univariate polynomial
 pub trait UniPoly<T>: Poly<T>
 where
-    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>
-        + Mul<&'b Self, Output = Self>
-        + Sub<&'b Self, Output = Self>
-        + Div<&'b Self, Output = Self>
-        + Rem<&'b Self, Output = Self>,
-    Self::Owned: Zero,
+    Self::Owned: OwnedPoly<T>,
     Self::BackingStorage: UniStore<T>,
+    // HACK: can't this diamond be flattened?
     <Self::BackingStorage as ToOwned>::Owned: OwnedUniStore<T>,
+    <Self::Owned as Poly<T>>::BackingStorage: OwnedUniStore<T>,
 {
-    fn shift_up(&self, n: usize) -> Self
+    fn shift_up(&self, n: usize) -> Self::Owned
     where
         T: Zero + Clone,
     {
-        let mut v = <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned::zeros(&[n]);
+        let mut v = <Self::Owned as Poly<T>>::BackingStorage::zeros(&[n]);
         v.extend(self.coeffs().cloned());
-        todo!();
+        Self::Owned::_from_store(v)
     }
 }
+
+pub trait OwnedPoly<T>: Poly<T, Owned = Self> {}

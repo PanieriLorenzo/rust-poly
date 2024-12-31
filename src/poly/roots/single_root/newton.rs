@@ -197,7 +197,7 @@ fn check_will_converge<T: RealScalar>(
 
 #[cfg(test)]
 mod test {
-    use crate::{num::One, roots::newton_deflate, util::__testing::check_roots, Poly64};
+    use crate::{num::One, roots::newton_deflate, util::__testing::check_roots, Poly2, Poly64};
 
     #[test]
     pub fn degree_0() {

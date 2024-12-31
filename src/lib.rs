@@ -84,7 +84,7 @@ macro_rules! complex {
 #[macro_export]
 macro_rules! poly {
     () => {{
-        <$crate::Poly<_> as $crate::num::Zero>::zero()
+        <$crate::Poly<_> as $crate::Poly2<$crate::num::Complex<_>>>::zero()
     }};
     (($re:expr, $im:expr); $n:expr) => {{
         $crate::Poly::from_complex_vec(vec![$crate::complex!($re, $im); $n])

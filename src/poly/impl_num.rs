@@ -8,22 +8,8 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 use crate::{
     util::{casting::usize_to_u32, linalg::convolve_1d},
-    Poly, RealScalar,
+    Poly, Poly2, RealScalar,
 };
-
-impl<T: RealScalar> Zero for Poly<T> {
-    fn zero() -> Self {
-        Self::from_real_slice(&[T::zero()])
-    }
-
-    fn is_zero(&self) -> bool {
-        debug_assert!(self.is_normalized());
-        if self.len_raw() != 1 {
-            return false;
-        }
-        self.0[0].is_zero()
-    }
-}
 
 impl<T: RealScalar> Poly<T> {
     /// Calculate the quotient and remainder using long division. More efficient than
@@ -92,12 +78,6 @@ impl<T: RealScalar> Poly<T> {
         // sanity check: result has the expected degree
         debug_assert_eq!(div.degree_raw(), expected_degree);
         Some((div, rem))
-    }
-}
-
-impl<T: RealScalar> One for Poly<T> {
-    fn one() -> Self {
-        Self(vec![Complex::<T>::one()])
     }
 }
 
