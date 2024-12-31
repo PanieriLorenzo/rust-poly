@@ -74,7 +74,9 @@ pub fn naive<T: RealScalar>(
 
 #[cfg(test)]
 mod test {
-    use crate::{num::One, roots::naive_deflate, util::__testing::check_roots, Poly2, Poly64};
+    use crate::{
+        num::One, roots::naive_deflate, util::__testing::check_roots, OwnedPoly, Poly2, Poly64,
+    };
 
     #[test]
     pub fn degree_0() {

@@ -45,10 +45,6 @@ where
     #[doc(hidden)]
     fn _from_store(store: Self::BackingStorage) -> Self;
 
-    fn zero() -> Self::Owned;
-
-    fn one() -> Self::Owned;
-
     fn is_zero(&self) -> bool;
 
     fn is_one(&self) -> bool;
@@ -139,4 +135,8 @@ where
     }
 }
 
-pub trait OwnedPoly<T>: Poly<T, Owned = Self> {}
+pub trait OwnedPoly<T>: Poly<T, Owned = Self> {
+    fn zero() -> Self;
+
+    fn one() -> Self;
+}

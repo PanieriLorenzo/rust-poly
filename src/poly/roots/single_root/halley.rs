@@ -160,7 +160,9 @@ pub fn halley<T: RealScalar>(
 
 #[cfg(test)]
 mod test {
-    use crate::{num::One, roots::halley_deflate, util::__testing::check_roots, Poly2, Poly64};
+    use crate::{
+        num::One, roots::halley_deflate, util::__testing::check_roots, OwnedPoly, Poly2, Poly64,
+    };
 
     #[test]
     pub fn degree_0() {

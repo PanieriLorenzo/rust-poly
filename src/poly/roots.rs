@@ -3,7 +3,7 @@ use crate::{
         complex::{c_from_f128, c_neg, c_sqrt, c_to_f128},
         vec::slice_mean,
     },
-    Poly, Poly2, RealScalar,
+    OwnedPoly, Poly, Poly2, RealScalar,
 };
 use anyhow::anyhow;
 use f128::f128;

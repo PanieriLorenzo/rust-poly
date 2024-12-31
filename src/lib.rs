@@ -84,7 +84,7 @@ macro_rules! complex {
 #[macro_export]
 macro_rules! poly {
     () => {{
-        <$crate::Poly<_> as $crate::Poly2<$crate::num::Complex<_>>>::zero()
+        <$crate::Poly<_> as $crate::OwnedPoly<$crate::num::Complex<_>>>::zero()
     }};
     (($re:expr, $im:expr); $n:expr) => {{
         $crate::Poly::from_complex_vec(vec![$crate::complex!($re, $im); $n])
@@ -112,7 +112,7 @@ pub use util::__testing;
 pub(crate) mod base;
 
 pub(crate) mod poly2;
-pub use poly2::Poly as Poly2;
+pub use poly2::{OwnedPoly, Poly as Poly2};
 pub(crate) mod storage;
 
 pub type Poly32 = Poly<f32>;

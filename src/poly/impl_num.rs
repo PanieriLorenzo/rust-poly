@@ -8,7 +8,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 use crate::{
     util::{casting::usize_to_u32, linalg::convolve_1d},
-    Poly, Poly2, RealScalar,
+    OwnedPoly, Poly, Poly2, RealScalar,
 };
 
 impl<T: RealScalar> Poly<T> {

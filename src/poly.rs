@@ -23,7 +23,15 @@ mod special_funcs;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly<T: RealScalar>(pub(crate) Vec<Complex<T>>);
 
-impl<T: RealScalar> OwnedPoly<Complex<T>> for Poly<T> {}
+impl<T: RealScalar> OwnedPoly<Complex<T>> for Poly<T> {
+    fn zero() -> Self::Owned {
+        Self::from_real_slice(&[T::zero()])
+    }
+
+    fn one() -> Self::Owned {
+        Self(vec![Complex::<T>::one()])
+    }
+}
 
 impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
     type BackingStorage = Vec<Complex<T>>;
@@ -163,14 +171,6 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
 
     fn _from_store(store: Self::BackingStorage) -> Self {
         Self(store)
-    }
-
-    fn zero() -> Self::Owned {
-        Self::from_real_slice(&[T::zero()])
-    }
-
-    fn one() -> Self::Owned {
-        Self(vec![Complex::<T>::one()])
     }
 
     fn is_zero(&self) -> bool {
