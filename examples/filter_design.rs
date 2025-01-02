@@ -12,7 +12,7 @@
 //! A full implementation would require additional steps for scaling and discretizing,
 //! those are skipped here.
 
-use rust_poly::Poly64;
+use rust_poly::{roots::RootFinderSettings, Poly64};
 
 fn main() {
     let num_poles = 48;
@@ -27,7 +27,7 @@ fn main() {
         // is shrunk by finding a single root with a different method, this unstucks
         // the solver for some problematic polynomials. In this case its not
         // necessary so we put 1 try.
-        .roots(1E-14, 1000)
+        .roots(RootFinderSettings::new(1E-14, 1000))
         .unwrap();
     roots
         .chunks(2)

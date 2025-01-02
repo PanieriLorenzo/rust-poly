@@ -37,6 +37,7 @@ pub type Result<T> = std::result::Result<Vec<Complex<T>>, Error<Vec<Complex<T>>>
 // TODO: use everywhere
 pub type Roots<T> = Vec<Complex<T>>;
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum PolishingMode<T> {
     None,
     StandardPrecision {
@@ -52,6 +53,7 @@ pub enum PolishingMode<T> {
     },
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum MultiplesHandlingMode<T> {
     None,
     BroadcastBest { detection_epsilon: T },
@@ -60,6 +62,7 @@ pub enum MultiplesHandlingMode<T> {
     KeepAverage { detection_epsilon: T },
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum InitialGuessMode<T> {
     GuessPoolOnly,
     RandomAnnulus { bias: T, perturbation: T, seed: u64 },
@@ -67,60 +70,81 @@ pub enum InitialGuessMode<T> {
     // TODO: GridSearch {},
 }
 
-impl<T: RealScalar> Poly<T> {
-    /// A convenient way of finding roots, with a pre-configured root finder.
-    /// Should work well for most real polynomials of low degree.
-    ///
-    /// Use [`Poly::roots_expert`] if you need more control over performance or accuracy.
-    ///
-    /// # Errors
-    /// - Solver did not converge within `max_iter` iterations
-    /// - Some other edge-case was encountered which could not be handled (please
-    ///   report this, as we can make this solver more robust!)
-    pub fn roots(&self, epsilon: T, max_iter: usize) -> Result<T> {
-        self.roots_expert(
-            epsilon.clone(),
+/// Parameters for the root finder, with defaults.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RootFinderSettings<'a, T> {
+    pub epsilon: T,
+    pub max_iter: usize,
+    pub min_iter: usize,
+    pub polishing_mode: PolishingMode<T>,
+    pub multiples_handling_mode: MultiplesHandlingMode<T>,
+    pub initial_guess_pool: &'a [Complex<T>],
+    pub initial_guess_mode: InitialGuessMode<T>,
+}
+
+impl<'a, T: RealScalar> RootFinderSettings<'a, T> {
+    pub fn new(epsilon: T, max_iter: usize) -> Self {
+        Self {
+            epsilon: epsilon.clone(),
             max_iter,
-            0,
-            PolishingMode::StandardPrecision {
+            min_iter: 0,
+            polishing_mode: PolishingMode::StandardPrecision {
                 epsilon: epsilon.clone(),
                 min_iter: 0,
                 max_iter,
             },
-            MultiplesHandlingMode::BroadcastBest {
+            multiples_handling_mode: MultiplesHandlingMode::BroadcastBest {
                 // TODO: tune ratio
                 detection_epsilon: epsilon * T::from_f64(1.5).expect("overflow"),
             },
-            &[],
-            InitialGuessMode::RandomAnnulus {
+            initial_guess_pool: &[],
+            initial_guess_mode: InitialGuessMode::RandomAnnulus {
                 bias: T::from_f64(0.5).expect("overflow"),
                 perturbation: T::from_f64(0.5).expect("overflow"),
                 seed: 1,
             },
-        )
+        }
     }
 
-    /// Highly configurable root finder.
-    ///
-    /// [`Poly::roots`] will often be good enough, but you may know something
-    /// about the polynomial you are factoring that allows you to tweak the
-    /// settings.
+    pub fn with_polihing_mode(mut self, mode: PolishingMode<T>) -> Self {
+        self.polishing_mode = mode;
+        self
+    }
+
+    pub fn with_multiples_handling_mode(mut self, mode: MultiplesHandlingMode<T>) -> Self {
+        self.multiples_handling_mode = mode;
+        self
+    }
+
+    pub fn with_initial_guess_pool(mut self, pool: &'a [Complex<T>]) -> Self {
+        self.initial_guess_pool = pool;
+        self
+    }
+
+    pub fn with_initial_guess_mode(mut self, mode: InitialGuessMode<T>) -> Self {
+        self.initial_guess_mode = mode;
+        self
+    }
+}
+
+impl<T: RealScalar> Poly<T> {
+    /// Numerically find the roots of the polynomial
     ///
     /// # Errors
     /// - Solver did not converge within `max_iter` iterations
     /// - Some other edge-case was encountered which could not be handled (please
     ///   report this, as we can make this solver more robust!)
-    /// - The combination of parameters that was provided is invalid
-    pub fn roots_expert(
-        &self,
-        epsilon: T,
-        max_iter: usize,
-        _min_iter: usize,
-        polishing_mode: PolishingMode<T>,
-        multiples_handling_mode: MultiplesHandlingMode<T>,
-        initial_guess_pool: &[Complex<T>],
-        initial_guess_mode: InitialGuessMode<T>,
-    ) -> Result<T> {
+    pub fn roots(&self, settings: RootFinderSettings<'_, T>) -> Result<T> {
+        let RootFinderSettings {
+            epsilon,
+            max_iter,
+            polishing_mode,
+            multiples_handling_mode,
+            initial_guess_pool,
+            initial_guess_mode,
+            ..
+        } = settings;
+
         debug_assert!(self.is_normalized());
 
         let mut this = self.clone();
@@ -185,16 +209,12 @@ impl<T: RealScalar> Poly<T> {
         let roots: Roots<T> = match polishing_mode {
             PolishingMode::None => Ok(roots),
             PolishingMode::StandardPrecision {
-                epsilon,
-                min_iter,
-                max_iter,
+                epsilon, max_iter, ..
             } => newton_parallel(&mut this, Some(epsilon), Some(max_iter), &roots),
 
             #[cfg(target_arch = "x86_64")]
             PolishingMode::HighPrecision {
-                epsilon,
-                min_iter,
-                max_iter,
+                epsilon, max_iter, ..
             } => {
                 let mut this = this.clone().cast_to_f128();
                 let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
@@ -411,13 +431,13 @@ fn average_multiples<T: RealScalar>(
 mod test {
     use num::complex::ComplexFloat;
 
-    use crate::Poly64;
+    use crate::{roots::RootFinderSettings, Poly64};
 
     /// See [#3](https://github.com/PanieriLorenzo/rust-poly/issues/3)
     #[test]
     fn roots_of_reverse_bessel() {
         let poly = Poly64::reverse_bessel(2).unwrap();
-        let roots = poly.roots(1E-10, 1000).unwrap();
+        let roots = poly.roots(RootFinderSettings::new(1E-10, 1000)).unwrap();
         assert!((roots[0].re() - -1.5).abs() < 0.01);
         assert!((roots[0].im().abs() - 0.866).abs() < 0.01);
         assert!((roots[1].re() - -1.5).abs() < 0.01);
