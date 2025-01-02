@@ -1,7 +1,10 @@
 //! Exploratory tests which use randomized test cases
 
 use fastrand::Rng;
-use rust_poly::__testing::{check_roots, test_case_roots, RandStreamR64};
+use rust_poly::{
+    __testing::{check_roots, test_case_roots, RandStreamR64},
+    roots::RootFinderSettings,
+};
 
 const LOG_LEVEL: log::Level = log::Level::Trace;
 
@@ -18,7 +21,9 @@ fn test_uniform_real_roots() {
         let mut scale_stream = RandStreamR64::new(seed_stream.u64(..), 0.1, 10.0);
         for i in 0..1 {
             let (poly, expected_roots) = test_case_roots(&mut roots_stream, &mut scale_stream, deg);
-            let roots = poly.roots(tolerance_min, 1000).unwrap();
+            let roots = poly
+                .roots(RootFinderSettings::new(tolerance_min, 1000))
+                .unwrap();
             assert!(
                 check_roots(roots.clone(), expected_roots.clone(), tolerance_max),
                 "{:?} != {:?} @ iter = {}",
