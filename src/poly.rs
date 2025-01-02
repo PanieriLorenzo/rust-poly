@@ -275,7 +275,7 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
 
         roots
             .into_iter()
-            .map(|e| Self::line(c_neg(e), Complex::<T>::one()))
+            .map(|e| Self::line(c_neg(&e), Complex::<T>::one()))
             .fold(Self::one(), |acc, x| acc * x)
             .normalize()
     }
@@ -376,7 +376,7 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
     /// 4D space.
     #[must_use]
     pub fn translate(mut self, x: Complex<T>, y: Complex<T>) -> Self {
-        self = self.compose(Self::from_complex_slice(&[c_neg(x), Complex::<T>::one()]));
+        self = self.compose(Self::from_complex_slice(&[c_neg(&x), Complex::<T>::one()]));
         self.0[0] += y;
         self
     }

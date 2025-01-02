@@ -16,12 +16,12 @@ impl<T: RealScalar> Poly<T> {
     }
 
     /// Scale a polynomial in-place
-    pub(crate) fn scale(&mut self, factor: Complex<T>) {
+    pub(crate) fn scale(&mut self, factor: &Complex<T>) {
         self.apply(|z| *z *= factor.clone());
     }
 
     /// Moving version of `scale`
-    pub(crate) fn scaled(mut self, factor: Complex<T>) -> Self {
+    pub(crate) fn scaled(mut self, factor: &Complex<T>) -> Self {
         self.scale(factor);
         self
     }
@@ -104,7 +104,7 @@ impl<T: RealScalar> Poly<T> {
     /// Factor out one root of the polynomial, by scaling coefficients from
     /// the one with the highest degree down, then discarding the smallest
     /// coefficient.
-    pub(crate) fn deflate_downward(mut self, r: Complex<T>) -> Self {
+    pub(crate) fn deflate_downward(mut self, r: &Complex<T>) -> Self {
         // TODO: it is possible to use FFT for forward deflation
         let mut z0 = Complex::<T>::zero();
         // FIXME: I think this does exactly one wasted iteration at the end
@@ -120,13 +120,13 @@ impl<T: RealScalar> Poly<T> {
     /// the one with the lowest degree upwards, then discarding the largest
     /// coefficient.
     #[allow(clippy::many_single_char_names)]
-    pub(crate) fn deflate_upward(mut self, r: Complex<T>) -> Self {
+    pub(crate) fn deflate_upward(mut self, r: &Complex<T>) -> Self {
         let n = self.degree_raw();
         if n == 0 {
             return self;
         }
         let mut z0 = Complex::zero();
-        if r != z0 {
+        if *r != z0 {
             let mut i = n - 1;
             let mut t = self.coeffs_descending(n).clone();
             let mut s;
@@ -146,9 +146,9 @@ impl<T: RealScalar> Poly<T> {
 
     /// Synthetic division that reduces numeric error by fusing the results
     /// of forward deflation and backward deflation
-    pub(crate) fn deflate_composite(&mut self, r: Complex<T>) {
+    pub(crate) fn deflate_composite(&mut self, r: &Complex<T>) {
         let n = self.degree_raw();
-        let fwd = self.clone().deflate_downward(r.clone());
+        let fwd = self.clone().deflate_downward(r);
         let bwd = self.clone().deflate_upward(r);
         // TODO: in order to drop the Bounded trait bound, this should be
         //       done without explicit reference to max value

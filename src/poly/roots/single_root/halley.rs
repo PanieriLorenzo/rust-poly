@@ -85,7 +85,7 @@ pub fn halley<T: RealScalar>(
 
                 // TODO: when const trait methods are supported, this should be
                 //       made fully const.
-                let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS));
+                let backoff = c_from_f64(&Complex::from_polar(SCALE, ROTATION_RADIANS));
                 // reverting to older base guess, but offset
                 guess = best_guess.clone() - guess_delta_old.clone() * backoff;
             }
@@ -110,7 +110,7 @@ pub fn halley<T: RealScalar>(
 
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
-            let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS));
+            let backoff = c_from_f64(&Complex::from_polar(SCALE, ROTATION_RADIANS));
             <Complex<T> as std::ops::Mul>::mul(guess_delta_old.clone(), backoff)
         } else {
             let m = multiplicity_lagouanelle(px.clone(), pdx.clone(), pddx);
@@ -129,7 +129,7 @@ pub fn halley<T: RealScalar>(
 
             // TODO: when const trait methods are supported, this should be
             //       made fully const.
-            let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS))
+            let backoff = c_from_f64(&Complex::from_polar(SCALE, ROTATION_RADIANS))
                 .scale(guess_delta_old.norm_sqr() / guess_delta.norm_sqr());
             guess_delta * backoff
         } else {

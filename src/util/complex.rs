@@ -9,7 +9,7 @@ use crate::RealScalar;
 use f128::f128;
 
 /// cast complex to primitive
-pub(crate) fn c_to_f64<T: RealScalar>(z: Complex<T>) -> Complex<f64> {
+pub(crate) fn c_to_f64<T: RealScalar>(z: &Complex<T>) -> Complex<f64> {
     Complex::new(
         z.re.to_f64().expect("overflow"),
         z.im.to_f64().expect("overflow"),
@@ -17,28 +17,28 @@ pub(crate) fn c_to_f64<T: RealScalar>(z: Complex<T>) -> Complex<f64> {
 }
 
 /// cast complex from primitive
-pub(crate) fn c_from_f64<T: RealScalar>(z: Complex<f64>) -> Complex<T> {
+pub(crate) fn c_from_f64<T: RealScalar>(z: &Complex<f64>) -> Complex<T> {
     Complex::new(
         T::from_f64(z.re).expect("overflow"),
         T::from_f64(z.im).expect("overflow"),
     )
 }
 
-pub(crate) fn c_to_f128<T: RealScalar>(z: Complex<T>) -> Complex<f128> {
+pub(crate) fn c_to_f128<T: RealScalar>(z: &Complex<T>) -> Complex<f128> {
     let z = c_to_f64(z);
     let re = f128::from(z.re);
     let im = f128::from(z.im);
     Complex::new(re, im)
 }
 
-pub(crate) fn c_from_f128<T: RealScalar>(z: Complex<f128>) -> Complex<T> {
+pub(crate) fn c_from_f128<T: RealScalar>(z: &Complex<f128>) -> Complex<T> {
     let re: f64 = z.re.into();
     let im: f64 = z.im.into();
-    c_from_f64(Complex::new(re, im))
+    c_from_f64(&Complex::new(re, im))
 }
 
 // neg operator for Complex, as it does not implement std::ops::Neg
-pub(crate) fn c_neg<T: RealScalar>(x: Complex<T>) -> Complex<T> {
+pub(crate) fn c_neg<T: RealScalar>(x: &Complex<T>) -> Complex<T> {
     Complex::<T>::zero() - x
 }
 
@@ -52,24 +52,24 @@ pub(crate) fn c_min<T: RealScalar>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
 }
 
 /// arg using `ToPrimitive`
-pub(crate) fn c_arg<T: RealScalar>(z: Complex<T>) -> T {
+pub(crate) fn c_arg<T: RealScalar>(z: &Complex<T>) -> T {
     let z = c_to_f64(z);
     T::from_f64(z.im.atan2(z.re)).expect("overflow")
 }
 
 /// exp using `ToPrimitive`
-pub(crate) fn c_exp<T: RealScalar>(z: Complex<T>) -> Complex<T> {
-    c_from_f64(c_to_f64(z).exp())
+pub(crate) fn c_exp<T: RealScalar>(z: &Complex<T>) -> Complex<T> {
+    c_from_f64(&c_to_f64(z).exp())
 }
 
 /// powf using `ToPrimitive`
-pub(crate) fn c_powf<T: RealScalar>(z: Complex<T>, e: T) -> Complex<T> {
-    c_from_f64(c_to_f64(z).powf(e.to_f64().expect("overflow")))
+pub(crate) fn c_powf<T: RealScalar>(z: &Complex<T>, e: T) -> Complex<T> {
+    c_from_f64(&c_to_f64(z).powf(e.to_f64().expect("overflow")))
 }
 
 /// sqrt using `ToPrimitive`
-pub(crate) fn c_sqrt<T: RealScalar>(z: Complex<T>) -> Complex<T> {
-    c_from_f64(c_to_f64(z).sqrt())
+pub(crate) fn c_sqrt<T: RealScalar>(z: &Complex<T>) -> Complex<T> {
+    c_from_f64(&c_to_f64(z).sqrt())
 }
 
 // sort a vector of complex numbers lexicographically, using their real part first
@@ -103,7 +103,7 @@ mod test {
     #[test]
     fn c_to_f64() {
         let src: Complex<f32> = Complex::new(-12.34, 56.78);
-        let dst = super::c_to_f64(src);
+        let dst = super::c_to_f64(&src);
 
         // strict comparison is what we're testing for
         #[allow(clippy::float_cmp)]
@@ -116,7 +116,7 @@ mod test {
     #[test]
     fn c_from_f64() {
         let src: Complex<f64> = Complex::new(-12.34, 56.78);
-        let dst: Complex<f32> = super::c_from_f64(src);
+        let dst: Complex<f32> = super::c_from_f64(&src);
 
         // strict comparison is what we're testing for
         #[allow(clippy::float_cmp)]
@@ -132,16 +132,16 @@ mod test {
     #[test]
     fn c_arg() {
         let src = Complex::new(0.25, 0.75);
-        assert_eq!(super::c_arg(src), src.arg());
+        assert_eq!(super::c_arg(&src), src.arg());
 
         let src = Complex::new(-0.25, 0.75);
-        assert_eq!(super::c_arg(src), src.arg());
+        assert_eq!(super::c_arg(&src), src.arg());
 
         let src = Complex::new(0.25, -0.75);
-        assert_eq!(super::c_arg(src), src.arg());
+        assert_eq!(super::c_arg(&src), src.arg());
 
         let src = Complex::new(-0.25, -0.75);
-        assert_eq!(super::c_arg(src), src.arg());
+        assert_eq!(super::c_arg(&src), src.arg());
     }
 
     // strict comparison is what we're testing for
@@ -149,7 +149,7 @@ mod test {
     #[test]
     fn c_exp() {
         let src = Complex::new(0.25, -0.75);
-        assert_eq!(super::c_exp(src), src.exp());
+        assert_eq!(super::c_exp(&src), src.exp());
     }
 
     // strict comparison is what we're testing for
@@ -157,7 +157,7 @@ mod test {
     #[test]
     fn c_powf() {
         let src = Complex::new(0.25, -0.75);
-        assert_eq!(super::c_powf(src, 1.23), src.powf(1.23));
+        assert_eq!(super::c_powf(&src, 1.23), src.powf(1.23));
     }
 
     // strict comparison is what we're testing for
@@ -165,6 +165,6 @@ mod test {
     #[test]
     fn c_sqrt() {
         let src = Complex::new(0.25, -0.75);
-        assert_eq!(super::c_sqrt(src), src.sqrt());
+        assert_eq!(super::c_sqrt(&src), src.sqrt());
     }
 }
