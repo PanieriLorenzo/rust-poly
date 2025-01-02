@@ -27,7 +27,7 @@ pub fn deflate<T: RealScalar>(
     // until we've found all roots
     loop {
         let trivial_roots = {
-            let mut roots = poly.zero_roots(epsilon.clone());
+            let mut roots = poly.zero_roots(&epsilon);
             match poly.degree_raw() {
                 1 => roots.extend(poly.linear_roots()),
                 2 => roots.extend(poly.quadratic_roots()),
@@ -46,7 +46,7 @@ pub fn deflate<T: RealScalar>(
         let (next_roots, _) = next_root_fun(poly, epsilon.clone(), max_iter, next_guess)?;
         let root = next_roots[0].clone();
         roots.push(root.clone());
-        poly.deflate_composite(root);
+        poly.deflate_composite(&root);
     }
 }
 

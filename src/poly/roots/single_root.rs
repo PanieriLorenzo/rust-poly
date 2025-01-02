@@ -19,6 +19,7 @@ pub type NextRootFun<T> =
 // TODO: with specialization use Nikolajsen 2014 if T is f64 or f32, but right
 //       now this is fine for all real-like, including fractions and infinite
 //       precision
+#[allow(clippy::needless_pass_by_value)]
 fn stopping_criterion_garwick<T: RealScalar>(
     z: Complex<T>,
     z_old: Complex<T>,
@@ -87,6 +88,7 @@ fn multiplicity_lagouanelle<T: RealScalar>(
 }
 
 /// Speed up convergence using Madsen 1973
+#[allow(clippy::needless_pass_by_value)]
 fn line_search_accelerate<T: RealScalar>(
     poly: &Poly<T>,
     guess: Complex<T>,
@@ -119,6 +121,7 @@ fn line_search_accelerate<T: RealScalar>(
 }
 
 /// Slow down convergence using Madsen 1973
+#[allow(clippy::needless_pass_by_value)]
 fn line_search_decelerate<T: RealScalar>(
     poly: &Poly<T>,
     guess: Complex<T>,

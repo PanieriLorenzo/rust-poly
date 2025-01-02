@@ -161,7 +161,7 @@ impl<T: RealScalar> Poly<T> {
 
         let mut this = self.clone();
 
-        let mut roots: Vec<Complex<T>> = this.zero_roots(epsilon.clone());
+        let mut roots: Vec<Complex<T>> = this.zero_roots(&epsilon);
 
         match this.degree_raw() {
             1 => {
@@ -229,17 +229,17 @@ impl<T: RealScalar> Poly<T> {
                 epsilon, max_iter, ..
             } => {
                 let mut this = this.clone().cast_to_f128();
-                let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
+                let roots = roots.iter().cloned().map(|z| c_to_f128(&z)).collect_vec();
                 newton_parallel(
                     &mut this,
                     Some(f128::from(epsilon.to_f64().expect("should fit in f64"))),
                     Some(max_iter),
                     &roots,
                 )
-                .map(|v| v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
+                .map(|v| v.into_iter().map(|z| c_from_f128::<T>(&z)).collect_vec())
                 .map_err(|e| match e {
                     Error::NoConverge(v) => {
-                        Error::NoConverge(v.into_iter().map(|z| c_from_f128::<T>(z)).collect_vec())
+                        Error::NoConverge(v.into_iter().map(|z| c_from_f128::<T>(&z)).collect_vec())
                     }
                     Error::Other(o) => Error::Other(o),
                 })
@@ -250,22 +250,22 @@ impl<T: RealScalar> Poly<T> {
             MultiplesHandlingMode::None => Ok(roots),
             MultiplesHandlingMode::BroadcastBest { detection_epsilon } => Ok(best_multiples(
                 &this,
-                group_multiples(roots, detection_epsilon),
+                group_multiples(roots, &detection_epsilon),
                 true,
             )),
             MultiplesHandlingMode::BroadcastAverage { detection_epsilon } => Ok(average_multiples(
                 &this,
-                group_multiples(roots, detection_epsilon),
+                group_multiples(roots, &detection_epsilon),
                 true,
             )),
             MultiplesHandlingMode::KeepBest { detection_epsilon } => Ok(best_multiples(
                 &this,
-                group_multiples(roots, detection_epsilon),
+                group_multiples(roots, &detection_epsilon),
                 false,
             )),
             MultiplesHandlingMode::KeepAverage { detection_epsilon } => Ok(average_multiples(
                 &this,
-                group_multiples(roots, detection_epsilon),
+                group_multiples(roots, &detection_epsilon),
                 false,
             )),
         }
@@ -274,12 +274,12 @@ impl<T: RealScalar> Poly<T> {
 
 // private
 impl<T: RealScalar> Poly<T> {
-    fn zero_roots(&mut self, epsilon: T) -> Vec<Complex<T>> {
+    fn zero_roots(&mut self, epsilon: &T) -> Vec<Complex<T>> {
         debug_assert!(self.is_normalized());
 
         let mut roots = vec![];
         for _ in 0..self.degree_raw() {
-            if self.eval(Complex::zero()).norm_sqr() < epsilon {
+            if self.eval(Complex::zero()).norm_sqr() < *epsilon {
                 roots.push(Complex::zero());
                 // deflating zero roots can be accomplished simply by shifting
                 *self = self.shift_down(1);
@@ -331,9 +331,9 @@ impl<T: RealScalar> Poly<T> {
 
         // TODO: switch to different formula when b^2 and 4c are very close due
         //       to loss of precision
-        let plus_minus_term = c_sqrt(b.clone() * b.clone() - four * a.clone() * c);
+        let plus_minus_term = c_sqrt(&(b.clone() * b.clone() - four * a.clone() * c));
         let x1 = (plus_minus_term.clone() - b.clone()) / (two.clone() * a.clone());
-        let x2 = (c_neg(b.clone()) - plus_minus_term) / (two * a);
+        let x2 = (c_neg(&b) - plus_minus_term) / (two * a);
 
         // we found all the roots
         *self = Self::one();
@@ -343,7 +343,7 @@ impl<T: RealScalar> Poly<T> {
 }
 
 /// Find roots that are within a given tolerance from each other and group them
-fn group_multiples<T: RealScalar>(roots: Roots<T>, epsilon: T) -> Vec<Roots<T>> {
+fn group_multiples<T: RealScalar>(roots: Roots<T>, epsilon: &T) -> Vec<Roots<T>> {
     // groups with their respective mean
     let mut groups: Vec<(Roots<T>, Complex<T>)> = vec![];
 
@@ -355,7 +355,7 @@ fn group_multiples<T: RealScalar>(roots: Roots<T>, epsilon: T) -> Vec<Roots<T>> 
         // if we do, we add the point, update the mean
         'roots_loop: for root in roots.drain(..) {
             for group in &mut groups {
-                if (group.1.clone() - root.clone()).norm_sqr() <= epsilon {
+                if (group.1.clone() - root.clone()).norm_sqr() <= *epsilon {
                     group.0.push(root.clone());
                     group.1 = slice_mean(&group.0);
                     continue 'roots_loop;
@@ -370,7 +370,7 @@ fn group_multiples<T: RealScalar>(roots: Roots<T>, epsilon: T) -> Vec<Roots<T>> 
             // hijacking retain to avoid having to write a loop where we delete
             // things from the collection we're iterating from.
             group.0.retain(|r| {
-                if (r.clone() - group.1.clone()).norm_sqr() <= epsilon {
+                if (r.clone() - group.1.clone()).norm_sqr() <= *epsilon {
                     true
                 } else {
                     roots.push(r.clone());

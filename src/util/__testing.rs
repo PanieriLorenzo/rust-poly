@@ -226,7 +226,7 @@ pub fn test_case_roots(
 ) -> (Poly64, Vec<Complex64>) {
     let roots = roots_stream.take(degree).collect_vec();
     let poly = Poly64::from_roots(&roots)
-        .scaled(scale_stream.next().expect("rng stream should be infinite"));
+        .scaled(&scale_stream.next().expect("rng stream should be infinite"));
     (poly, roots)
 }
 
@@ -243,7 +243,7 @@ pub fn test_case_conj_roots(
         .flat_map(|(r1, r2)| [r1, r2])
         .collect_vec();
     let poly = Poly64::from_roots(&roots)
-        .scaled(scale_stream.next().expect("rng stream should be infinite"));
+        .scaled(&scale_stream.next().expect("rng stream should be infinite"));
     (poly, roots)
 }
 
@@ -259,7 +259,7 @@ pub fn test_case_multiple_roots(
         roots.push(first_root);
     }
     let poly = Poly64::from_roots(&roots)
-        .scaled(scale_stream.next().expect("rng stream should be infinite"));
+        .scaled(&scale_stream.next().expect("rng stream should be infinite"));
     (poly, roots)
 }
 

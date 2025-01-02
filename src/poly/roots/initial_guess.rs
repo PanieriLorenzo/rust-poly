@@ -35,7 +35,7 @@ pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
         pdz += small;
     }
 
-    let theta = c_arg(c_neg(pz) / pdz);
+    let theta = c_arg(&(c_neg(&pz) / pdz));
     let mut iter_coeffs = poly.0.iter();
     let a0 = iter_coeffs.next().expect("infallible");
 
@@ -43,7 +43,7 @@ pub fn initial_guess_smallest<T: RealScalar>(poly: &Poly<T>) -> Complex<T> {
         .zip(1..)
         .map(|(ak, k)| {
             c_powf(
-                c_exp(Complex::i().scale(theta.clone())).scale((a0 / ak).norm_sqr()),
+                &c_exp(&Complex::i().scale(theta.clone())).scale((a0 / ak).norm_sqr()),
                 T::one() / T::from_usize(k).expect("overflow"),
             )
         })
@@ -104,7 +104,7 @@ pub fn initial_guesses_circle<T: RealScalar>(
         let radius = radius.clone() * (T::one() - perturbation.clone())
             + (T::from_f64(rng.f64()).expect("overflow") * span.clone() + low.clone())
                 * perturbation.clone();
-        *y = c_from_f64(Complex::from_polar(
+        *y = c_from_f64(&Complex::from_polar(
             radius.to_f64().expect("overflow"),
             angle.to_f64().expect("overflow"),
         ));

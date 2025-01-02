@@ -91,7 +91,7 @@ pub fn newton<T: RealScalar>(
 
                 // TODO: when const trait methods are supported, this should be
                 //       made fully const.
-                let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS));
+                let backoff = c_from_f64(&Complex::from_polar(SCALE, ROTATION_RADIANS));
                 // reverting to older base guess, but offset
                 guess = best_guess.clone() - guess_delta.clone() * backoff;
             }
@@ -153,7 +153,7 @@ fn compute_delta<T: RealScalar>(
         const SCALE: f64 = 5.0;
         // TODO: when const trait methods are supported, this should be
         //       made fully const.
-        let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS));
+        let backoff = c_from_f64(&Complex::from_polar(SCALE, ROTATION_RADIANS));
         return delta_old * backoff;
     }
 
@@ -166,7 +166,7 @@ fn compute_delta<T: RealScalar>(
         // TODO: when const trait methods are supported, this should be
         //       made fully const.
 
-        let backoff = c_from_f64(Complex::from_polar(SCALE, ROTATION_RADIANS))
+        let backoff = c_from_f64(&Complex::from_polar(SCALE, ROTATION_RADIANS))
             .scale(delta_old.norm_sqr() / delta.norm_sqr());
 
         return delta * backoff;
@@ -181,6 +181,7 @@ fn compute_delta<T: RealScalar>(
 ///
 /// This condition is based on [Ostrowski 1966](https://doi.org/10.2307/2005025),
 /// but uses an approximation by [Henrik Vestermark 2020](http://dx.doi.org/10.13140/RG.2.2.30423.34728).
+#[allow(clippy::needless_pass_by_value)]
 fn check_will_converge<T: RealScalar>(
     guess: Complex<T>,
     guess_old: Complex<T>,
