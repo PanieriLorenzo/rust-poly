@@ -8,6 +8,14 @@ macro_rules! panic_t_from_f64 {
 }
 pub(crate) use panic_t_from_f64;
 
+/// Documents `to_f64` panics
+macro_rules! panic_t_to_f64 {
+    () => {
+        r"If `T` is any primitive type, this function does not panic. However, if `T` does not implement [`num::FromPrimitive::to_f64`] correctly, this function might panic under certain circumstances (casting of extreme values, usually)\n\n"
+    };
+}
+pub(crate) use panic_t_to_f64;
+
 /// Documents generic [`num::FromPrimitive`] panics.
 ///
 /// You must provide a string containing the integer type with the largest range

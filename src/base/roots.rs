@@ -1,5 +1,7 @@
-// TODO: clean up these, as some of the things Herbie does are completely superfluous
+#![allow(clippy::unreadable_literal)]
+#![allow(unused)]
 
+// TODO: clean up these, as some of the things Herbie does are completely superfluous
 use num::complex::Complex64;
 
 /// Original: `rb * rb - ib * ib - 4.0 * ra * rc + 4.0 * ia * ic`

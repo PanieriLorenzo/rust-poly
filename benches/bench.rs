@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, BatchSize, Benchmark
 use rust_poly::{
     Poly64,
     __testing::{PolyStream, RandStreamC64Polar},
-    roots::newton_deflate,
+    roots::{newton_deflate, RootFinderSettings},
 };
 
 criterion_main!(/*micro_benches, */ realistic_benches, solver_benches);
@@ -47,7 +47,7 @@ pub fn bessel_filter_design(c: &mut Criterion) {
                 black_box(
                     Poly64::reverse_bessel(black_box(n))
                         .unwrap()
-                        .roots(1E-14, 100),
+                        .roots(RootFinderSettings::new(1E-14, 100)),
                 )
             })
         });

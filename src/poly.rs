@@ -54,7 +54,7 @@ impl<T: RealScalar> Poly<T> {
     }
 
     /// Complex constant as a polynomial of degree zero
-    #[inline(always)]
+    #[inline]
     #[must_use]
     pub fn constant(c: Complex<T>) -> Self {
         Self::new(&[c])
