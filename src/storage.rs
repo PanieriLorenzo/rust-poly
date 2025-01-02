@@ -22,6 +22,13 @@ where
         T: 'a;
 }
 
+/// Mutable storage, either borrowed or owned.
+pub trait MutStore<T>: BaseStore<T>
+where
+    Self::Owned: OwnedStore<T>,
+{
+}
+
 /// Univariate storage.
 pub trait UniStore<T>: BaseStore<T>
 where
@@ -30,7 +37,7 @@ where
 }
 
 /// Owned storage.
-pub trait OwnedStore<T>: BaseStore<T, Owned = Self> {
+pub trait OwnedStore<T>: MutStore<T, Owned = Self> {
     fn empty() -> Self;
 
     fn zeros(shape: &[usize]) -> Self

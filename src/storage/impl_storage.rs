@@ -1,6 +1,6 @@
 use num::Zero;
 
-use super::{BaseStore, OwnedStore, OwnedUniStore, UniStore};
+use super::{BaseStore, MutStore, OwnedStore, OwnedUniStore, UniStore};
 
 impl<T: Clone> BaseStore<T> for Vec<T> {
     #[inline]
@@ -35,3 +35,5 @@ impl<T: Clone> OwnedUniStore<T> for Vec<T> {
         self.push(val);
     }
 }
+
+impl<T: Clone> MutStore<T> for Vec<T> {}
