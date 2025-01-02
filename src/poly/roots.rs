@@ -2,6 +2,7 @@ use crate::{
     poly2::UniPoly,
     util::{
         complex::{c_from_f128, c_neg, c_sqrt, c_to_f128},
+        doc_macros::{panic_t_from_f64, panic_t_to_f64},
         vec::slice_mean,
     },
     OwnedPoly, Poly, Poly2, RealScalar,
@@ -83,6 +84,10 @@ pub struct RootFinderSettings<'a, T> {
 }
 
 impl<'a, T: RealScalar> RootFinderSettings<'a, T> {
+    ///
+    /// # Panics
+    #[doc = panic_t_from_f64!()]
+    #[must_use]
     pub fn new(epsilon: T, max_iter: usize) -> Self {
         Self {
             epsilon: epsilon.clone(),
@@ -95,32 +100,36 @@ impl<'a, T: RealScalar> RootFinderSettings<'a, T> {
             },
             multiples_handling_mode: MultiplesHandlingMode::BroadcastBest {
                 // TODO: tune ratio
-                detection_epsilon: epsilon * T::from_f64(1.5).expect("overflow"),
+                detection_epsilon: epsilon * T::from_f64(1.5).expect("should fit in T"),
             },
             initial_guess_pool: &[],
             initial_guess_mode: InitialGuessMode::RandomAnnulus {
-                bias: T::from_f64(0.5).expect("overflow"),
-                perturbation: T::from_f64(0.5).expect("overflow"),
+                bias: T::from_f64(0.5).expect("should fit in T"),
+                perturbation: T::from_f64(0.5).expect("should fit in T"),
                 seed: 1,
             },
         }
     }
 
+    #[must_use]
     pub fn with_polihing_mode(mut self, mode: PolishingMode<T>) -> Self {
         self.polishing_mode = mode;
         self
     }
 
+    #[must_use]
     pub fn with_multiples_handling_mode(mut self, mode: MultiplesHandlingMode<T>) -> Self {
         self.multiples_handling_mode = mode;
         self
     }
 
+    #[must_use]
     pub fn with_initial_guess_pool(mut self, pool: &'a [Complex<T>]) -> Self {
         self.initial_guess_pool = pool;
         self
     }
 
+    #[must_use]
     pub fn with_initial_guess_mode(mut self, mode: InitialGuessMode<T>) -> Self {
         self.initial_guess_mode = mode;
         self
@@ -134,6 +143,9 @@ impl<T: RealScalar> Poly<T> {
     /// - Solver did not converge within `max_iter` iterations
     /// - Some other edge-case was encountered which could not be handled (please
     ///   report this, as we can make this solver more robust!)
+    ///
+    /// # Panics
+    #[doc = panic_t_to_f64!()]
     pub fn roots(&self, settings: RootFinderSettings<'_, T>) -> Result<T> {
         let RootFinderSettings {
             epsilon,
@@ -220,7 +232,7 @@ impl<T: RealScalar> Poly<T> {
                 let roots = roots.iter().cloned().map(|z| c_to_f128(z)).collect_vec();
                 newton_parallel(
                     &mut this,
-                    Some(f128::from(epsilon.to_f64().expect("overflow"))),
+                    Some(f128::from(epsilon.to_f64().expect("should fit in f64"))),
                     Some(max_iter),
                     &roots,
                 )
@@ -406,7 +418,7 @@ fn best_multiples<T: RealScalar>(
 }
 
 fn average_multiples<T: RealScalar>(
-    poly: &Poly<T>,
+    _poly: &Poly<T>,
     groups: Vec<Roots<T>>,
     do_broadcast: bool,
 ) -> Roots<T> {

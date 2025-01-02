@@ -2,13 +2,11 @@
 
 use std::cmp::Ordering;
 
-use num::{Complex, FromPrimitive, One, ToPrimitive, Zero};
+use num::{Complex, One, Zero};
 
 use crate::RealScalar;
 
 use f128::f128;
-
-use super::vec::slice_mean;
 
 /// cast complex to primitive
 pub(crate) fn c_to_f64<T: RealScalar>(z: Complex<T>) -> Complex<f64> {
@@ -98,11 +96,6 @@ pub(crate) fn complex_fmt<T: std::fmt::Display + Zero + One + PartialEq>(c: &Com
     }
 }
 
-pub fn complex_mean<T: RealScalar>(v: &[Complex<T>]) -> Complex<T> {
-    let (res, ims): (Vec<_>, Vec<_>) = v.iter().map(|z| (z.re.clone(), z.im.clone())).unzip();
-    Complex::new(slice_mean(&res), slice_mean(&ims))
-}
-
 #[cfg(test)]
 mod test {
     use num::Complex;
@@ -111,18 +104,31 @@ mod test {
     fn c_to_f64() {
         let src: Complex<f32> = Complex::new(-12.34, 56.78);
         let dst = super::c_to_f64(src);
-        assert_eq!(f64::from(src.re), dst.re);
-        assert_eq!(f64::from(src.im), dst.im);
+
+        // strict comparison is what we're testing for
+        #[allow(clippy::float_cmp)]
+        {
+            assert_eq!(f64::from(src.re), dst.re);
+            assert_eq!(f64::from(src.im), dst.im);
+        }
     }
 
     #[test]
     fn c_from_f64() {
         let src: Complex<f64> = Complex::new(-12.34, 56.78);
         let dst: Complex<f32> = super::c_from_f64(src);
-        assert_eq!(src.re as f32, dst.re);
-        assert_eq!(src.im as f32, dst.im);
+
+        // strict comparison is what we're testing for
+        #[allow(clippy::float_cmp)]
+        #[allow(clippy::cast_possible_truncation)]
+        {
+            assert_eq!(src.re as f32, dst.re);
+            assert_eq!(src.im as f32, dst.im);
+        }
     }
 
+    // strict comparison is what we're testing for
+    #[allow(clippy::float_cmp)]
     #[test]
     fn c_arg() {
         let src = Complex::new(0.25, 0.75);
@@ -138,18 +144,24 @@ mod test {
         assert_eq!(super::c_arg(src), src.arg());
     }
 
+    // strict comparison is what we're testing for
+    #[allow(clippy::float_cmp)]
     #[test]
     fn c_exp() {
         let src = Complex::new(0.25, -0.75);
         assert_eq!(super::c_exp(src), src.exp());
     }
 
+    // strict comparison is what we're testing for
+    #[allow(clippy::float_cmp)]
     #[test]
     fn c_powf() {
         let src = Complex::new(0.25, -0.75);
         assert_eq!(super::c_powf(src, 1.23), src.powf(1.23));
     }
 
+    // strict comparison is what we're testing for
+    #[allow(clippy::float_cmp)]
     #[test]
     fn c_sqrt() {
         let src = Complex::new(0.25, -0.75);

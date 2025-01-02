@@ -10,15 +10,6 @@ use crate::{util::float::f64_make_safe, Poly, Poly64, RealScalar};
 
 use super::float::f64_make_nonzero;
 
-macro_rules! assert_not_prod {
-    () => {
-        #[cfg(not(debug_assertions))]
-        {
-            panic!("cannot use testing api in production, because it may change between minor or patch versions with no warning");
-        }
-    };
-}
-
 struct RandStreamF64 {
     state: Rng,
 }
