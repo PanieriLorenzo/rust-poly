@@ -143,7 +143,7 @@ where
 /// Univariate polynomial
 pub trait UniPoly<T>: Poly<T>
 where
-    Self::Owned: OwnedPoly<T>,
+    Self::Owned: OwnedUniPoly<T>,
     Self::BackingStorage: UniStore<T>,
     // HACK: can't this diamond be flattened?
     <Self::BackingStorage as ToOwned>::Owned: OwnedUniStore<T>,
@@ -183,6 +183,30 @@ where
         );
         Self::Owned::_from_store(v)
     }
+
+    /// Get the nth term of the polynomial as a new polynomial
+    ///
+    /// Will return None if out of bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    /// use num::Complex;
+    /// use num::One;
+    ///
+    /// let p  = poly![1.0, 2.0, 3.0];
+    /// assert_eq!(p.get_term(1).unwrap(), poly![0.0, 2.0]);
+    /// ```
+    #[must_use]
+    fn get_term(&self, degree: i64) -> Option<Self::Owned>
+    where
+        T: Clone + num::Zero,
+    {
+        Some(Self::Owned::term(
+            self._as_store().iter().nth(degree as usize)?.clone(),
+            degree,
+        ))
+    }
 }
 
 pub trait OwnedPoly<T>: Poly<T, Owned = Self>
@@ -218,6 +242,14 @@ where
         let offset = p1.1.clone() - slope.clone() * p1.0;
         let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[2], [offset, slope]);
         Self::_from_store(v)
+    }
+
+    fn term(coeff: T, degree: i64) -> Self
+    where
+        T: Clone + num::Zero,
+    {
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[1], [coeff]);
+        Self::_from_store(v).shift_up(degree as usize)
     }
 
     /// Fit a polynomial to a set of points or constraints on the derivatives

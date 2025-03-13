@@ -232,27 +232,6 @@ impl<T: RealScalar> Poly<T> {
     pub fn is_empty(&self) -> bool {
         self.size() == 0
     }
-
-    /// Get the nth term of the polynomial as a new polynomial
-    ///
-    /// Will return None if out of bounds.
-    ///
-    /// # Examples
-    /// ```
-    /// use rust_poly::{poly, Poly};
-    /// use num::Complex;
-    /// use num::One;
-    ///
-    /// let p  = poly![1.0, 2.0, 3.0];
-    /// assert_eq!(p.get_term(1).unwrap(), poly![0.0, 2.0]);
-    /// ```
-    #[must_use]
-    pub fn get_term(&self, degree: u32) -> Option<Self> {
-        if degree as usize >= self.len_raw() {
-            return None;
-        }
-        Some(Self::term(self.as_slice()[degree as usize].clone(), degree))
-    }
 }
 
 impl<T: RealScalar + PartialOrd> Poly<T> {
