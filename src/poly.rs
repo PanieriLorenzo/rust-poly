@@ -188,6 +188,11 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
         }
         self.0[0].is_one()
     }
+
+    fn size(&self) -> usize {
+        debug_assert!(self.is_normalized());
+        self.len_raw()
+    }
 }
 
 impl<T: RealScalar> UniPoly<Complex<T>> for Poly<T> {}
@@ -213,15 +218,19 @@ impl<T: RealScalar> Poly<T> {
         Self::new(&[Complex::zero(), complex!(T::one())]).pow(degree) * coeff
     }
 
+    // TODO: do not remove this before 1.0, as it would break a lot of people's code
+    #[deprecated(note = "use Poly::size instead")]
+    #[inline]
     #[must_use]
     pub fn len(&self) -> usize {
-        debug_assert!(self.is_normalized());
-        self.len_raw()
+        self.size()
     }
 
+    // TODO: do not remove this before 1.0, as it would break a lot of people's code
+    #[deprecated(note = "use Poly::size() == 0, or Poly::is_zero where applicable")]
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.size() == 0
     }
 
     /// Compute the conjugate polynomial, that is a polynomial where every

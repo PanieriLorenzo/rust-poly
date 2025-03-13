@@ -55,6 +55,9 @@ where
     /// polynomials. As the degree of zero polynomials is undefined.
     fn degree_usize(&self) -> usize;
 
+    /// The total number of coefficients in the polynomial.
+    fn size(&self) -> usize;
+
     /// The degree of a polynomial (the maximum exponent)
     ///
     /// Note that this will return `-1` for zero polynomials. The degree of
