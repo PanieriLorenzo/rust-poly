@@ -4,7 +4,7 @@ use itertools::Itertools;
 use num::{Complex, One, Zero};
 
 use crate::{
-    poly2::{OwnedPoly, UniPoly},
+    poly2::{OwnedPoly, OwnedUniPoly, UniPoly},
     util::{
         complex::{c_neg, complex_fmt, complex_sort_mut},
         doc_macros::panic_absurd_size,
@@ -192,32 +192,11 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
 
 impl<T: RealScalar> UniPoly<Complex<T>> for Poly<T> {}
 
+impl<T: RealScalar> OwnedUniPoly<Complex<T>> for Poly<T> {}
+
 impl<T: RealScalar> Poly<T> {
     pub fn new(coeffs: &[Complex<T>]) -> Self {
         Self(coeffs.to_owned()).normalize()
-    }
-
-    /// Line between two points with complex coordinates.
-    ///
-    /// Note that the points are determined by two complex numbers, so they are
-    /// in a four dimensional space. Leave the imaginary component as zero for lines
-    /// in a 2D plane.
-    ///
-    /// # Examples
-    /// ```
-    /// use rust_poly::Poly;
-    /// use num::Complex;
-    /// use num::{One, Zero};
-    ///
-    /// let p1 = (Complex::new(-1.0, 0.0), Complex::new(2.0, 0.0));
-    /// let p2 = (Complex::new(2.0, 0.0), Complex::new(-1.0, 0.0));
-    ///
-    /// assert_eq!(Poly::line_from_points(p1, p2).eval_point(Complex::one()), Complex::zero());
-    /// ```
-    pub fn line_from_points(p1: (Complex<T>, Complex<T>), p2: (Complex<T>, Complex<T>)) -> Self {
-        let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
-        let offset = p1.1.clone() - slope.clone() * p1.0;
-        Poly::new(&[offset, slope])
     }
 
     /// Create a polynomial from a single term (coefficient + degree)

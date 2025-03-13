@@ -162,3 +162,41 @@ pub trait OwnedPoly<T>: Poly<T, Owned = Self> {
 
     fn one() -> Self;
 }
+
+pub trait OwnedUniPoly<T>: OwnedPoly<T> + UniPoly<T>
+where
+    <Self::BackingStorage as ToOwned>::Owned: OwnedUniStore<T>,
+    <Self::Owned as Poly<T>>::BackingStorage: OwnedUniStore<T>,
+{
+    /// # Examples
+    /// ```
+    /// use rust_poly::Poly;
+    /// use num::Complex;
+    /// use num::{One, Zero};
+    ///
+    /// let p1 = (Complex::new(-1.0, 0.0), Complex::new(2.0, 0.0));
+    /// let p2 = (Complex::new(2.0, 0.0), Complex::new(-1.0, 0.0));
+    ///
+    /// assert_eq!(Poly::line_from_points(p1, p2).eval_point(Complex::one()), Complex::zero());
+    /// ```
+    fn line_from_points(p1: (T, T), p2: (T, T)) -> Self
+    where
+        T: Clone + Sub<Output = T> + Div<Output = T> + Mul<Output = T>,
+    {
+        let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
+        let offset = p1.1.clone() - slope.clone() * p1.0;
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter([offset, slope]);
+        Self::_from_store(v)
+    }
+
+    /// Fit a polynomial to a set of points or constraints on the derivatives
+    /// of the polynomial at these points.
+    ///
+    /// Points or constraints are given as a list of tuples, the first value
+    /// is the x coordinate, the second is the y coordinate, the final value
+    /// is the order of the derivative. For simple polynomial interpolation,
+    /// without any constraints on the derivatives, the last value should be 0.
+    fn fit(constraints: &[(T, T, usize)]) -> Self {
+        todo!()
+    }
+}
