@@ -20,6 +20,10 @@ where
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
         T: 'a;
+
+    fn shape(&self) -> &[usize];
+
+    fn ndim(&self) -> usize;
 }
 
 /// Mutable storage, either borrowed or owned.
@@ -43,6 +47,8 @@ pub trait OwnedStore<T>: MutStore<T, Owned = Self> {
     fn zeros(shape: &[usize]) -> Self
     where
         T: Zero;
+
+    fn from_iter(shape: &[usize], values: impl IntoIterator<Item = T>) -> Self;
 }
 
 /// Growable uni-dimensional storage, e.g. [`Vec`].
@@ -55,12 +61,12 @@ pub trait OwnedUniStore<T>: UniStore<T> + OwnedStore<T> {
         }
     }
 
-    fn from_iter(values: impl IntoIterator<Item = T>) -> Self
-    where
-        Self: Sized,
-    {
-        let mut v = Self::empty();
-        v.extend(values);
-        v
-    }
+    // fn from_iter(values: impl IntoIterator<Item = T>) -> Self
+    // where
+    //     Self: Sized,
+    // {
+    //     let mut v = Self::empty();
+    //     v.extend(values);
+    //     v
+    // }
 }

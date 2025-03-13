@@ -2,6 +2,8 @@
 
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
+use num::complex::ComplexFloat;
+
 use crate::{
     num::Zero,
     poly2,
@@ -33,7 +35,9 @@ pub trait Poly<T>:
 where
     Self::Owned: OwnedPoly<T>,
     Self: Sized,
-    <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned: OwnedStore<T>,
+    // <<Self as poly2::Poly<T>>::BackingStorage as ToOwned>::Owned: OwnedStore<T>,
+    <Self::BackingStorage as ToOwned>::Owned: OwnedStore<T>,
+    <Self::Owned as Poly<T>>::BackingStorage: OwnedStore<T>,
 {
     type BackingStorage: BaseStore<T>;
 
@@ -117,6 +121,23 @@ where
             *y = self.eval(x.clone());
         }
     }
+
+    /// Compute the conjugate polynomial, that is a polynomial where every
+    /// coefficient is conjugated.
+    ///
+    /// To evaluate a conjugate polynomial, you must evaluate it at the conjugate
+    /// of the input, i.e. `poly.conj().eval(z.conj())`
+    #[must_use]
+    fn conj(&self) -> Self::Owned
+    where
+        T: Clone + ComplexFloat,
+    {
+        let data = self._as_store();
+        Self::Owned::_from_store(<Self::Owned as Poly<T>>::BackingStorage::from_iter(
+            data.shape(),
+            data.iter().cloned().map(|z| z.conj()),
+        ))
+    }
 }
 
 /// Univariate polynomial
@@ -140,7 +161,7 @@ where
         T: Zero + Clone,
     {
         let mut v = <Self::Owned as Poly<T>>::BackingStorage::zeros(&[n]);
-        v.extend(self.coeffs().cloned());
+        v.extend(self._as_store().iter().cloned());
         Self::Owned::_from_store(v)
     }
 
@@ -155,12 +176,19 @@ where
     where
         T: Clone,
     {
-        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(self.coeffs().skip(n).cloned());
+        let s = self._as_store();
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(
+            s.shape(),
+            s.iter().skip(n).cloned(),
+        );
         Self::Owned::_from_store(v)
     }
 }
 
-pub trait OwnedPoly<T>: Poly<T, Owned = Self> {
+pub trait OwnedPoly<T>: Poly<T, Owned = Self>
+where
+    Self::BackingStorage: OwnedStore<T>,
+{
     fn zero() -> Self;
 
     fn one() -> Self;
@@ -188,7 +216,7 @@ where
     {
         let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
         let offset = p1.1.clone() - slope.clone() * p1.0;
-        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter([offset, slope]);
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[2], [offset, slope]);
         Self::_from_store(v)
     }
 

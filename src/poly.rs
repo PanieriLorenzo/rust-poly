@@ -218,7 +218,7 @@ impl<T: RealScalar> Poly<T> {
         Self::new(&[Complex::zero(), complex!(T::one())]).pow(degree) * coeff
     }
 
-    // TODO: do not remove this before 1.0, as it would break a lot of people's code
+    // TODO: wait a bit before removing, as it would break a lot of people's code
     #[deprecated(note = "use Poly::size instead")]
     #[inline]
     #[must_use]
@@ -226,21 +226,11 @@ impl<T: RealScalar> Poly<T> {
         self.size()
     }
 
-    // TODO: do not remove this before 1.0, as it would break a lot of people's code
+    // TODO: wait a bit before removing, as it would break a lot of people's code
     #[deprecated(note = "use Poly::size() == 0, or Poly::is_zero where applicable")]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.size() == 0
-    }
-
-    /// Compute the conjugate polynomial, that is a polynomial where every
-    /// coefficient is conjugated.
-    ///
-    /// To evaluate a conjugate polynomial, you must evaluate it at the conjugate
-    /// of the input, i.e. `poly.conj().eval(z.conj())`
-    #[must_use]
-    pub fn conj(&self) -> Self {
-        Self(self.0.iter().cloned().map(|z| z.conj()).collect_vec()).normalize()
     }
 
     /// Get the nth term of the polynomial as a new polynomial
