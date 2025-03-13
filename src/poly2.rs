@@ -11,6 +11,8 @@ use crate::{
 
 pub mod aliases;
 pub mod poly_base;
+pub mod roots;
+pub mod roots_base;
 
 /// A generic polynomial
 ///
