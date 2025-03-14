@@ -5,14 +5,17 @@ use std::{
     ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
-use num::{complex::ComplexFloat, FromPrimitive, One};
+use num::{complex::ComplexFloat, Complex, FromPrimitive, One};
 
 use crate::{
     num::Zero,
     poly2,
+    scalar::ComplexScalar,
     storage::{BaseStore, MutStore, OwnedStore, OwnedUniStore, UniStore},
     util::doc_macros::panic_absurd_size,
 };
+
+use itertools::Itertools;
 
 pub mod aliases;
 pub mod poly_base;
@@ -148,6 +151,14 @@ where
     #[inline]
     fn as_slice(&self) -> &[T] {
         self.__as_store().as_slice()
+    }
+
+    #[must_use]
+    fn to_vec(&self) -> Vec<T>
+    where
+        T: Clone,
+    {
+        Vec::from(self.as_slice())
     }
 }
 
@@ -295,6 +306,15 @@ where
     fn as_mut_slice(&mut self) -> &mut [T] {
         self.__as_store_mut().as_mut_slice()
     }
+
+    #[inline]
+    #[must_use]
+    fn coeffs_mut<'a>(&'a mut self) -> impl Iterator<Item = &'a mut T>
+    where
+        T: 'a,
+    {
+        self.as_mut_slice().iter_mut()
+    }
 }
 
 pub trait OwnedPoly<T>: Poly<T, Owned = Self>
@@ -343,6 +363,20 @@ where
     {
         let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[1], [coeff]).unwrap();
         Self::__from_store(v).shift_up(degree as usize)
+    }
+
+    fn from_iter(iter: impl IntoIterator<Item = T>) -> Self {
+        let data = iter.into_iter().collect_vec();
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[data.len()], data).unwrap();
+        Self::__from_store(v)
+    }
+
+    #[must_use]
+    fn from_real_iterator(coeffs: impl IntoIterator<Item = T::ComponentScalar>) -> Self
+    where
+        T: ComplexScalar,
+    {
+        Self::from_iter(coeffs.into_iter().map(|x| T::from_real(x)))
     }
 
     /// Fit a polynomial to a set of points or constraints on the derivatives

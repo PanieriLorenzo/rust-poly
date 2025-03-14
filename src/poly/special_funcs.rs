@@ -1,5 +1,6 @@
 use crate::{
     poly2::OwnedUniPoly,
+    scalar::ComplexScalar,
     util::{
         casting::{usize_to_f64, usize_to_i32, usize_to_u32},
         doc_macros::{self, panic_absurd_size},

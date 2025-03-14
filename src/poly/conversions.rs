@@ -1,7 +1,7 @@
 use itertools::Itertools;
-use num::Complex;
+use num::{complex::ComplexFloat, Complex};
 
-use crate::{Poly, Poly2, RealScalar};
+use crate::{scalar::ComplexScalar, OwnedUniPoly, Poly, Poly2, RealScalar};
 
 impl<T: RealScalar> Poly<T> {
     #[deprecated = "use Poly::as_slice().as_ptr() instead"]
@@ -16,49 +16,50 @@ impl<T: RealScalar> Poly<T> {
     }
 
     /// Iterate over coefficients, from the least significant
+    #[deprecated = "use Poly::coeffs instead"]
     pub fn iter(&self) -> std::slice::Iter<'_, Complex<T>> {
         self.0.as_slice().iter()
     }
 
     /// Iterate over coefficients, from the least significant
+    #[deprecated = "use Poly::coeffs_mut instead"]
     pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Complex<T>> {
         self.0.as_mut_slice().iter_mut()
     }
 
-    #[must_use]
-    pub fn to_vec(&self) -> Vec<Complex<T>> {
-        Vec::from(self.as_slice())
-    }
-
     /// The same as `Poly::new()`
+    #[deprecated = "use From instead"]
     pub fn from_complex_slice(value: &[Complex<T>]) -> Self {
         Self::new(value)
     }
 
     #[allow(clippy::needless_pass_by_value)]
+    #[deprecated = "use From instead"]
     #[must_use]
     pub fn from_complex_vec(value: Vec<Complex<T>>) -> Self {
         Self::new(value.as_slice())
     }
 
+    #[deprecated = "use From instead"]
     #[must_use]
-    pub fn from_real_slice(value: &[T]) -> Self {
+    pub fn from_real_slice(value: &[T]) -> Self
+    where
+        Complex<T>: ComplexScalar<ComponentScalar = T>,
+    {
         Self::from_real_iterator(value.iter().cloned())
     }
 
+    #[deprecated = "use From instead"]
     #[allow(clippy::needless_pass_by_value)]
     #[must_use]
-    pub fn from_real_vec(value: Vec<T>) -> Self {
+    pub fn from_real_vec(value: Vec<T>) -> Self
+    where
+        Complex<T>: ComplexScalar<ComponentScalar = T>,
+    {
         Self::from_real_slice(value.as_slice())
     }
 
-    #[must_use]
-    pub fn from_real_iterator(coeffs: impl Iterator<Item = T>) -> Self {
-        let res = Self::from_complex_iterator(coeffs.map(|x| Complex::from(x)));
-        debug_assert!(res.is_normalized());
-        res
-    }
-
+    #[deprecated = "use Poly::from_iter instead"]
     #[must_use]
     pub fn from_complex_iterator(coeffs: impl Iterator<Item = Complex<T>>) -> Self {
         Self(coeffs.collect_vec()).normalize()

@@ -87,16 +87,20 @@ macro_rules! poly {
         <$crate::Poly<_> as $crate::OwnedPoly<$crate::num::Complex<_>>>::zero()
     }};
     (($re:expr, $im:expr); $n:expr) => {{
-        $crate::Poly::from_complex_vec(vec![$crate::complex!($re, $im); $n])
+        use $crate::OwnedUniPoly;
+        $crate::Poly::from_iter(vec![$crate::complex!($re, $im); $n])
     }};
     ($elem:expr; $n:expr) => {{
-        $crate::Poly::from_real_vec(vec![$elem; $n])
+        use $crate::OwnedUniPoly;
+        $crate::Poly::from_iter(vec![$crate::complex!($elem); $n])
     }};
     ($(($re:expr, $im:expr)),+ $(,)?) => {{
-        $crate::Poly::from_complex_vec(vec![$($crate::complex!($re, $im)),*])
+        use $crate::OwnedUniPoly;
+        $crate::Poly::from_iter(vec![$($crate::complex!($re, $im)),*])
     }};
     ($($elems:expr),+ $(,)?) => {{
-        $crate::Poly::from_real_vec(vec![$($elems),*])
+        use $crate::OwnedUniPoly;
+        $crate::Poly::from_iter(vec![$($crate::complex!($elems)),*])
     }};
 }
 

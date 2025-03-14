@@ -11,13 +11,3 @@ impl<T: RealScalar> Poly<T> {
         &mut self.0[n - idx - 1]
     }
 }
-
-impl<T: RealScalar> Poly<T> {
-    /// Return a mutable slice containing the coefficient in ascending order of degree
-    ///
-    /// This is an alias for [`Poly::as_mut_slice()`] for API consistency.
-    #[inline]
-    pub fn coeffs_mut(&mut self) -> &mut [Complex<T>] {
-        self.0.as_mut_slice()
-    }
-}

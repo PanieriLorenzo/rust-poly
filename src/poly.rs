@@ -24,7 +24,7 @@ pub struct Poly<T: RealScalar>(pub(crate) Vec<Complex<T>>);
 
 impl<T: RealScalar> OwnedPoly<Complex<T>> for Poly<T> {
     fn zero() -> Self::Owned {
-        Self::from_real_slice(&[T::zero()])
+        Self(vec![Complex::<T>::zero()])
     }
 
     fn one() -> Self::Owned {

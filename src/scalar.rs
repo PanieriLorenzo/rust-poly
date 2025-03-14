@@ -1,7 +1,11 @@
 //! Traits for the coefficients of polynomials
 
 use f128::f128;
-use num::{traits::Float, Complex, FromPrimitive, Num, ToPrimitive};
+use num::{
+    complex::{Complex32, Complex64},
+    traits::Float,
+    Complex, FromPrimitive, Num, ToPrimitive,
+};
 use std::{
     fmt::Display,
     ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign},
@@ -46,16 +50,26 @@ impl Rational for f128 {
     }
 }
 
-// pub trait ComplexScalar: Scalar {
-//     type ComponentScalar;
-// }
+pub trait ComplexScalar {
+    type ComponentScalar;
 
-// impl ComplexScalar for Complex64 {
-//     type ComponentScalar = f64;
-// }
-// impl ComplexScalar for Complex32 {
-//     type ComponentScalar = f32;
-// }
+    fn from_real(re: Self::ComponentScalar) -> Self;
+}
+
+impl ComplexScalar for Complex64 {
+    type ComponentScalar = f64;
+
+    fn from_real(re: Self::ComponentScalar) -> Self {
+        Complex64::from_f64(re).expect("infallible")
+    }
+}
+impl ComplexScalar for Complex32 {
+    type ComponentScalar = f32;
+
+    fn from_real(re: Self::ComponentScalar) -> Self {
+        Complex32::from_f32(re).expect("infallible")
+    }
+}
 
 /// The trait bounds necessary to provide the basic functionality of this crate.
 #[allow(clippy::module_name_repetitions)]
