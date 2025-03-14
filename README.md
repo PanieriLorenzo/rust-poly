@@ -7,6 +7,8 @@ Numeric manipulation of real and complex polynomials.
 > Note: this crate is still in development and might change in the future.
 
 Basic Goals:
+- [ ] feature parity with [numpy.poly](https://numpy.org/doc/stable/reference/generated/numpy.poly.html)
+- [ ] feature parity with [numpy.polynomial](https://numpy.org/doc/stable/reference/routines.polynomials-package.html#module-numpy.polynomial)
 - [x] addition, subtraction and multiplication of complex and real univariate polynomials
 - [x] long division of complex and real univariate polynomials
 - [x] finding complex roots of polynomials
