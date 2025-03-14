@@ -13,7 +13,6 @@ use crate::{
 };
 
 mod base;
-mod calculus;
 mod conversions;
 mod impl_num;
 mod indexing;

@@ -1,5 +1,6 @@
 use crate::{
     num::{Complex, One, Zero},
+    poly2::UniPoly,
     roots::{self},
     util::{
         self,

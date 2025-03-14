@@ -4,6 +4,7 @@ use itertools::Itertools;
 
 use crate::{
     num::{Complex, Zero},
+    poly2::UniPoly,
     scalar::Rational,
     util::{
         casting::usize_to_f64,

@@ -1,4 +1,4 @@
-use rust_poly::{complex, num::CheckedDiv, poly, Poly2, Poly64};
+use rust_poly::{complex, num::CheckedDiv, poly, Poly2, Poly64, UniPoly};
 
 /// Check that zero polynomials behave as expected
 #[test]
@@ -21,10 +21,10 @@ fn zero_polynomial_properties() {
     assert_eq!(zp.eval(complex!(100.0, -100.0)), complex!(0.0, 0.0));
 
     // composition with any polynomial should yield zero
-    assert_eq!(zp.clone().compose(&poly![1.0, 2.0, 3.0]), zp);
+    assert_eq!(zp.clone().compose(poly![1.0, 2.0, 3.0]), zp);
 
     // composition of any polynomial with zero should yield leading coefficient
-    assert_eq!(poly![1.0, 2.0, 3.0].compose(&zp), poly![1.0]);
+    assert_eq!(poly![1.0, 2.0, 3.0].compose(zp.clone()), poly![1.0]);
 
     // derivative of a constant should be zero
     assert_eq!(poly![1.0].diff(), zp);

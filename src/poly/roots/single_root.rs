@@ -1,4 +1,4 @@
-use crate::{num::Complex, Poly, Poly2, RealScalar};
+use crate::{num::Complex, poly2::UniPoly, Poly, Poly2, RealScalar};
 
 mod naive;
 pub use naive::naive;

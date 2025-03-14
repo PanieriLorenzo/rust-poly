@@ -112,7 +112,7 @@ pub use util::__testing;
 pub(crate) mod base;
 
 pub(crate) mod poly2;
-pub use poly2::{OwnedPoly, Poly as Poly2};
+pub use poly2::{OwnedPoly, OwnedUniPoly, Poly as Poly2, UniPoly};
 pub(crate) mod storage;
 
 pub type Poly32 = Poly<f32>;

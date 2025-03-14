@@ -1,8 +1,11 @@
 //! The new API, will replace the [`poly`] module.
 
-use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use std::{
+    fmt::Display,
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
+};
 
-use num::{complex::ComplexFloat, One};
+use num::{complex::ComplexFloat, FromPrimitive, One};
 
 use crate::{
     num::Zero,
@@ -222,6 +225,54 @@ where
         let x_trans = self.compose(Self::Owned::_from_store(s));
         x_trans + Self::Owned::constant(y)
     }
+
+    /// Derivative
+    ///
+    /// # Panics
+    /// On very large degree polynomials coefficients may overflow in `T`
+    #[must_use]
+    fn diff(self) -> Self::Owned
+    where
+        T: FromPrimitive + Clone + Mul<T, Output = T>,
+    {
+        // derivative of constant is zero
+        if self.degree() == 0 {
+            return Self::Owned::zero();
+        }
+
+        let coeffs = (0..self.size())
+            // HACK: this douple try_from is because Complex<f32> or Complex<f64>
+            //       does not implement TryFrom<usize>, but do implement TryFrom<u64>
+            .map(|x| T::from_usize(x).expect("overflow"))
+            // .map(|x| Complex::new(x, T::zero()))
+            .zip(self.coeffs())
+            .map(|(n, c)| n * c.clone())
+            .skip(1); // shift degrees down
+        let store = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[self.size() - 1], coeffs)
+            .unwrap();
+        Self::Owned::_from_store(store)
+    }
+
+    /// Antiderivative (with C=0)
+    ///
+    /// # Panics
+    /// On very large degree polynomials coefficients may overflow in `T`
+    #[must_use]
+    fn integral(self) -> Self::Owned
+    where
+        T: Zero + FromPrimitive + Clone + Div<T, Output = T>,
+    {
+        let coeffs = itertools::chain(
+            [T::zero()],
+            (1..=self.size())
+                .map(|x| T::from_usize(x).expect("overflow"))
+                .zip(self.coeffs())
+                .map(|(n, c)| c.clone() / n),
+        );
+        let store = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[self.size() + 1], coeffs)
+            .unwrap();
+        Self::Owned::_from_store(store)
+    }
 }
 
 pub trait OwnedPoly<T>: Poly<T, Owned = Self>
@@ -281,5 +332,36 @@ where
     /// without any constraints on the derivatives, the last value should be 0.
     fn fit(constraints: &[(T, T, usize)]) -> Self {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::poly2::{Poly, UniPoly};
+
+    #[test]
+    fn diff() {
+        let p = poly![1.0f64, 2.0, 3.0];
+        assert_eq!(p.diff(), poly![2.0, 6.0]);
+    }
+
+    /// This was a bug
+    #[test]
+    fn diff1() {
+        let one = poly![1.0];
+        assert_eq!(one.diff().degree(), -1);
+    }
+
+    #[test]
+    fn integral() {
+        let p = poly![1.0, 2.0, 3.0];
+        assert_eq!(p.integral(), poly![0.0, 1.0, 1.0, 1.0]);
+    }
+
+    #[test]
+    fn integral_diff() {
+        let p = poly![1.0, 2.0, 3.0];
+        let q = p.clone().integral().diff();
+        assert_eq!(p, q);
     }
 }
