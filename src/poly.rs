@@ -204,20 +204,6 @@ impl<T: RealScalar> Poly<T> {
         Self(coeffs.to_owned()).normalize()
     }
 
-    /// Create a polynomial from a single term (coefficient + degree)
-    ///
-    /// # Examples
-    /// ```
-    /// use rust_poly::{poly, Poly};
-    /// use num::Complex;
-    /// use num::One;
-    ///
-    /// assert_eq!(Poly::term(Complex::one(), 3), poly![0.0, 0.0, 0.0, 1.0]);
-    /// ```
-    pub fn term(coeff: Complex<T>, degree: u32) -> Self {
-        Self::new(&[Complex::zero(), complex!(T::one())]).pow(degree) * coeff
-    }
-
     // TODO: wait a bit before removing, as it would break a lot of people's code
     #[deprecated(note = "use Poly::size instead")]
     #[inline]

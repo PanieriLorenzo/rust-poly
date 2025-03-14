@@ -21,7 +21,7 @@ where
     where
         T: 'a;
 
-    fn shape(&self) -> &[usize];
+    fn shape(&self) -> Box<[usize]>;
 
     fn ndim(&self) -> usize;
 }
@@ -41,14 +41,17 @@ where
 }
 
 /// Owned storage.
-pub trait OwnedStore<T>: MutStore<T, Owned = Self> {
+pub trait OwnedStore<T>: MutStore<T, Owned = Self> + Sized {
     fn empty() -> Self;
 
     fn zeros(shape: &[usize]) -> Self
     where
         T: Zero;
 
-    fn from_iter(shape: &[usize], values: impl IntoIterator<Item = T>) -> Self;
+    /// Construct a store from a sequence of values and the shape, i.e. dimensions,
+    /// that the values should be arranged in. Returns `None` if the values do
+    /// not fit in the shape.
+    fn from_iter(shape: &[usize], values: impl IntoIterator<Item = T>) -> Option<Self>;
 }
 
 /// Growable uni-dimensional storage, e.g. [`Vec`].

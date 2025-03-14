@@ -7,7 +7,8 @@ use num::{traits::CheckedRem, CheckedDiv, Complex, One, Zero};
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 use crate::{
-    util::{casting::usize_to_u32, linalg::convolve_1d},
+    poly2::OwnedUniPoly,
+    util::{casting::usize_to_u32, doc_macros::panic_absurd_size, linalg::convolve_1d},
     OwnedPoly, Poly, Poly2, RealScalar,
 };
 
@@ -28,6 +29,7 @@ impl<T: RealScalar> Poly<T> {
     /// let expected1 = (poly![3.0], poly![-8.0, -4.0]);
     /// assert_eq!(c1.clone().div_rem(&c2).unwrap(), expected1);
     /// ```
+    #[doc = panic_absurd_size!()]
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_wrap)]
     #[must_use]
@@ -66,7 +68,7 @@ impl<T: RealScalar> Poly<T> {
                 let num_k = this.degree_raw();
                 let c = num_c / den_c;
                 let k = num_k - den_k;
-                let new_term = Self::term(c, usize_to_u32(k));
+                let new_term = Self::term(c, k.try_into().expect("degree is too big"));
                 this = this.clone() - new_term.clone() * other;
                 div = div + new_term;
             }

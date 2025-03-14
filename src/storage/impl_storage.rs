@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use num::Zero;
 
 use super::{BaseStore, MutStore, OwnedStore, OwnedUniStore, UniStore};
@@ -10,6 +11,16 @@ impl<T: Clone> BaseStore<T> for Vec<T> {
         T: 'a,
     {
         self.as_slice().iter()
+    }
+
+    #[inline]
+    fn shape(&self) -> Box<[usize]> {
+        [self.len()].into()
+    }
+
+    #[inline]
+    fn ndim(&self) -> usize {
+        1
     }
 }
 
@@ -26,6 +37,17 @@ impl<T: Clone> OwnedStore<T> for Vec<T> {
     {
         debug_assert_eq!(shape.len(), 1, "Vec is 1 dimensional");
         vec![T::zero(); shape[0]]
+    }
+
+    fn from_iter(shape: &[usize], values: impl IntoIterator<Item = T>) -> Option<Self> {
+        if shape.len() != 1 {
+            return None;
+        }
+        let res = values.into_iter().collect_vec();
+        if res.len() != shape[0] {
+            return None;
+        }
+        Some(res)
     }
 }
 

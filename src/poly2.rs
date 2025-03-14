@@ -133,10 +133,13 @@ where
         T: Clone + ComplexFloat,
     {
         let data = self._as_store();
-        Self::Owned::_from_store(<Self::Owned as Poly<T>>::BackingStorage::from_iter(
-            data.shape(),
-            data.iter().cloned().map(|z| z.conj()),
-        ))
+        Self::Owned::_from_store(
+            <Self::Owned as Poly<T>>::BackingStorage::from_iter(
+                &data.shape(),
+                data.iter().cloned().map(|z| z.conj()),
+            )
+            .unwrap(),
+        )
     }
 }
 
@@ -178,9 +181,10 @@ where
     {
         let s = self._as_store();
         let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(
-            s.shape(),
+            &s.shape(),
             s.iter().skip(n).cloned(),
-        );
+        )
+        .unwrap();
         Self::Owned::_from_store(v)
     }
 
@@ -240,7 +244,7 @@ where
     {
         let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
         let offset = p1.1.clone() - slope.clone() * p1.0;
-        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[2], [offset, slope]);
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[2], [offset, slope]).unwrap();
         Self::_from_store(v)
     }
 
@@ -248,7 +252,7 @@ where
     where
         T: Clone + num::Zero,
     {
-        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[1], [coeff]);
+        let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[1], [coeff]).unwrap();
         Self::_from_store(v).shift_up(degree as usize)
     }
 

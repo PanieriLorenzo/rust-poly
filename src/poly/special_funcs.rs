@@ -1,6 +1,8 @@
 use crate::{
+    poly2::OwnedUniPoly,
     util::{
         casting::{usize_to_f64, usize_to_i32, usize_to_u32},
+        doc_macros::{self, panic_absurd_size},
         luts::factorial_lut,
     },
     Poly, RealScalar,
@@ -60,12 +62,13 @@ impl<T: RealScalar + FromPrimitive> Poly<T> {
     }
 
     /// Get the nth [Bessel polynomial](https://en.wikipedia.org/wiki/Bessel_polynomials)
+    #[doc = panic_absurd_size!()]
     #[must_use]
     pub fn bessel(n: usize) -> Option<Self> {
         let mut poly = poly![];
         for k in 0..=n {
             let c = T::from_f64(coeff(n, k))?;
-            let term = Self::term(complex!(c), usize_to_u32(k));
+            let term = Self::term(complex!(c), k.try_into().expect("degree is too big"));
             poly = poly + term;
         }
         Some(poly)

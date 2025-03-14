@@ -120,6 +120,8 @@ pub type Poly64 = Poly<f64>;
 
 #[cfg(test)]
 mod tests {
+    use crate::poly2::OwnedUniPoly;
+
     use super::*;
     use num::{Complex, One, Zero};
 
