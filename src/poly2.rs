@@ -1,8 +1,8 @@
 //! The new API, will replace the [`poly`] module.
 
-use std::ops::{Add, Div, Mul, Rem, Sub};
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
-use num::complex::ComplexFloat;
+use num::{complex::ComplexFloat, One};
 
 use crate::{
     num::Zero,
@@ -106,7 +106,7 @@ where
     }
 
     /// Polynomial composition.
-    fn compose(&self, other: &Self) -> Self::Owned;
+    fn compose(&self, other: Self::Owned) -> Self::Owned;
 
     fn eval(&self, x: T) -> T;
 
@@ -211,6 +211,17 @@ where
             degree,
         ))
     }
+
+    /// Translate along x-axis and y-axis.
+    #[must_use]
+    fn translate(&self, x: T, y: T) -> Self::Owned
+    where
+        T: Neg<Output = T> + One,
+    {
+        let s = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[2], [-x, T::one()]).unwrap();
+        let x_trans = self.compose(Self::Owned::_from_store(s));
+        x_trans + Self::Owned::constant(y)
+    }
 }
 
 pub trait OwnedPoly<T>: Poly<T, Owned = Self>
@@ -220,6 +231,11 @@ where
     fn zero() -> Self;
 
     fn one() -> Self;
+
+    fn constant(val: T) -> Self {
+        let s = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[1], [val]).unwrap();
+        Self::_from_store(s)
+    }
 }
 
 pub trait OwnedUniPoly<T>: OwnedPoly<T> + UniPoly<T>

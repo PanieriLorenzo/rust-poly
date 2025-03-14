@@ -105,7 +105,7 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
     ///
     /// assert_eq!(f.clone().compose(g), f);
     #[must_use]
-    fn compose(&self, other: &Self) -> Self {
+    fn compose(&self, other: Self) -> Self {
         // invariant: polynomials are normalized
         debug_assert!(self.is_normalized());
         debug_assert!(other.is_normalized());
@@ -221,6 +221,8 @@ impl<T: RealScalar> Poly<T> {
 }
 
 impl<T: RealScalar + PartialOrd> Poly<T> {
+    // TODO: port this
+
     /// Monic polynomial from its complex roots.
     ///
     /// # Examples
@@ -246,19 +248,6 @@ impl<T: RealScalar + PartialOrd> Poly<T> {
             .map(|e| Self::new(&[c_neg(&e), Complex::<T>::one()]))
             .fold(Self::one(), |acc, x| acc * x)
             .normalize()
-    }
-}
-
-impl<T: RealScalar + PartialOrd> Poly<T> {
-    /// Translate along x-axis (or x-plane) and y-axis (or y-plane).
-    ///
-    /// Using complex coordinates means you'll effectively be translating in
-    /// 4D space.
-    #[must_use]
-    pub fn translate(mut self, x: Complex<T>, y: Complex<T>) -> Self {
-        self = self.compose(&Self::from_complex_slice(&[c_neg(&x), Complex::<T>::one()]));
-        self.0[0] += y;
-        self
     }
 }
 
@@ -298,7 +287,7 @@ impl<T: RealScalar + Display> Display for Poly<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::{poly, Poly2};
+    use crate::{poly, poly2::UniPoly, Poly2};
 
     #[test]
     fn pow() {
