@@ -389,6 +389,53 @@ where
     fn fit(constraints: &[(T, T, usize)]) -> Self {
         todo!()
     }
+
+    /// Get the nth [Chebyshev polynomial](https://en.wikipedia.org/wiki/Chebyshev_polynomials)
+    /// of the first kind.
+    ///
+    /// ```
+    /// use rust_poly::{poly, Poly};
+    ///
+    /// assert_eq!(Poly::cheby(2), poly![-1.0, 0.0, 2.0]);
+    /// assert_eq!(Poly::cheby(3), poly![0.0, -3.0, 0.0, 4.0]);
+    /// assert_eq!(Poly::cheby(4), poly![1.0, 0.0, -8.0, 0.0, 8.0])
+    /// ```
+    // TODO: technically it can panic in some extreme cases, would need to
+    //       do some boundary testing to write a proper doc comment
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    fn cheby1(n: usize) -> Self
+    where
+        T: Zero + One + FromPrimitive + Sub<T, Output = T>,
+    {
+        // TODO: make the first 32-ish explicit for performance
+        match n {
+            0 => Self::from_iter([T::one()]),
+            1 => Self::from_iter([T::zero(), T::one()]),
+            2 => Self::from_iter([
+                T::zero() - T::one(),
+                T::zero(),
+                T::from_u8(2).expect("overflow"),
+            ]),
+            3 => Self::from_iter([
+                T::zero(),
+                T::zero() - T::from_u8(3).expect("overflow"),
+                T::zero(),
+                T::from_u8(4).expect("overflow"),
+            ]),
+            4 => Self::from_iter([
+                T::one(),
+                T::zero(),
+                T::zero() - T::from_u8(8).expect("overflow"),
+                T::zero(),
+                T::from_u8(8).expect("overflow"),
+            ]),
+            _ => {
+                Self::from_iter([T::zero(), T::from_u8(2).expect("overflow")]) * Self::cheby1(n - 1)
+                    - Self::cheby1(n - 2)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
