@@ -8,7 +8,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 use crate::{
     poly2::OwnedUniPoly,
-    util::{casting::usize_to_u32, doc_macros::panic_absurd_size, linalg::convolve_1d},
+    util::{doc_macros::panic_absurd_size, linalg::convolve_1d},
     OwnedPoly, Poly, Poly2, RealScalar,
 };
 

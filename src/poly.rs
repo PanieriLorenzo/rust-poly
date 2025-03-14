@@ -1,14 +1,10 @@
 use std::fmt::Display;
 
-use itertools::Itertools;
 use num::{Complex, One, Zero};
 
 use crate::{
     poly2::{OwnedPoly, OwnedUniPoly, UniPoly},
-    util::{
-        complex::{c_neg, complex_fmt, complex_sort_mut},
-        doc_macros::panic_absurd_size,
-    },
+    util::complex::{c_neg, complex_fmt, complex_sort_mut},
     Poly2, RealScalar,
 };
 

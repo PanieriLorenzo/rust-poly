@@ -30,7 +30,7 @@ where
     /// For multi-dimensional
     /// containers, the order of the coefficients is undefined for now, but will
     /// be stabilized once/if multi-variate polynomials are implemented.
-    fn as_slice<'a>(&'a self) -> &'a [T];
+    fn as_slice(&self) -> &[T];
 
     fn shape(&self) -> Box<[usize]>;
 
@@ -43,7 +43,7 @@ where
     Self::Owned: OwnedStore<T>,
 {
     /// Slice into the backing store's data, the data should be stored as one contiguous region
-    fn as_mut_slice<'a>(&'a mut self) -> &'a mut [T];
+    fn as_mut_slice(&mut self) -> &mut [T];
 }
 
 /// Univariate storage.

@@ -1,15 +1,11 @@
 //! The new API, will replace the [`poly`] module.
 
-use std::{
-    fmt::Display,
-    ops::{Add, Div, Mul, Neg, Rem, Sub},
-};
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
-use num::{complex::ComplexFloat, Complex, FromPrimitive, One};
+use num::{complex::ComplexFloat, FromPrimitive, One};
 
 use crate::{
     num::Zero,
-    poly2,
     scalar::ComplexScalar,
     storage::{BaseStore, MutStore, OwnedStore, OwnedUniStore, UniStore},
     util::doc_macros::panic_absurd_size,
@@ -142,7 +138,7 @@ where
         Self::Owned::__from_store(
             <Self::Owned as Poly<T>>::BackingStorage::from_iter(
                 &data.shape(),
-                data.iter().cloned().map(|z| z.conj()),
+                data.iter().copied().map(num::complex::ComplexFloat::conj),
             )
             .unwrap(),
         )

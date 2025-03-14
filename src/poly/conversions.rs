@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use num::{complex::ComplexFloat, Complex};
+use num::Complex;
 
 use crate::{scalar::ComplexScalar, OwnedUniPoly, Poly, Poly2, RealScalar};
 

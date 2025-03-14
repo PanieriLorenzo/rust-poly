@@ -1,12 +1,11 @@
 use crate::{
     poly2::OwnedUniPoly,
-    scalar::ComplexScalar,
     util::{
-        casting::{usize_to_f64, usize_to_i32, usize_to_u32},
-        doc_macros::{self, panic_absurd_size},
+        casting::{usize_to_f64, usize_to_i32},
+        doc_macros::panic_absurd_size,
         luts::factorial_lut,
     },
-    Poly, Poly2, RealScalar,
+    Poly, RealScalar,
 };
 use num::{BigUint, FromPrimitive};
 
