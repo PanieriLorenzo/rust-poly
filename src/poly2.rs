@@ -10,7 +10,7 @@ use num::{complex::ComplexFloat, FromPrimitive, One};
 use crate::{
     num::Zero,
     poly2,
-    storage::{BaseStore, OwnedStore, OwnedUniStore, UniStore},
+    storage::{BaseStore, MutStore, OwnedStore, OwnedUniStore, UniStore},
     util::doc_macros::panic_absurd_size,
 };
 
@@ -46,11 +46,11 @@ where
 
     /// Implementation detail
     #[doc(hidden)]
-    fn _as_store(&self) -> &Self::BackingStorage;
+    fn __as_store(&self) -> &Self::BackingStorage;
 
     /// Implementation detail
     #[doc(hidden)]
-    fn _from_store(store: Self::BackingStorage) -> Self;
+    fn __from_store(store: Self::BackingStorage) -> Self;
 
     fn is_zero(&self) -> bool;
 
@@ -105,7 +105,7 @@ where
     where
         T: 'a,
     {
-        self._as_store().iter()
+        self.__as_store().iter()
     }
 
     /// Polynomial composition.
@@ -135,14 +135,19 @@ where
     where
         T: Clone + ComplexFloat,
     {
-        let data = self._as_store();
-        Self::Owned::_from_store(
+        let data = self.__as_store();
+        Self::Owned::__from_store(
             <Self::Owned as Poly<T>>::BackingStorage::from_iter(
                 &data.shape(),
                 data.iter().cloned().map(|z| z.conj()),
             )
             .unwrap(),
         )
+    }
+
+    #[inline]
+    fn as_slice(&self) -> &[T] {
+        self.__as_store().as_slice()
     }
 }
 
@@ -167,8 +172,8 @@ where
         T: Zero + Clone,
     {
         let mut v = <Self::Owned as Poly<T>>::BackingStorage::zeros(&[n]);
-        v.extend(self._as_store().iter().cloned());
-        Self::Owned::_from_store(v)
+        v.extend(self.__as_store().iter().cloned());
+        Self::Owned::__from_store(v)
     }
 
     /// # Examples
@@ -182,13 +187,13 @@ where
     where
         T: Clone,
     {
-        let s = self._as_store();
+        let s = self.__as_store();
         let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(
             &s.shape(),
             s.iter().skip(n).cloned(),
         )
         .unwrap();
-        Self::Owned::_from_store(v)
+        Self::Owned::__from_store(v)
     }
 
     /// Get the nth term of the polynomial as a new polynomial
@@ -210,7 +215,7 @@ where
         T: Clone + num::Zero,
     {
         Some(Self::Owned::term(
-            self._as_store().iter().nth(degree as usize)?.clone(),
+            self.__as_store().iter().nth(degree as usize)?.clone(),
             degree,
         ))
     }
@@ -222,7 +227,7 @@ where
         T: Neg<Output = T> + One,
     {
         let s = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[2], [-x, T::one()]).unwrap();
-        let x_trans = self.compose(Self::Owned::_from_store(s));
+        let x_trans = self.compose(Self::Owned::__from_store(s));
         x_trans + Self::Owned::constant(y)
     }
 
@@ -250,7 +255,7 @@ where
             .skip(1); // shift degrees down
         let store = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[self.size() - 1], coeffs)
             .unwrap();
-        Self::Owned::_from_store(store)
+        Self::Owned::__from_store(store)
     }
 
     /// Antiderivative (with C=0)
@@ -271,7 +276,24 @@ where
         );
         let store = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[self.size() + 1], coeffs)
             .unwrap();
-        Self::Owned::_from_store(store)
+        Self::Owned::__from_store(store)
+    }
+}
+
+pub trait MutPoly<T>: Poly<T>
+where
+    Self::Owned: OwnedPoly<T>,
+    Self::BackingStorage: MutStore<T>,
+    <Self::BackingStorage as ToOwned>::Owned: OwnedStore<T>,
+    <Self::Owned as Poly<T>>::BackingStorage: OwnedStore<T>,
+{
+    /// Implementation detail
+    #[doc(hidden)]
+    fn __as_store_mut(&mut self) -> &mut Self::BackingStorage;
+
+    #[inline]
+    fn as_mut_slice(&mut self) -> &mut [T] {
+        self.__as_store_mut().as_mut_slice()
     }
 }
 
@@ -285,7 +307,7 @@ where
 
     fn constant(val: T) -> Self {
         let s = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[1], [val]).unwrap();
-        Self::_from_store(s)
+        Self::__from_store(s)
     }
 }
 
@@ -312,7 +334,7 @@ where
         let slope = (p2.1 - p1.1.clone()) / (p2.0 - p1.0.clone());
         let offset = p1.1.clone() - slope.clone() * p1.0;
         let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[2], [offset, slope]).unwrap();
-        Self::_from_store(v)
+        Self::__from_store(v)
     }
 
     fn term(coeff: T, degree: i64) -> Self
@@ -320,7 +342,7 @@ where
         T: Clone + num::Zero,
     {
         let v = <Self::Owned as Poly<T>>::BackingStorage::from_iter(&[1], [coeff]).unwrap();
-        Self::_from_store(v).shift_up(degree as usize)
+        Self::__from_store(v).shift_up(degree as usize)
     }
 
     /// Fit a polynomial to a set of points or constraints on the derivatives

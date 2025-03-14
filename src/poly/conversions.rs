@@ -1,23 +1,16 @@
 use itertools::Itertools;
 use num::Complex;
 
-use crate::{Poly, RealScalar};
+use crate::{Poly, Poly2, RealScalar};
 
 impl<T: RealScalar> Poly<T> {
-    #[must_use]
-    pub fn as_slice(&self) -> &[Complex<T>] {
-        self.0.as_slice()
-    }
-
-    pub fn as_mut_slice(&mut self) -> &mut [Complex<T>] {
-        self.0.as_mut_slice()
-    }
-
+    #[deprecated = "use Poly::as_slice().as_ptr() instead"]
     #[must_use]
     pub fn as_ptr(&self) -> *const Complex<T> {
         self.0.as_ptr()
     }
 
+    #[deprecated = "use Poly::as_mut_slice().as_mut_ptr() instead"]
     pub fn as_mut_ptr(&mut self) -> *mut Complex<T> {
         self.0.as_mut_ptr()
     }

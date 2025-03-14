@@ -22,6 +22,11 @@ impl<T: Clone> BaseStore<T> for Vec<T> {
     fn ndim(&self) -> usize {
         1
     }
+
+    #[inline]
+    fn as_slice<'a>(&'a self) -> &'a [T] {
+        self.as_slice()
+    }
 }
 
 impl<T: Clone> UniStore<T> for Vec<T> {}
@@ -58,4 +63,8 @@ impl<T: Clone> OwnedUniStore<T> for Vec<T> {
     }
 }
 
-impl<T: Clone> MutStore<T> for Vec<T> {}
+impl<T: Clone> MutStore<T> for Vec<T> {
+    fn as_mut_slice<'a>(&'a mut self) -> &'a mut [T] {
+        self.as_mut_slice()
+    }
+}

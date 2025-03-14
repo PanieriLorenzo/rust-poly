@@ -18,6 +18,6 @@ impl<T: RealScalar> Poly<T> {
     /// This is an alias for [`Poly::as_mut_slice()`] for API consistency.
     #[inline]
     pub fn coeffs_mut(&mut self) -> &mut [Complex<T>] {
-        self.as_mut_slice()
+        self.0.as_mut_slice()
     }
 }

@@ -16,10 +16,21 @@ pub trait BaseStore<T>: ToOwned
 where
     Self::Owned: OwnedStore<T>,
 {
-    /// Non-owning iterator
+    /// Non-owning iterator over all elements in the container
+    ///
+    /// For multi-dimensional
+    /// containers, the order of the coefficients is undefined for now, but will
+    /// be stabilized once/if multi-variate polynomials are implemented.
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
         T: 'a;
+
+    /// Slice into the backing store's data, the data should be stored as one contiguous region.
+    ///
+    /// For multi-dimensional
+    /// containers, the order of the coefficients is undefined for now, but will
+    /// be stabilized once/if multi-variate polynomials are implemented.
+    fn as_slice<'a>(&'a self) -> &'a [T];
 
     fn shape(&self) -> Box<[usize]>;
 
@@ -31,6 +42,8 @@ pub trait MutStore<T>: BaseStore<T>
 where
     Self::Owned: OwnedStore<T>,
 {
+    /// Slice into the backing store's data, the data should be stored as one contiguous region
+    fn as_mut_slice<'a>(&'a mut self) -> &'a mut [T];
 }
 
 /// Univariate storage.

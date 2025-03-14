@@ -164,11 +164,11 @@ impl<T: RealScalar> Poly2<Complex<T>> for Poly<T> {
         eval
     }
 
-    fn _as_store(&self) -> &Self::BackingStorage {
+    fn __as_store(&self) -> &Self::BackingStorage {
         &self.0
     }
 
-    fn _from_store(store: Self::BackingStorage) -> Self {
+    fn __from_store(store: Self::BackingStorage) -> Self {
         Self(store)
     }
 
