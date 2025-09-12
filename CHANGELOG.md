@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3] - 2025-09-12
+
+### ⚙️ Miscellaneous Tasks
+
+- Updated dependencies
+- Internal cleanup
+
 ## [0.4.2] - 2024-10-11
 
 ### 🚀 Features
