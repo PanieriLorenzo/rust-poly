@@ -12,6 +12,9 @@ readme = "README.md"
 keywords = ["mathematics", "numerics", "polynomial", "solver"]
 categories = ["mathematics"]
 
+[workspace]
+members = [".", "crates/api2"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
