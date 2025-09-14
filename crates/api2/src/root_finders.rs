@@ -1,6 +1,7 @@
 mod aberth_ehrlich;
 mod errors;
 mod initial_guess;
+mod parallel_newton;
 
 use crate::{
     aliases::{C, R},
@@ -13,7 +14,7 @@ use crate::{
 use self::{
     aberth_ehrlich::aberth_ehrlich,
     errors::{BreakReason, ContinueReason, RootsError},
-    initial_guess::initial_guess_uniform,
+    initial_guess::{initial_guess_annulus, initial_guess_uniform},
 };
 
 pub enum ComplexRootsInitialGuessStrategy<T> {
@@ -28,6 +29,14 @@ pub enum ComplexRootsInitialGuessStrategy<T> {
         min_im: T,
         max_im: T,
     },
+
+    RandomAnnulus {
+        seed: u64,
+        bias: T,
+        perturbation: T,
+    },
+    // TODO: Hull {},
+    // TODO: GridSearch {},
 }
 
 pub enum ComplexRootsFinderStrategyKind {
@@ -131,6 +140,18 @@ where
                 max_re,
                 min_im,
                 max_im,
+                &mut active_guesses,
+                needed_guesses,
+            ),
+            ComplexRootsInitialGuessStrategy::RandomAnnulus {
+                seed,
+                bias,
+                perturbation,
+            } => initial_guess_annulus(
+                seed,
+                &poly,
+                bias,
+                perturbation,
                 &mut active_guesses,
                 needed_guesses,
             ),

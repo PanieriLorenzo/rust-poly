@@ -174,17 +174,27 @@ impl RealScalar for f64 {
 }
 
 pub trait ComplexScalar: NonIntegerScalar {
-    fn new(re: Self::RealPartScalar, im: Self::RealPartScalar) -> Self;
+    fn cartesian(re: Self::RealPartScalar, im: Self::RealPartScalar) -> Self;
+
+    fn polar(radius: Self::RealPartScalar, angle: Self::RealPartScalar) -> Self;
 }
 
 impl ComplexScalar for Complex32 {
-    fn new(re: Self::RealPartScalar, im: Self::RealPartScalar) -> Self {
+    fn cartesian(re: Self::RealPartScalar, im: Self::RealPartScalar) -> Self {
         Complex32::new(re, im)
+    }
+
+    fn polar(radius: Self::RealPartScalar, angle: Self::RealPartScalar) -> Self {
+        Complex32::from_polar(radius, angle)
     }
 }
 
 impl ComplexScalar for Complex64 {
-    fn new(re: Self::RealPartScalar, im: Self::RealPartScalar) -> Self {
+    fn cartesian(re: Self::RealPartScalar, im: Self::RealPartScalar) -> Self {
         Complex64::new(re, im)
+    }
+
+    fn polar(radius: Self::RealPartScalar, angle: Self::RealPartScalar) -> Self {
+        Complex64::from_polar(radius, angle)
     }
 }

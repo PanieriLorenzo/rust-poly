@@ -3,7 +3,7 @@
 use std::mem;
 
 use crate::{
-    aliases::C,
+    aliases::{C, R},
     base::{BasePoly, UnivariateMarker},
     errors::{CAST_OVERFLOW, DEGREE_TOO_LARGE},
     scalar_traits::{BasicScalar, NonIntegerScalar, RealScalar},
@@ -38,7 +38,7 @@ impl<S: BasicStorage> BasePoly<S, UnivariateMarker> {
         }
     }
 
-    pub fn iter_inner(&self) -> impl Iterator<Item = &S::T> {
+    pub fn iter_inner(&self) -> impl DoubleEndedIterator<Item = &S::T> {
         self.storage.borrow().iter()
     }
 
@@ -121,6 +121,50 @@ impl<S: BasicStorage> BasePoly<S, UnivariateMarker> {
         for (y, x) in out.iter_mut().zip(points) {
             *y = self.eval_complex_inner(x.clone());
         }
+    }
+
+    pub fn is_monic_inner(&self) -> bool {
+        self.storage.borrow()[self.degree_raw_inner()].is_one()
+    }
+
+    /// The radius of a disk containing all the roots
+    ///
+    /// Uses Deutsch's simple formula \[[McNamee 2005](https://www.researchgate.net/publication/228745231_A_comparison_of_a_priori_bounds_on_real_or_complex_roots_of_polynomials)\]
+    pub fn upper_bound_inner(&self) -> R<S>
+    where
+        S::T: NonIntegerScalar,
+    {
+        debug_assert!(
+            self.degree_raw_inner() >= 2,
+            "upper bound of small degree polynomials is not supported, use explicit solver"
+        );
+        debug_assert!(
+            self.is_monic_inner(),
+            "Deuthsch's formula requires the polynomial to be monic"
+        );
+
+        let n = self.len_inner();
+        let next_last = self.storage.borrow()[n - 2].clone();
+        let coeffs_iter = self.storage.borrow().iter().take(n - 2);
+        let coeffs_iter_shifted = self.storage.borrow().iter().skip(1).take(n - 2);
+        let max_term = coeffs_iter
+            .zip(coeffs_iter_shifted)
+            .map(|(num, denom)| num.clone() / denom.clone())
+            .map(|z| z.to_complex().taxicab_norm())
+            .reduce(|acc, z| if z > acc { z } else { acc })
+            .expect("infallible");
+        next_last.to_complex().taxicab_norm() + max_term
+    }
+
+    /// The radius of a disk containing none of the roots
+    pub fn lower_bound_inner(&self) -> R<S>
+    where
+        S::T: NonIntegerScalar,
+    {
+        // TODO: implement without cloning
+        let mut this = BasePoly::<Vec<_>, _>::from_iter(self.iter_inner().cloned().rev());
+        this.make_monic_inner();
+        R::<S>::one() / this.upper_bound_inner()
     }
 }
 

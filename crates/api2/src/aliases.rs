@@ -1,4 +1,4 @@
-use num_complex::{Complex32, Complex64};
+use num_complex::{Complex, Complex32, Complex64};
 
 use crate::{
     base::{BasePoly, UnivariateMarker},
@@ -10,9 +10,13 @@ pub(crate) type C<S> = <<S as BasicStorage>::T as NonIntegerScalar>::ToComplexSc
 
 pub(crate) type R<S> = <C<S> as BasicScalar>::RealPartScalar;
 
+pub type Poly<T> = BasePoly<Vec<Complex<T>>, UnivariateMarker>;
+
 pub type Poly32 = BasePoly<Vec<Complex32>, UnivariateMarker>;
 
 pub type Poly64 = BasePoly<Vec<Complex64>, UnivariateMarker>;
+
+pub type RealPoly<T> = BasePoly<Vec<T>, UnivariateMarker>;
 
 pub type RealPoly32 = BasePoly<Vec<f32>, UnivariateMarker>;
 
